@@ -1,30 +1,11 @@
 "use client";
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { useAuth } from "@/contexts/AuthContext";
 
 export default function DashboardPage() {
-  const { user } = useAuth();
-
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Welcome Message */}
-        <div className="mb-8">
-          <p
-            className="text-[16px] font-medium leading-normal mb-0"
-            style={{ color: "black" }}
-          >
-            Welcome,
-          </p>
-          <p
-            className="text-[20px] font-medium leading-normal"
-            style={{ color: "black" }}
-          >
-            {user?.fullName || "Nguyen Van A"}
-          </p>
-        </div>
-
         {/* Top 4 cards with gradients - empty as per Figma */}
         <div className="flex gap-10">
           {/* Card 1 - Red gradient */}
