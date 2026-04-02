@@ -76,9 +76,9 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="py-8">
+      <nav className="py-5">
         {navigation.map((section) => (
-          <div key={section.title} className="mb-10">
+          <div key={section.title} className="mb-2">
             <h2
               className="text-[14px] font-semibold mb-4 px-[18px] tracking-normal"
               style={{ color: "#8d8d8d" }}
@@ -86,7 +86,7 @@ export function Sidebar() {
               {section.title}
             </h2>
             <ul
-              className="space-y-8"
+              className="space-y-2"
               style={{ listStyle: "none", paddingLeft: 0 }}
             >
               {section.items.map((item) => {
@@ -98,21 +98,34 @@ export function Sidebar() {
                     <Link
                       href={item.href}
                       className={cn(
-                        "flex items-center py-6 px-[18px] text-[16px] font-semibold transition-colors relative no-underline",
+                        "group flex items-center py-3 px-[18px] text-[16px] font-medium transition-colors relative no-underline",
                         isActive
                           ? "bg-[#1a80a2] text-white rounded-tr-[10px]"
-                          : "text-black hover:bg-gray-100 hover:text-black",
+                          : "text-black hover:text-[#1a80a2]",
                       )}
                       style={{
-                        color: isActive ? "white" : "black",
                         textDecoration: "none",
                       }}
                     >
                       <IconComponent
-                        className="w-5 h-5 flex-shrink-0"
+                        className={cn(
+                          "w-5 h-5 flex-shrink-0 transition-colors",
+                          isActive
+                            ? "text-white"
+                            : "text-black group-hover:text-[#1a80a2]",
+                        )}
                         style={{ marginRight: "10px" }}
                       />
-                      <span>{item.name}</span>
+                      <span
+                        className={cn(
+                          "transition-colors",
+                          isActive
+                            ? "text-white"
+                            : "text-black group-hover:text-[#1a80a2]",
+                        )}
+                      >
+                        {item.name}
+                      </span>
                     </Link>
                   </li>
                 );
