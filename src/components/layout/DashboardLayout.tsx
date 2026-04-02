@@ -9,9 +9,9 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
+    <div className="min-h-screen bg-[#f9fafb]">
       <Sidebar />
-      <main className="ml-[180px] p-8">{children}</main>
+      <main className="ml-[263px] p-8">{children}</main>
     </div>
   );
 }
