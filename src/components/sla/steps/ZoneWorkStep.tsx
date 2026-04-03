@@ -6,6 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
+import { StandardDialog } from "@/components/ui/standard-dialog";
+import { FormActions } from "@/components/ui/form-actions";
+import { ZoneFormContent } from "@/components/sla/forms/ZoneFormContent";
+import { WorkAreaFormContent } from "@/components/sla/forms/WorkAreaFormContent";
 import {
   Plus,
   MapPin,
@@ -439,302 +443,37 @@ export function ZoneWorkStep({
         </div>
       </div>
 
-      {/* Zone Form Popup */}
-      {showZoneForm && (
-        <div
-          className="fixed top-0 left-0 w-full h-full bg-white bg-opacity-5 flex items-center justify-center"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 9999,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-          }}
-        >
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-black">
-                Thêm Zone Mới
-              </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowZoneForm(false)}
-                className="h-6 w-6 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+      {/* Zone Form Dialog */}
+      <StandardDialog
+        open={showZoneForm}
+        onOpenChange={setShowZoneForm}
+        title="Thêm Zone Mới"
+        maxWidth="md"
+      >
+        <ZoneFormContent
+          newZone={newZone}
+          setNewZone={setNewZone}
+          onSave={handleAddZone}
+          onCancel={() => setShowZoneForm(false)}
+        />
+      </StandardDialog>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="zoneName">Tên zone</Label>
-                <Input
-                  id="zoneName"
-                  placeholder="VD: Khu vực ngoài cảnh, Khu vực trong nhà..."
-                  value={newZone.name}
-                  onChange={(e) =>
-                    setNewZone({ ...newZone, name: e.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="zoneDescription">Mô tả</Label>
-                <Input
-                  id="zoneDescription"
-                  placeholder="Mô tả chi tiết về zone"
-                  value={newZone.description}
-                  onChange={(e) =>
-                    setNewZone({ ...newZone, description: e.target.value })
-                  }
-                />
-              </div>
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowZoneForm(false)}
-                >
-                  Hủy
-                </Button>
-                <Button
-                  onClick={handleAddZone}
-                  className="bg-[#1a80a2] hover:bg-[#1a80a2]/90"
-                >
-                  Thêm Zone
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Work Area Form Popup */}
-      {showWorkAreaForm && (
-        <div
-          className="fixed top-0 left-0 w-full h-full bg-white bg-opacity-5 flex items-center justify-center"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 9999,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-          }}
-        >
-          <div className="bg-white rounded-lg p-6 w-full max-w-5xl mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-black">
-                Thêm Khu Vực Làm Việc & Công Việc
-              </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowWorkAreaForm(false)}
-                className="h-6 w-6 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="workAreaName">Tên khu vực làm việc</Label>
-                  <Input
-                    id="workAreaName"
-                    placeholder="VD: Sảnh tầng 1, Phòng họp A..."
-                    value={newWorkArea.name}
-                    onChange={(e) =>
-                      setNewWorkArea({ ...newWorkArea, name: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="workAreaSize">Diện tích (m²)</Label>
-                  <Input
-                    id="workAreaSize"
-                    type="number"
-                    placeholder="Nhập diện tích"
-                    value={newWorkArea.area || ""}
-                    onChange={(e) =>
-                      setNewWorkArea({
-                        ...newWorkArea,
-                        area: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="workAreaDescription">Mô tả</Label>
-                <Input
-                  id="workAreaDescription"
-                  placeholder="Mô tả chi tiết khu vực"
-                  value={newWorkArea.description}
-                  onChange={(e) =>
-                    setNewWorkArea({
-                      ...newWorkArea,
-                      description: e.target.value,
-                    })
-                  }
-                />
-              </div>
-
-              {/* Tasks Section */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-black">
-                    Danh sách công việc
-                  </h4>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAddTaskToNewWorkArea}
-                  >
-                    + Thêm công việc
-                  </Button>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm border border-gray-200 rounded-lg">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="text-left py-3 px-4 font-medium text-gray-700 border-b">
-                          STT
-                        </th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-700 border-b">
-                          Tên công việc
-                        </th>
-                        <th className="text-center py-3 px-4 font-medium text-gray-700 border-b">
-                          Ngày
-                        </th>
-                        <th className="text-center py-3 px-4 font-medium text-gray-700 border-b">
-                          Tuần
-                        </th>
-                        <th className="text-center py-3 px-4 font-medium text-gray-700 border-b">
-                          Tháng
-                        </th>
-                        <th className="text-center py-3 px-4 font-medium text-gray-700 border-b">
-                          Năm
-                        </th>
-                        <th className="text-center py-3 px-4 font-medium text-gray-700 border-b">
-                          Hành động
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {newWorkArea.tasks.map((task, index) => (
-                        <tr key={task.id} className="border-b hover:bg-gray-50">
-                          <td className="py-3 px-4 text-center">{index + 1}</td>
-                          <td className="py-3 px-4">
-                            <Input
-                              value={task.name}
-                              onChange={(e) =>
-                                handleUpdateTaskInNewWorkArea(
-                                  task.id,
-                                  "name",
-                                  e.target.value,
-                                )
-                              }
-                              placeholder="Nhập tên công việc"
-                              className="border-gray-300"
-                            />
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <Checkbox
-                              checked={task.frequency.daily}
-                              onCheckedChange={(checked) =>
-                                handleUpdateTaskInNewWorkArea(
-                                  task.id,
-                                  "daily",
-                                  checked,
-                                )
-                              }
-                            />
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <Checkbox
-                              checked={task.frequency.weekly}
-                              onCheckedChange={(checked) =>
-                                handleUpdateTaskInNewWorkArea(
-                                  task.id,
-                                  "weekly",
-                                  checked,
-                                )
-                              }
-                            />
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <Checkbox
-                              checked={task.frequency.monthly}
-                              onCheckedChange={(checked) =>
-                                handleUpdateTaskInNewWorkArea(
-                                  task.id,
-                                  "monthly",
-                                  checked,
-                                )
-                              }
-                            />
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <Checkbox
-                              checked={task.frequency.yearly}
-                              onCheckedChange={(checked) =>
-                                handleUpdateTaskInNewWorkArea(
-                                  task.id,
-                                  "yearly",
-                                  checked,
-                                )
-                              }
-                            />
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setNewWorkArea({
-                                  ...newWorkArea,
-                                  tasks: newWorkArea.tasks.filter(
-                                    (t) => t.id !== task.id,
-                                  ),
-                                });
-                              }}
-                              className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-4 border-t">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowWorkAreaForm(false)}
-                >
-                  Hủy
-                </Button>
-                <Button
-                  onClick={handleAddWorkArea}
-                  className="bg-[#1a80a2] hover:bg-[#1a80a2]/90"
-                >
-                  Thêm Khu Vực
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Work Area Form Dialog */}
+      <StandardDialog
+        open={showWorkAreaForm}
+        onOpenChange={setShowWorkAreaForm}
+        title="Thêm Khu Vực Làm Việc & Công Việc"
+        maxWidth="xl"
+      >
+        <WorkAreaFormContent
+          newWorkArea={newWorkArea}
+          setNewWorkArea={setNewWorkArea}
+          onSave={handleAddWorkArea}
+          onCancel={() => setShowWorkAreaForm(false)}
+          onAddTask={handleAddTaskToNewWorkArea}
+          onUpdateTask={handleUpdateTaskInNewWorkArea}
+        />
+      </StandardDialog>
 
       {/* Summary */}
       {zones.length > 0 && (

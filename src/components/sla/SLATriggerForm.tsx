@@ -11,12 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { StandardDialog } from "@/components/ui/standard-dialog";
+import { FormActions } from "@/components/ui/form-actions";
 import type { SLATrigger, CreateSLATriggerData } from "@/types/sla";
 
 interface SLATriggerFormProps {
@@ -81,134 +77,139 @@ export function SLATriggerForm({
     onClose();
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSave();
+  };
+
+  const handleReset = () => {
+    setFormData({
+      name: "",
+      type: "",
+      condition: "",
+      threshold: 0,
+      unit: "",
+    });
+  };
+
   const isFormValid =
     formData.name && formData.type && formData.condition && formData.unit;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>
-            {mode === "create" ? "Create New SLA Trigger" : "Edit SLA Trigger"}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
+    <StandardDialog
+      open={isOpen}
+      onOpenChange={onClose}
+      title={mode === "create" ? "Create New SLA Trigger" : "Edit SLA Trigger"}
+      maxWidth="sm"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Trigger Name *</Label>
+          <Input
+            id="name"
+            placeholder="Enter trigger name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="type">Trigger Type *</Label>
+          <Select
+            value={formData.type}
+            onValueChange={(value) => setFormData({ ...formData, type: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select trigger type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Response Time">Response Time</SelectItem>
+              <SelectItem value="Resolution Time">Resolution Time</SelectItem>
+              <SelectItem value="Quality Score">Quality Score</SelectItem>
+              <SelectItem value="Customer Satisfaction">
+                Customer Satisfaction
+              </SelectItem>
+              <SelectItem value="First Contact Resolution">
+                First Contact Resolution
+              </SelectItem>
+              <SelectItem value="Escalation Rate">Escalation Rate</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Trigger Name</Label>
-            <Input
-              id="name"
-              placeholder="Enter trigger name"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
+            <Label htmlFor="condition">Condition *</Label>
+            <Select
+              value={formData.condition}
+              onValueChange={(value) =>
+                setFormData({ ...formData, condition: value })
               }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select condition" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Greater than">Greater than</SelectItem>
+                <SelectItem value="Less than">Less than</SelectItem>
+                <SelectItem value="Equal to">Equal to</SelectItem>
+                <SelectItem value="Greater than or equal">
+                  Greater than or equal
+                </SelectItem>
+                <SelectItem value="Less than or equal">
+                  Less than or equal
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="threshold">Threshold *</Label>
+            <Input
+              id="threshold"
+              type="number"
+              placeholder="0"
+              value={formData.threshold}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  threshold: parseInt(e.target.value) || 0,
+                })
+              }
+              required
             />
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="type">Trigger Type</Label>
-            <Select
-              value={formData.type}
-              onValueChange={(value) =>
-                setFormData({ ...formData, type: value })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select trigger type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Response Time">Response Time</SelectItem>
-                <SelectItem value="Resolution Time">Resolution Time</SelectItem>
-                <SelectItem value="Quality Score">Quality Score</SelectItem>
-                <SelectItem value="Customer Satisfaction">
-                  Customer Satisfaction
-                </SelectItem>
-                <SelectItem value="First Contact Resolution">
-                  First Contact Resolution
-                </SelectItem>
-                <SelectItem value="Escalation Rate">Escalation Rate</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="condition">Condition</Label>
-              <Select
-                value={formData.condition}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, condition: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select condition" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Greater than">Greater than</SelectItem>
-                  <SelectItem value="Less than">Less than</SelectItem>
-                  <SelectItem value="Equal to">Equal to</SelectItem>
-                  <SelectItem value="Greater than or equal">
-                    Greater than or equal
-                  </SelectItem>
-                  <SelectItem value="Less than or equal">
-                    Less than or equal
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="threshold">Threshold</Label>
-              <Input
-                id="threshold"
-                type="number"
-                placeholder="0"
-                value={formData.threshold}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    threshold: parseInt(e.target.value) || 0,
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="unit">Unit</Label>
-            <Select
-              value={formData.unit}
-              onValueChange={(value) =>
-                setFormData({ ...formData, unit: value })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select unit" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="seconds">Seconds</SelectItem>
-                <SelectItem value="minutes">Minutes</SelectItem>
-                <SelectItem value="hours">Hours</SelectItem>
-                <SelectItem value="days">Days</SelectItem>
-                <SelectItem value="percentage">Percentage</SelectItem>
-                <SelectItem value="count">Count</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              className="bg-[#1a80a2] hover:bg-[#1a80a2]/90"
-              disabled={!isFormValid}
-            >
-              {mode === "create" ? "Create Trigger" : "Save Changes"}
-            </Button>
-          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <div className="space-y-2">
+          <Label htmlFor="unit">Unit *</Label>
+          <Select
+            value={formData.unit}
+            onValueChange={(value) => setFormData({ ...formData, unit: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select unit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="seconds">Seconds</SelectItem>
+              <SelectItem value="minutes">Minutes</SelectItem>
+              <SelectItem value="hours">Hours</SelectItem>
+              <SelectItem value="days">Days</SelectItem>
+              <SelectItem value="percentage">Percentage</SelectItem>
+              <SelectItem value="count">Count</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <FormActions
+          onReset={handleReset}
+          onCancel={onClose}
+          submitLabel={mode === "create" ? "Create Trigger" : "Save Changes"}
+          isLoading={false}
+          showReset={true}
+          showCancel={true}
+        />
+      </form>
+    </StandardDialog>
   );
 }

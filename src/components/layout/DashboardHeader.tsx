@@ -11,12 +11,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { LogoutConfirmation } from "@/components/ui/logout-confirmation";
+import { useState } from "react";
 
 export function DashboardHeader() {
   const { user, logout } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogoutClick = () => {
+    setShowLogoutDialog(true);
+  };
+
+  const handleLogoutConfirm = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Still redirect even if logout fails
+      window.location.href = "/login";
+    } finally {
+      setIsLoggingOut(false);
+      setShowLogoutDialog(false);
+    }
   };
 
   return (
@@ -24,17 +42,10 @@ export function DashboardHeader() {
       <div className="flex items-center justify-between h-full px-8">
         {/* Left side - CleanOPS logo and user info */}
         <div className="flex items-center gap-6">
-          {/* CleanOPS Logo */}
-          <div className="flex items-center gap-3">
-            <span className="text-[18px] font-semibold text-black">
-              leanOPS
-            </span>
-          </div>
-
           {/* User Welcome Message */}
           <div className="text-left">
-            <p className="text-[11px] text-gray-500 leading-tight">Welcome,</p>
-            <p className="text-[15px] font-semibold text-gray-900 leading-tight">
+            <p className="text-[14px] text-gray-500 leading-tight">Welcome,</p>
+            <p className="text-[18px] font-semibold text-gray-900 leading-tight">
               {user?.fullName || "Nguyen Van A"}
             </p>
           </div>
@@ -75,17 +86,27 @@ export function DashboardHeader() {
               <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+                <span>Hồ sơ</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem
+                onClick={handleLogoutClick}
+                disabled={isLoggingOut}
+              >
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+                <span>Đăng xuất</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
+
+      <LogoutConfirmation
+        open={showLogoutDialog}
+        onOpenChange={setShowLogoutDialog}
+        onConfirm={handleLogoutConfirm}
+        isLoading={isLoggingOut}
+      />
     </header>
   );
 }

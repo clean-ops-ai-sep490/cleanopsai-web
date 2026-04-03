@@ -11,6 +11,7 @@ import {
   Calendar,
   Users,
   FileText,
+  Building2,
 } from "lucide-react";
 
 const navigation = [
@@ -50,7 +51,8 @@ const navigation = [
   {
     title: "KHÁC",
     items: [
-      { name: "Thêm hợp đồng", href: "/dashboard/contracts", icon: FileText },
+      { name: "Hợp đồng", href: "/dashboard/contracts", icon: FileText },
+      { name: "Khách hàng", href: "/dashboard/clients", icon: Building2 },
     ],
   },
 ];
@@ -59,9 +61,9 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-[200px] bg-[#f9fafb] border-r border-gray-200">
+    <aside className="fixed left-0 top-0 h-screen w-[200px] bg-[#f9fafb] border-r border-gray-200 flex flex-col">
       {/* Logo */}
-      <div className="h-[106px] flex items-center px-6 border-b border-gray-200">
+      <div className="h-[106px] flex items-center px-6 border-b border-gray-200 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-[58px] h-[58px] bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
             <span className="text-white font-bold text-[20px]">C</span>
@@ -75,8 +77,8 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="py-5">
+      {/* Navigation - Scrollable */}
+      <nav className="flex-1 py-5 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {navigation.map((section) => (
           <div key={section.title} className="mb-2">
             <h2
