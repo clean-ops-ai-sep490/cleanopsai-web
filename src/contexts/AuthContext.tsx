@@ -24,7 +24,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (data: LoginRequest) => Promise<AuthTokenResponse>;
   register: (data: RegisterRequest) => Promise<RegisterResponse>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -68,9 +68,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return registerUser(data);
   }, []);
 
-  const logout = useCallback(() => {
-    logoutUser();
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      await logoutUser();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setUser(null);
+      // Redirect to login page after logout
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+    }
   }, []);
 
   return (

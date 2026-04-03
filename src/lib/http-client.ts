@@ -57,9 +57,13 @@ class HttpClient {
     const token = this.getToken();
 
     const headers: Record<string, string> = {
-      "Content-Type": "application/json",
       ...options?.headers,
     };
+
+    // Don't set Content-Type for FormData - let the browser set it with boundary
+    if (!(body instanceof FormData)) {
+      headers["Content-Type"] = "application/json";
+    }
 
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
@@ -68,7 +72,12 @@ class HttpClient {
     return fetch(this.buildUrl(path, options?.params), {
       method,
       headers,
-      body: body ? JSON.stringify(body) : undefined,
+      body:
+        body instanceof FormData
+          ? body
+          : body
+            ? JSON.stringify(body)
+            : undefined,
       signal: options?.signal,
     });
   }
@@ -79,10 +88,9 @@ class HttpClient {
       return this.refreshPromise;
     }
 
-    this.refreshPromise = this.refreshToken!()
-      .finally(() => {
-        this.refreshPromise = null;
-      });
+    this.refreshPromise = this.refreshToken!().finally(() => {
+      this.refreshPromise = null;
+    });
 
     return this.refreshPromise;
   }
@@ -108,7 +116,11 @@ class HttpClient {
         await this.handleRefresh();
       } catch {
         this.onAuthFailure?.();
-        throw new HttpClientError(401, response.statusText, await response.text());
+        throw new HttpClientError(
+          401,
+          response.statusText,
+          await response.text(),
+        );
       }
 
       const retry = await this.doFetch(method, path, body, options);
@@ -118,7 +130,11 @@ class HttpClient {
           this.onAuthFailure?.();
         }
         let errorBody: unknown;
-        try { errorBody = await retry.json(); } catch { errorBody = await retry.text(); }
+        try {
+          errorBody = await retry.json();
+        } catch {
+          errorBody = await retry.text();
+        }
         throw new HttpClientError(retry.status, retry.statusText, errorBody);
       }
 
@@ -127,8 +143,16 @@ class HttpClient {
 
     if (!response.ok) {
       let errorBody: unknown;
-      try { errorBody = await response.json(); } catch { errorBody = await response.text(); }
-      throw new HttpClientError(response.status, response.statusText, errorBody);
+      try {
+        errorBody = await response.json();
+      } catch {
+        errorBody = await response.text();
+      }
+      throw new HttpClientError(
+        response.status,
+        response.statusText,
+        errorBody,
+      );
     }
 
     return this.parseResponse<T>(response);
