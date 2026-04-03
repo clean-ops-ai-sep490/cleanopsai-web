@@ -1,39 +1,38 @@
-import { auth0 } from "@/lib/auth0";
-import LoginButton from "@/components/LoginButton";
-import LogoutButton from "@/components/LogoutButton";
-import Profile from "@/components/Profile";
+"use client";
 
-export default async function Home() {
-  const session = await auth0.getSession();
-  const user = session?.user;
-  
+import AuthGuard from "@/components/AuthGuard";
+import { useAuth } from "@/contexts/AuthContext";
+
+export default function Home() {
   return (
-    <div className="app-container">
-      <div className="main-card-wrapper">
-        <img
-          src="https://cdn.auth0.com/quantum-assets/dist/latest/logos/auth0/auth0-lockup-en-ondark.png"
-          alt="Auth0 Logo"
-          className="auth0-logo"
-        />
-        <h1 className="main-title">Next.js + Auth0</h1>
-        
-        <div className="action-card">
-          {user ? (
-            <div className="logged-in-section">
-              <p className="logged-in-message">✅ Successfully logged in!</p>
-              <Profile />
-              <LogoutButton />
-            </div>
-          ) : (
-            <>
-              <p className="action-text">
-                Welcome! Please log in to access your protected content.
-              </p>
-              <LoginButton />
-            </>
-          )}
+    <AuthGuard>
+      <HomeContent />
+    </AuthGuard>
+  );
+}
+
+function HomeContent() {
+  const { user, logout } = useAuth();
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 className="text-xl font-bold">CleanOps AI</h1>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-600">{user?.email}</span>
+            <button
+              onClick={logout}
+              className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <p className="text-gray-600">Welcome to CleanOps AI. You are authenticated.</p>
+      </main>
     </div>
   );
 }
