@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,15 +5,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { FormActions } from "@/components/ui/form-actions";
 import { Trash2 } from "lucide-react";
 import type { WorkAreaTask } from "@/types/sla";
+import {
+  validateWorkArea,
+  type WorkAreaFormData,
+} from "@/lib/validators/work-area-validator";
+import { toast } from "sonner";
 
 interface WorkAreaFormContentProps {
-  newWorkArea: {
-    name: string;
-    zoneId: string;
-    area: number;
-    description: string;
-    tasks: WorkAreaTask[];
-  };
+  newWorkArea: WorkAreaFormData;
   setNewWorkArea: (workArea: any) => void;
   onSave: () => void;
   onCancel: () => void;
@@ -33,9 +30,14 @@ export function WorkAreaFormContent({
 }: WorkAreaFormContentProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newWorkArea.name.trim() && newWorkArea.zoneId && newWorkArea.area > 0) {
-      onSave();
+
+    const errors = validateWorkArea(newWorkArea);
+    if (errors.length > 0) {
+      toast.error(errors[0].message);
+      return;
     }
+
+    onSave();
   };
 
   const handleReset = () => {

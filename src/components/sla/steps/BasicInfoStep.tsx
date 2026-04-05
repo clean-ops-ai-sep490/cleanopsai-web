@@ -1,15 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import type { SLABasicInfo } from "@/types/sla";
+import { useBasicInfoForm } from "@/hooks/useBasicInfoForm";
 
 interface BasicInfoStepProps {
   data: SLABasicInfo;
@@ -17,9 +13,34 @@ interface BasicInfoStepProps {
 }
 
 export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
-  const handleInputChange = (field: keyof SLABasicInfo, value: string) => {
-    onChange({ ...data, [field]: value });
-  };
+  const [loading, setLoading] = useState(true);
+
+  const {
+    selectedContract,
+    selectedWorkArea,
+    selectedEnvironmentType,
+    selectedZone,
+    selectedLocation,
+    loadContracts,
+    loadWorkAreas,
+    loadEnvironmentTypes,
+    loadZones,
+    loadLocations,
+    handleInputChange,
+    formatWorkAreaDisplay,
+  } = useBasicInfoForm(data, onChange);
+
+  useEffect(() => {
+    setLoading(false);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1a80a2]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -30,15 +51,14 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="contractNumber">Số hợp đồng</Label>
-            <Input
-              id="contractNumber"
-              placeholder="Nhập số hợp đồng"
-              value={data.contractNumber}
-              onChange={(e) =>
-                handleInputChange("contractNumber", e.target.value)
-              }
-              className="bg-gray-100"
+            <Label htmlFor="contractId">Hợp đồng</Label>
+            <SearchableSelect
+              value={data.contractId}
+              onValueChange={(value) => handleInputChange("contractId", value)}
+              placeholder="Chọn hợp đồng"
+              searchPlaceholder="Tìm kiếm hợp đồng..."
+              emptyMessage="Không tìm thấy hợp đồng nào."
+              loadItems={loadContracts}
             />
           </div>
 
@@ -54,68 +74,76 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="serviceType">Loại dịch vụ</Label>
-            <Select
-              value={data.serviceType}
-              onValueChange={(value) => handleInputChange("serviceType", value)}
-            >
-              <SelectTrigger className="bg-gray-100">
-                <SelectValue placeholder="Chọn loại dịch vụ" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cleaning-office">
-                  Vệ sinh văn phòng
-                </SelectItem>
-                <SelectItem value="cleaning-industrial">
-                  Vệ sinh công nghiệp
-                </SelectItem>
-                <SelectItem value="cleaning-hospital">
-                  Vệ sinh bệnh viện
-                </SelectItem>
-                <SelectItem value="cleaning-school">
-                  Vệ sinh trường học
-                </SelectItem>
-                <SelectItem value="cleaning-residential">
-                  Vệ sinh khu dân cư
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="environmentTypeId">Loại môi trường</Label>
+            <SearchableSelect
+              value={data.environmentTypeId}
+              onValueChange={(value) =>
+                handleInputChange("environmentTypeId", value)
+              }
+              placeholder="Chọn loại môi trường"
+              searchPlaceholder="Tìm kiếm loại môi trường..."
+              emptyMessage="Không tìm thấy loại môi trường nào."
+              loadItems={loadEnvironmentTypes}
+            />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="environment">Môi trường áp dụng</Label>
-            <Select
-              value={data.environment}
-              onValueChange={(value) => handleInputChange("environment", value)}
-            >
-              <SelectTrigger className="bg-gray-100">
-                <SelectValue placeholder="Chọn môi trường" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="indoor">Trong nhà</SelectItem>
-                <SelectItem value="outdoor">Ngoài trời</SelectItem>
-                <SelectItem value="mixed">Hỗn hợp</SelectItem>
-                <SelectItem value="specialized">Chuyên biệt</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label htmlFor="locationId">Địa điểm</Label>
+            <SearchableSelect
+              value={data.locationId}
+              onValueChange={(value) => handleInputChange("locationId", value)}
+              placeholder="Chọn địa điểm"
+              searchPlaceholder="Tìm kiếm địa điểm..."
+              emptyMessage="Không tìm thấy địa điểm nào."
+              loadItems={loadLocations}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="zoneId">Khu vực (Zone)</Label>
+            <SearchableSelect
+              value={data.zoneId}
+              onValueChange={(value) => handleInputChange("zoneId", value)}
+              placeholder="Chọn khu vực"
+              searchPlaceholder="Tìm kiếm khu vực..."
+              emptyMessage="Không tìm thấy khu vực nào."
+              loadItems={loadZones}
+              disabled={!data.locationId}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="workAreaId">Khu vực làm việc</Label>
+            <SearchableSelect
+              value={data.workAreaId}
+              onValueChange={(value) => handleInputChange("workAreaId", value)}
+              placeholder="Chọn khu vực làm việc"
+              searchPlaceholder="Tìm kiếm khu vực làm việc..."
+              emptyMessage="Không tìm thấy khu vực làm việc nào."
+              loadItems={loadWorkAreas}
+              displayFormatter={formatWorkAreaDisplay}
+              disabled={!data.zoneId}
+            />
           </div>
         </div>
       </div>
 
       {/* Summary Card */}
-      {data.contractNumber &&
+      {data.contractId &&
         data.slaName &&
-        data.serviceType &&
-        data.environment && (
+        data.locationId &&
+        data.zoneId &&
+        data.workAreaId &&
+        data.environmentTypeId && (
           <div className="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 className="font-medium text-blue-900 mb-3">
               Tóm tắt thông tin SLA:
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-blue-700 font-medium">Số hợp đồng:</span>
+                <span className="text-blue-700 font-medium">Hợp đồng:</span>
                 <span className="text-blue-800 ml-2">
-                  {data.contractNumber}
+                  {selectedContract?.name || data.contractId}
                 </span>
               </div>
               <div>
@@ -123,27 +151,33 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
                 <span className="text-blue-800 ml-2">{data.slaName}</span>
               </div>
               <div>
-                <span className="text-blue-700 font-medium">Loại dịch vụ:</span>
+                <span className="text-blue-700 font-medium">
+                  Loại môi trường:
+                </span>
                 <span className="text-blue-800 ml-2">
-                  {data.serviceType === "cleaning-office" &&
-                    "Vệ sinh văn phòng"}
-                  {data.serviceType === "cleaning-industrial" &&
-                    "Vệ sinh công nghiệp"}
-                  {data.serviceType === "cleaning-hospital" &&
-                    "Vệ sinh bệnh viện"}
-                  {data.serviceType === "cleaning-school" &&
-                    "Vệ sinh trường học"}
-                  {data.serviceType === "cleaning-residential" &&
-                    "Vệ sinh khu dân cư"}
+                  {selectedEnvironmentType?.name || data.environmentTypeId}
                 </span>
               </div>
               <div>
-                <span className="text-blue-700 font-medium">Môi trường:</span>
+                <span className="text-blue-700 font-medium">Địa điểm:</span>
                 <span className="text-blue-800 ml-2">
-                  {data.environment === "indoor" && "Trong nhà"}
-                  {data.environment === "outdoor" && "Ngoài trời"}
-                  {data.environment === "mixed" && "Hỗn hợp"}
-                  {data.environment === "specialized" && "Chuyên biệt"}
+                  {selectedLocation?.name || data.locationId}
+                </span>
+              </div>
+              <div>
+                <span className="text-blue-700 font-medium">Khu vực:</span>
+                <span className="text-blue-800 ml-2">
+                  {selectedZone?.name || data.zoneId}
+                </span>
+              </div>
+              <div>
+                <span className="text-blue-700 font-medium">
+                  Khu vực làm việc:
+                </span>
+                <span className="text-blue-800 ml-2">
+                  {selectedWorkArea
+                    ? formatWorkAreaDisplay(selectedWorkArea)
+                    : data.workAreaId}
                 </span>
               </div>
             </div>
