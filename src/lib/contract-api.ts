@@ -1,29 +1,6 @@
 import { api } from "./api";
-import type {
-  Client,
-  Contract,
-  Location,
-  Zone,
-  WorkArea,
-  ContractFormData,
-  LocationFormData,
-  ZoneFormData,
-  WorkAreaFormData,
-} from "@/types/contract";
+import type { Contract, ContractFormData } from "@/types/contract";
 
-// Client API
-export async function createClient(data: {
-  name: string;
-  email: string;
-}): Promise<Client> {
-  return api.post<Client>("/Clients", data);
-}
-
-export async function getClients(): Promise<Client[]> {
-  return api.get<Client[]>("/Clients");
-}
-
-// Contract API
 export async function createContract(
   data: ContractFormData,
 ): Promise<Contract> {
@@ -39,50 +16,78 @@ export async function createContract(
 }
 
 export async function getContracts(): Promise<Contract[]> {
-  return api.get<Contract[]>("/Contracts");
+  const response = await api.get<Contract[] | { data: Contract[] } | any>(
+    "/Contracts",
+  );
+
+  // Handle different response formats
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  // If response is wrapped in a data property
+  if (response && Array.isArray(response.data)) {
+    return response.data;
+  }
+
+  // If response has items property (common in paginated APIs)
+  if (response && Array.isArray(response.items)) {
+    return response.items;
+  }
+
+  // Log the actual response structure for debugging
+  console.log("Unexpected Contracts API response structure:", response);
+
+  // Return empty array as fallback
+  return [];
 }
 
-// Location API
-export async function createLocation(
-  data: LocationFormData,
-): Promise<Location> {
-  return api.post<Location>("/Locations", data);
-}
+export async function getContractsPaginated(params: {
+  pageNumber?: number;
+  pageSize?: number;
+  search?: string;
+}): Promise<{ items: Contract[]; totalCount: number }> {
+  const { pageNumber = 1, pageSize = 50 } = params; // Increased default pageSize and removed search
 
-export async function getLocations(): Promise<Location[]> {
-  return api.get<Location[]>("/Locations");
-}
+  let url = `/Contracts?pageNumber=${pageNumber}&pageSize=${pageSize}`;
 
-export async function getLocationsByClient(
-  clientId: string,
-): Promise<Location[]> {
-  return api.get<Location[]>(`/Locations?clientId=${clientId}`);
-}
+  const response = await api.get<any>(url);
 
-// Zone API
-export async function createZone(data: ZoneFormData): Promise<Zone> {
-  return api.post<Zone>("/Zones", data);
-}
+  console.log("Contracts Paginated API Response:", response); // Debug log
 
-export async function getZones(): Promise<Zone[]> {
-  return api.get<Zone[]>("/Zones");
-}
+  // Handle the actual API response format with 'content' field
+  if (response && Array.isArray(response.content)) {
+    return {
+      items: response.content,
+      totalCount: response.totalElements || response.content.length,
+    };
+  }
 
-export async function getZonesByLocation(locationId: string): Promise<Zone[]> {
-  return api.get<Zone[]>(`/Zones?locationId=${locationId}`);
-}
+  // Handle different response formats (fallback)
+  if (response && Array.isArray(response.items)) {
+    return {
+      items: response.items,
+      totalCount: response.totalCount || response.items.length,
+    };
+  }
 
-// Work Area API
-export async function createWorkArea(
-  data: WorkAreaFormData,
-): Promise<WorkArea> {
-  return api.post<WorkArea>("/WorkAreas", data);
-}
+  if (response && Array.isArray(response.data)) {
+    return {
+      items: response.data,
+      totalCount: response.totalCount || response.data.length,
+    };
+  }
 
-export async function getWorkAreas(): Promise<WorkArea[]> {
-  return api.get<WorkArea[]>("/WorkAreas");
-}
+  if (Array.isArray(response)) {
+    return {
+      items: response,
+      totalCount: response.length,
+    };
+  }
 
-export async function getWorkAreasByZone(zoneId: string): Promise<WorkArea[]> {
-  return api.get<WorkArea[]>(`/WorkAreas?zoneId=${zoneId}`);
+  console.log(
+    "Unexpected Contracts Paginated API response structure:",
+    response,
+  );
+  return { items: [], totalCount: 0 };
 }
