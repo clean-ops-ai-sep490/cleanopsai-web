@@ -31,7 +31,9 @@ function HomeContent() {
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <p className="text-gray-600">Welcome to CleanOps AI. You are authenticated.</p>
+        <p className="text-gray-600">
+          Welcome to CleanOps AI. You are authenticated.
+        </p>
       </main>
     </div>
   );

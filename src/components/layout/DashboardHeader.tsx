@@ -12,30 +12,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { LogoutConfirmation } from "@/components/ui/logout-confirmation";
-import { useState } from "react";
+import { useLogout } from "@/hooks/useLogout";
 
 export function DashboardHeader() {
-  const { user, logout } = useAuth();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-
-  const handleLogoutClick = () => {
-    setShowLogoutDialog(true);
-  };
-
-  const handleLogoutConfirm = async () => {
-    setIsLoggingOut(true);
-    try {
-      await logout();
-    } catch (error) {
-      console.error("Logout failed:", error);
-      // Still redirect even if logout fails
-      window.location.href = "/login";
-    } finally {
-      setIsLoggingOut(false);
-      setShowLogoutDialog(false);
-    }
-  };
+  const { user } = useAuth();
+  const {
+    isLoggingOut,
+    showLogoutDialog,
+    setShowLogoutDialog,
+    handleLogoutClick,
+    handleLogoutConfirm,
+    handleLogoutCancel,
+  } = useLogout();
 
   return (
     <header className="fixed top-0 left-[200px] right-0 h-[106px] bg-white border-b border-gray-200 z-10">
@@ -54,53 +42,43 @@ export function DashboardHeader() {
         {/* Right side - Notifications and User Menu */}
         <div className="flex items-center gap-4">
           {/* Notification Bell */}
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-6 w-6 text-black" />
-            {/* Notification badge - can be conditionally shown */}
-            <span className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+          <Button variant="ghost" size="sm" className="relative">
+            <Bell className="h-5 w-5 text-gray-600" />
+            <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+              3
+            </span>
           </Button>
 
-          {/* User Avatar with Dropdown */}
+          {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="relative h-12 w-12 rounded-full"
-              >
-                <Avatar className="h-12 w-12">
-                  <AvatarFallback className="bg-[#1a80a2] text-white text-lg">
+              <Button variant="ghost" className="flex items-center gap-2 p-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-[#1a80a2] text-white text-sm">
                     {user?.fullName?.charAt(0) || "U"}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <div className="flex flex-col space-y-1 p-2">
-                <p className="text-sm font-medium leading-none">
-                  {user?.fullName || "Nguyen Van A"}
-                </p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  {user?.email || "user@example.com"}
-                </p>
-              </div>
-              <DropdownMenuSeparator />
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem>
                 <User className="mr-2 h-4 w-4" />
-                <span>Hồ sơ</span>
+                Profile
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogoutClick}
-                disabled={isLoggingOut}
+                className="text-red-600"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Đăng xuất</span>
+                Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
 
+      {/* Logout Confirmation Dialog */}
       <LogoutConfirmation
         open={showLogoutDialog}
         onOpenChange={setShowLogoutDialog}
