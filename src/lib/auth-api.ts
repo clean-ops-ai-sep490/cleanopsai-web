@@ -10,7 +10,7 @@ import type {
 export async function loginUser(
   data: LoginRequest,
 ): Promise<AuthTokenResponse> {
-  const result = await api.post<AuthTokenResponse>("api/Auths/login", data);
+  const result = await api.post<AuthTokenResponse>("/Auths/login", data);
   setTokens(result.accessToken, result.refreshToken);
   return result;
 }
@@ -18,17 +18,17 @@ export async function loginUser(
 export async function registerUser(
   data: RegisterRequest,
 ): Promise<RegisterResponse> {
-  return api.post<RegisterResponse>("api/Auths/register", data);
+  return api.post<RegisterResponse>("/Auths/register", data);
 }
 
 export async function getMe(): Promise<User> {
-  return api.get<User>("api/Auths/me");
+  return api.get<User>("/Auths/me");
 }
 
 export async function logoutUser(): Promise<void> {
   try {
     // Call backend logout endpoint to invalidate tokens on server
-    await api.post("api/Auths/logout", {});
+    await api.post("/Auths/logout", {});
   } catch (error) {
     // Even if backend call fails, we still clear local tokens
     console.warn("Backend logout failed, clearing local tokens anyway:", error);

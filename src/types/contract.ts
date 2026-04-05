@@ -35,6 +35,7 @@ export interface WorkArea {
   id?: string;
   name: string;
   zoneId: string;
+  zoneName?: string; // Add zone name for display
 }
 
 // Form data types
