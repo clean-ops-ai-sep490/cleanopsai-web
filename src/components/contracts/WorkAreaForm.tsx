@@ -14,7 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { createWorkArea, getZones } from "@/lib/contract-api";
+import { createWorkArea } from "@/lib/work-area-api";
+import { getZones } from "@/lib/zone-api";
 import type { WorkAreaFormData, Zone } from "@/types/contract";
 
 interface WorkAreaFormProps {

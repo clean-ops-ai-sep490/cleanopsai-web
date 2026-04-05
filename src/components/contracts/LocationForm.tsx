@@ -14,7 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { createLocation, getClients } from "@/lib/contract-api";
+import { createLocation } from "@/lib/location-api";
+import { getClients } from "@/lib/client-api";
 import type { LocationFormData, Client } from "@/types/contract";
 
 interface LocationFormProps {
