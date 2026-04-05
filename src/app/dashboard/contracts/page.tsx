@@ -16,7 +16,8 @@ import {
 import { StandardDialog } from "@/components/ui/standard-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus, FileText, MapPin } from "lucide-react";
-import { getContracts, getClients } from "@/lib/contract-api";
+import { getContracts } from "@/lib/contract-api";
+import { getClients } from "@/lib/client-api";
 import { ContractForm } from "@/components/contracts/ContractForm";
 
 export default function ContractsPage() {

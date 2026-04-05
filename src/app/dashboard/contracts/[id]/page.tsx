@@ -7,11 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, FileText, MapPin, Building2 } from "lucide-react";
-import {
-  getContracts,
-  getClients,
-  getLocationsByClient,
-} from "@/lib/contract-api";
+import { getContracts } from "@/lib/contract-api";
+import { getClients, getLocationsByClient } from "@/lib/client-api";
 
 export default function ContractDetailPage() {
   const params = useParams();
