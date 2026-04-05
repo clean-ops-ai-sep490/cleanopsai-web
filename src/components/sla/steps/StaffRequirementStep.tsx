@@ -4,53 +4,27 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Clock, Users, Plus } from "lucide-react";
-import type { Zone, WorkArea, SLAStaffRequirement } from "@/types/sla";
+import { TimePicker } from "@/components/ui/time-picker";
+import { Clock, Users, Plus, Trash2 } from "lucide-react";
+import type { SLAStaffRequirement } from "@/types/sla";
 
 interface StaffRequirementStepProps {
   staffRequirements: SLAStaffRequirement[];
   onStaffRequirementsChange: (requirements: SLAStaffRequirement[]) => void;
-  zones: Zone[];
-  workAreas: WorkArea[];
 }
 
 export function StaffRequirementStep({
   staffRequirements,
   onStaffRequirementsChange,
-  zones,
-  workAreas,
 }: StaffRequirementStepProps) {
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [selectedZoneId, setSelectedZoneId] = useState<string>("");
-
-  // Mock data for staff positions
-  const staffPositions = [
-    { value: "cleaner", label: "Nhân viên vệ sinh" },
-    { value: "supervisor", label: "Giám sát viên" },
-    { value: "team-leader", label: "Trưởng nhóm" },
-    { value: "specialist", label: "Chuyên viên kỹ thuật" },
-  ];
-
-  const workShifts = [
-    { value: "morning", label: "Ca sáng (6:00 - 14:00)" },
-    { value: "afternoon", label: "Ca chiều (14:00 - 22:00)" },
-    { value: "night", label: "Ca đêm (22:00 - 6:00)" },
-    { value: "full-day", label: "Cả ngày (8:00 - 17:00)" },
-  ];
-
   const addStaffRequirement = () => {
     const newRequirement: SLAStaffRequirement = {
-      position: "",
-      quantity: 1,
-      workTime: "",
+      name: "",
+      startTime: "",
+      endTime: "",
+      requiredWorker: 1,
+      breakTime: 0,
     };
     onStaffRequirementsChange([...staffRequirements, newRequirement]);
   };
@@ -75,25 +49,33 @@ export function StaffRequirementStep({
   };
 
   const getTotalStaff = () => {
-    return staffRequirements.reduce((total, req) => total + req.quantity, 0);
+    return staffRequirements.reduce(
+      (total, req) => total + req.requiredWorker,
+      0,
+    );
   };
 
-  const getWorkAreasByZone = (zoneId: string) => {
-    return workAreas.filter((area) => area.zoneId === zoneId);
+  // Helper function to format time for display
+  const formatTimeForDisplay = (time: string) => {
+    if (!time) return "";
+    const [hours, minutes] = time.split(":");
+    const hour = parseInt(hours, 10);
+    const minute = parseInt(minutes, 10);
+    return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
   };
 
   return (
     <div className="space-y-8">
-      {/* Work Schedule Section */}
+      {/* Header */}
       <div className="bg-blue-100 p-6 rounded-lg">
         <div className="flex items-center justify-center mb-4">
           <Clock className="h-12 w-12 text-[#1a80a2]" />
         </div>
         <h3 className="text-center text-lg font-medium text-[#1a80a2] mb-2">
-          Thêm ca làm việc
+          Bố trí ca làm việc
         </h3>
         <p className="text-center text-gray-600 text-sm">
-          Thiết lập lịch làm việc cho từng khu vực
+          Thiết lập ca làm việc và số lượng nhân viên cần thiết
         </p>
       </div>
 
@@ -101,11 +83,11 @@ export function StaffRequirementStep({
       <div>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-black">
-            Yêu cầu về nhân sự
+            Ca làm việc và nhân sự
           </h2>
           <Button onClick={addStaffRequirement} variant="outline" size="sm">
             <Plus className="h-4 w-4 mr-2" />
-            Thêm vị trí
+            Thêm ca làm việc
           </Button>
         </div>
 
@@ -113,75 +95,74 @@ export function StaffRequirementStep({
           <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Chưa có yêu cầu nhân sự
+              Chưa có ca làm việc
             </h3>
-            <p className="text-gray-600 mb-4">Thêm yêu cầu nhân sự đầu tiên</p>
+            <p className="text-gray-600 mb-4">Thêm ca làm việc đầu tiên</p>
             <Button
               onClick={addStaffRequirement}
               className="bg-[#1a80a2] hover:bg-[#1a80a2]/90"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Thêm yêu cầu
+              Thêm ca làm việc
             </Button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">
-                    STT
-                  </th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">
-                    Vị trí
-                  </th>
-                  <th className="text-center py-3 px-4 font-medium text-gray-700">
-                    Số lượng
-                  </th>
-                  <th className="text-center py-3 px-4 font-medium text-gray-700">
-                    Thời gian
-                  </th>
-                  <th className="text-center py-3 px-4 font-medium text-gray-700">
-                    Hành động
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {staffRequirements.map((requirement, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="py-4 px-4 text-center">{index + 1}</td>
-                    <td className="py-4 px-4">
-                      <Select
-                        value={requirement.position}
-                        onValueChange={(value) =>
-                          updateStaffRequirement(index, "position", value)
+          <div className="space-y-4">
+            {staffRequirements.map((requirement, index) => (
+              <Card key={index} className="border">
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor={`name-${index}`}>Tên ca làm việc</Label>
+                      <Input
+                        id={`name-${index}`}
+                        placeholder="VD: Ca sáng"
+                        value={requirement.name}
+                        onChange={(e) =>
+                          updateStaffRequirement(index, "name", e.target.value)
                         }
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Chọn vị trí" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {staffPositions.map((position) => (
-                            <SelectItem
-                              key={position.value}
-                              value={position.value}
-                            >
-                              {position.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <div className="flex items-center justify-center space-x-2">
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`startTime-${index}`}>Giờ bắt đầu</Label>
+                      <TimePicker
+                        value={requirement.startTime}
+                        onChange={(time) =>
+                          updateStaffRequirement(index, "startTime", time)
+                        }
+                        placeholder="Chọn giờ bắt đầu"
+                        format="24"
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`endTime-${index}`}>Giờ kết thúc</Label>
+                      <TimePicker
+                        value={requirement.endTime}
+                        onChange={(time) =>
+                          updateStaffRequirement(index, "endTime", time)
+                        }
+                        placeholder="Chọn giờ kết thúc"
+                        format="24"
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`requiredWorker-${index}`}>
+                        Số nhân viên
+                      </Label>
+                      <div className="flex items-center space-x-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() =>
                             updateStaffRequirement(
                               index,
-                              "quantity",
-                              Math.max(1, requirement.quantity - 1),
+                              "requiredWorker",
+                              Math.max(1, requirement.requiredWorker - 1),
                             )
                           }
                           className="h-8 w-8 p-0"
@@ -189,17 +170,18 @@ export function StaffRequirementStep({
                           -
                         </Button>
                         <Input
+                          id={`requiredWorker-${index}`}
                           type="number"
                           min="1"
-                          value={requirement.quantity}
+                          value={requirement.requiredWorker}
                           onChange={(e) =>
                             updateStaffRequirement(
                               index,
-                              "quantity",
+                              "requiredWorker",
                               parseInt(e.target.value) || 1,
                             )
                           }
-                          className="w-16 h-8 text-center"
+                          className="w-16 text-center"
                         />
                         <Button
                           variant="outline"
@@ -207,8 +189,8 @@ export function StaffRequirementStep({
                           onClick={() =>
                             updateStaffRequirement(
                               index,
-                              "quantity",
-                              requirement.quantity + 1,
+                              "requiredWorker",
+                              requirement.requiredWorker + 1,
                             )
                           }
                           className="h-8 w-8 p-0"
@@ -216,134 +198,82 @@ export function StaffRequirementStep({
                           +
                         </Button>
                       </div>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <Select
-                        value={requirement.workTime}
-                        onValueChange={(value) =>
-                          updateStaffRequirement(index, "workTime", value)
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`breakTime-${index}`}>
+                        Thời gian nghỉ (phút)
+                      </Label>
+                      <Input
+                        id={`breakTime-${index}`}
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={requirement.breakTime}
+                        onChange={(e) =>
+                          updateStaffRequirement(
+                            index,
+                            "breakTime",
+                            parseInt(e.target.value) || 0,
+                          )
                         }
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Chọn ca làm việc" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {workShifts.map((shift) => (
-                            <SelectItem key={shift.value} value={shift.value}>
-                              {shift.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeStaffRequirement(index)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        Xóa
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeStaffRequirement(index)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Xóa ca làm việc
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
 
         {staffRequirements.length > 0 && (
           <div className="text-center mt-4">
-            <button
-              type="button"
+            <Button
+              variant="outline"
               onClick={addStaffRequirement}
-              className="text-[#1a80a2] hover:text-[#1a80a2]/80 text-sm font-medium"
+              className="text-[#1a80a2] border-[#1a80a2] hover:bg-[#1a80a2] hover:text-white"
             >
-              + Thêm khu vực
-            </button>
+              <Plus className="h-4 w-4 mr-2" />
+              Thêm ca làm việc khác
+            </Button>
           </div>
         )}
       </div>
-
-      {/* Zone Work Areas Summary */}
-      {zones.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold text-black mb-4">
-            Khu vực được phân công
-          </h3>
-          <div className="space-y-4">
-            {zones.map((zone) => {
-              const zoneWorkAreas = getWorkAreasByZone(zone.id);
-              const totalArea = zoneWorkAreas.reduce(
-                (sum, area) => sum + area.area,
-                0,
-              );
-
-              return (
-                <Card key={zone.id} className="border-l-4 border-l-[#1a80a2]">
-                  <CardContent className="pt-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium text-black">{zone.name}</h4>
-                        <p className="text-sm text-gray-600">
-                          {zoneWorkAreas.length} khu vực làm việc • {totalArea}
-                          m²
-                        </p>
-                        {zoneWorkAreas.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {zoneWorkAreas.map((area) => (
-                              <span
-                                key={area.id}
-                                className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
-                              >
-                                {area.name} ({area.area}m²)
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedZoneId(zone.id);
-                          setShowScheduleModal(true);
-                        }}
-                      >
-                        Chọn ca làm việc
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Summary */}
       {staffRequirements.length > 0 && (
         <Card className="bg-green-50 border-green-200">
           <CardContent className="pt-6">
             <h3 className="font-medium text-green-900 mb-2">
-              Tóm tắt nhân sự:
+              Tóm tắt ca làm việc:
             </h3>
             <div className="space-y-1">
               <p className="text-green-800">
                 Tổng số nhân viên: <strong>{getTotalStaff()}</strong> người
               </p>
               <p className="text-green-800">
-                Số vị trí công việc: <strong>{staffRequirements.length}</strong>{" "}
-                vị trí
+                Số ca làm việc: <strong>{staffRequirements.length}</strong> ca
               </p>
-              <div className="mt-2">
+              <div className="mt-2 space-y-1">
                 {staffRequirements.map((req, index) => (
                   <div key={index} className="text-sm text-green-700">
-                    •{" "}
-                    {staffPositions.find((p) => p.value === req.position)
-                      ?.label || req.position}
-                    : {req.quantity} người
+                    • {req.name || `Ca ${index + 1}`}:{" "}
+                    {formatTimeForDisplay(req.startTime)} -{" "}
+                    {formatTimeForDisplay(req.endTime)} ({req.requiredWorker}{" "}
+                    người)
+                    {req.breakTime > 0 && ` - Nghỉ ${req.breakTime} phút`}
                   </div>
                 ))}
               </div>
