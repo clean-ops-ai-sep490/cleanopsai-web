@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormActions } from "@/components/ui/form-actions";
 import { toast } from "sonner";
-import { createClient } from "@/lib/contract-api";
+import { createClient } from "@/lib/client-api";
 
 interface ClientFormProps {
   onSuccess?: () => void;

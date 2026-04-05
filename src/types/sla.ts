@@ -1,3 +1,88 @@
+// SLA API Types based on backend endpoints
+export interface SLA {
+  id: string;
+  name: string;
+  description?: string;
+  environmentTypeId: string;
+  serviceType: "Cleaning";
+  workAreaId: string;
+  contractId: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateSLAData {
+  name: string;
+  description?: string;
+  environmentTypeId: string;
+  serviceType: "Cleaning";
+  workAreaId: string;
+  contractId: string;
+}
+
+export interface SLAShift {
+  id: string;
+  name: string;
+  slaId: string;
+  startTime: string;
+  endTime: string;
+  requiredWorker: number;
+  breakTime: number;
+  createdAt?: string;
+}
+
+export interface CreateSLAShiftData {
+  name: string;
+  slaId: string;
+  startTime: string;
+  endTime: string;
+  requiredWorker: number;
+  breakTime: number;
+}
+
+export interface SLATask {
+  id: string;
+  name: string;
+  slaId: string;
+  recurrenceType: "Daily" | "Weekly" | "Monthly" | "Yearly";
+  recurrenceConfig: {
+    interval: number;
+    daysOfWeek?: (
+      | "Sunday"
+      | "Monday"
+      | "Tuesday"
+      | "Wednesday"
+      | "Thursday"
+      | "Friday"
+      | "Saturday"
+    )[];
+    daysOfMonth?: number[];
+    monthDays?: { month: number; day: number }[];
+  };
+  createdAt?: string;
+}
+
+export interface CreateSLATaskData {
+  name: string;
+  slaId: string;
+  recurrenceType: "Daily" | "Weekly" | "Monthly" | "Yearly";
+  recurrenceConfig: {
+    interval: number;
+    daysOfWeek?: (
+      | "Sunday"
+      | "Monday"
+      | "Tuesday"
+      | "Wednesday"
+      | "Thursday"
+      | "Friday"
+      | "Saturday"
+    )[];
+    daysOfMonth?: number[];
+    monthDays?: { month: number; day: number }[];
+  };
+}
+
+// Legacy types for backward compatibility (will be removed)
 export interface SLATrigger {
   id: string;
   name: string;
@@ -46,21 +131,43 @@ export interface WorkArea {
 
 // SLA Creation Flow types
 export interface SLABasicInfo {
-  contractNumber: string;
-  serviceType: string;
+  contractId: string;
+  environmentTypeId: string;
   slaName: string;
-  environment: string;
+  locationId: string;
+  zoneId: string;
+  workAreaId: string;
 }
 
 export interface SLAStaffRequirement {
-  position: string;
-  quantity: number;
-  workTime: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  requiredWorker: number;
+  breakTime: number;
+}
+
+export interface SLATaskRequirement {
+  name: string;
+  recurrenceType: "Daily" | "Weekly" | "Monthly" | "Yearly";
+  recurrenceConfig: {
+    interval: number;
+    daysOfWeek?: (
+      | "Sunday"
+      | "Monday"
+      | "Tuesday"
+      | "Wednesday"
+      | "Thursday"
+      | "Friday"
+      | "Saturday"
+    )[];
+    daysOfMonth?: number[];
+    monthDays?: { month: number; day: number }[];
+  };
 }
 
 export interface SLACreationData {
   basicInfo: SLABasicInfo;
-  zones: Zone[];
-  workAreas: WorkArea[];
   staffRequirements: SLAStaffRequirement[];
+  taskRequirements: SLATaskRequirement[];
 }

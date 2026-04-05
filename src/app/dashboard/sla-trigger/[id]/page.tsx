@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -10,147 +10,113 @@ import {
   ArrowLeft,
   Edit,
   Trash2,
-  Play,
-  Pause,
   Clock,
-  Target,
-  TrendingUp,
-  AlertTriangle,
+  Users,
   CheckCircle2,
-  XCircle,
   Activity,
+  Building,
+  MapPin,
 } from "lucide-react";
 import Link from "next/link";
-import type { SLATrigger } from "@/types/sla";
+import type { SLA, SLAShift, SLATask } from "@/types/sla";
+import {
+  getSLAById,
+  getSLAShiftsBySLA,
+  getSLATasksBySLA,
+  deleteSLA,
+} from "@/lib/sla-api";
+import { toast } from "sonner";
 
-// Mock data - in real app this would come from API
-const mockTrigger: SLATrigger = {
-  id: "1",
-  name: "Response Time Alert",
-  type: "Response Time",
-  condition: "Greater than",
-  threshold: 30,
-  unit: "minutes",
-  status: "active",
-  createdAt: "2024-01-15",
-};
-
-const mockMetrics = {
-  totalTriggers: 15,
-  triggersThisWeek: 3,
-  averageValue: 27.5,
-  complianceRate: 85.2,
-  lastTriggered: "2024-01-20 14:30",
-  triggerFrequency: "2-3 times per week",
-};
-
-const mockHistory = [
-  {
-    id: "1",
-    date: "2024-01-20",
-    time: "14:30",
-    triggered: true,
-    value: 35,
-    threshold: 30,
-    severity: "high",
-    resolved: true,
-  },
-  {
-    id: "2",
-    date: "2024-01-19",
-    time: "09:15",
-    triggered: false,
-    value: 25,
-    threshold: 30,
-    severity: "normal",
-    resolved: true,
-  },
-  {
-    id: "3",
-    date: "2024-01-18",
-    time: "16:45",
-    triggered: true,
-    value: 32,
-    threshold: 30,
-    severity: "medium",
-    resolved: true,
-  },
-  {
-    id: "4",
-    date: "2024-01-17",
-    time: "11:20",
-    triggered: false,
-    value: 28,
-    threshold: 30,
-    severity: "normal",
-    resolved: true,
-  },
-  {
-    id: "5",
-    date: "2024-01-16",
-    time: "13:10",
-    triggered: false,
-    value: 22,
-    threshold: 30,
-    severity: "normal",
-    resolved: true,
-  },
-];
-
-export default function SLATriggerDetailPage() {
+export default function SLADetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [trigger] = useState<SLATrigger>(mockTrigger);
+  const [sla, setSLA] = useState<SLA | null>(null);
+  const [shifts, setShifts] = useState<SLAShift[]>([]);
+  const [tasks, setTasks] = useState<SLATask[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "active":
-        return <CheckCircle2 className="h-5 w-5 text-green-600" />;
-      case "inactive":
-        return <XCircle className="h-5 w-5 text-gray-600" />;
-      default:
-        return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+  useEffect(() => {
+    if (params.id) {
+      loadSLAData(params.id as string);
+    }
+  }, [params.id]);
+
+  const loadSLAData = async (id: string) => {
+    try {
+      setLoading(true);
+      const [slaData, shiftsData, tasksData] = await Promise.all([
+        getSLAById(id),
+        getSLAShiftsBySLA(id),
+        getSLATasksBySLA(id),
+      ]);
+      setSLA(slaData);
+      setShifts(shiftsData);
+      setTasks(tasksData);
+    } catch (error) {
+      console.error("Failed to load SLA data:", error);
+      toast.error("Không thể tải thông tin SLA");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type.toLowerCase()) {
-      case "response time":
-        return <Clock className="h-6 w-6 text-blue-600" />;
-      case "resolution time":
-        return <Target className="h-6 w-6 text-purple-600" />;
-      case "quality score":
-        return <TrendingUp className="h-6 w-6 text-green-600" />;
-      default:
-        return <AlertTriangle className="h-6 w-6 text-orange-600" />;
-    }
-  };
+  const handleDelete = async () => {
+    if (!sla || !confirm("Bạn có chắc chắn muốn xóa SLA này?")) return;
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case "high":
-        return "bg-red-100 text-red-800 border-red-200";
-      case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "normal":
-        return "bg-green-100 text-green-800 border-green-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
-  const handleToggleStatus = () => {
-    // Toggle trigger status logic
-    console.log("Toggle status for trigger:", trigger.id);
-  };
-
-  const handleDelete = () => {
-    // Delete trigger logic
-    if (confirm("Are you sure you want to delete this SLA trigger?")) {
-      console.log("Delete trigger:", trigger.id);
+    try {
+      await deleteSLA(sla.id);
+      toast.success("Đã xóa SLA thành công");
       router.push("/dashboard/sla-trigger");
+    } catch (error) {
+      console.error("Failed to delete SLA:", error);
+      toast.error("Không thể xóa SLA");
     }
   };
+
+  const getTotalWorkers = () => {
+    return shifts.reduce((total, shift) => total + shift.requiredWorker, 0);
+  };
+
+  const getRecurrenceText = (recurrenceType: string) => {
+    switch (recurrenceType) {
+      case "Daily":
+        return "Hàng ngày";
+      case "Weekly":
+        return "Hàng tuần";
+      case "Monthly":
+        return "Hàng tháng";
+      case "Yearly":
+        return "Hàng năm";
+      default:
+        return recurrenceType;
+    }
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1a80a2] mx-auto"></div>
+            <p className="mt-2 text-gray-600">Đang tải...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!sla) {
+    return (
+      <DashboardLayout>
+        <div className="text-center py-12">
+          <p className="text-gray-600">Không tìm thấy SLA</p>
+          <Link href="/dashboard/sla-trigger">
+            <Button className="mt-4">Quay lại danh sách</Button>
+          </Link>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -161,48 +127,30 @@ export default function SLATriggerDetailPage() {
             <Link href="/dashboard/sla-trigger">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to SLA Triggers
+                Quay lại danh sách SLA
               </Button>
             </Link>
             <div className="flex items-center space-x-3">
-              {getTypeIcon(trigger.type)}
+              <Building className="h-6 w-6 text-blue-600" />
               <div>
                 <h1 className="text-2xl font-semibold text-black">
-                  {trigger.name}
+                  {sla.name}
                 </h1>
                 <p className="text-gray-600">
-                  ID: {trigger.id} • Created: {trigger.createdAt}
+                  ID: {sla.id} • Tạo:{" "}
+                  {sla.createdAt
+                    ? new Date(sla.createdAt).toLocaleDateString("vi-VN")
+                    : "N/A"}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              onClick={handleToggleStatus}
-              className={
-                trigger.status === "active"
-                  ? "text-orange-600"
-                  : "text-green-600"
-              }
-            >
-              {trigger.status === "active" ? (
-                <>
-                  <Pause className="h-4 w-4 mr-2" />
-                  Disable
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4 mr-2" />
-                  Enable
-                </>
-              )}
-            </Button>
-            <Link href={`/dashboard/sla-trigger/${trigger.id}/edit`}>
+            <Link href={`/dashboard/sla-trigger/${sla.id}/edit`}>
               <Button variant="outline">
                 <Edit className="h-4 w-4 mr-2" />
-                Edit
+                Chỉnh sửa
               </Button>
             </Link>
             <Button
@@ -211,7 +159,7 @@ export default function SLATriggerDetailPage() {
               className="text-red-600 hover:text-red-700"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete
+              Xóa
             </Button>
           </div>
         </div>
@@ -219,163 +167,183 @@ export default function SLATriggerDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Configuration Details */}
+            {/* SLA Details */}
             <Card>
               <CardHeader>
-                <CardTitle>Trigger Configuration</CardTitle>
+                <CardTitle>Thông tin SLA</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="text-sm font-medium text-gray-600">
-                      Trigger Type
+                      Tên SLA
                     </label>
                     <p className="text-lg font-semibold text-black">
-                      {trigger.type}
+                      {sla.name}
                     </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">
-                      Status
+                      Loại dịch vụ
                     </label>
-                    <div className="flex items-center space-x-2 mt-1">
-                      {getStatusIcon(trigger.status)}
-                      <Badge
-                        variant={
-                          trigger.status === "active" ? "default" : "secondary"
-                        }
-                        className={
-                          trigger.status === "active"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }
-                      >
-                        {trigger.status}
-                      </Badge>
-                    </div>
+                    <Badge
+                      variant="outline"
+                      className="bg-blue-50 text-blue-700 border-blue-200"
+                    >
+                      {sla.serviceType}
+                    </Badge>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">
-                      Condition
+                      Hợp đồng
                     </label>
                     <p className="text-lg font-semibold text-black">
-                      {trigger.condition}
+                      {sla.contractId}
                     </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">
-                      Threshold
+                      Khu vực làm việc
                     </label>
-                    <p className="text-lg font-semibold text-[#1a80a2]">
-                      {trigger.threshold} {trigger.unit}
+                    <p className="text-lg font-semibold text-black">
+                      {sla.workAreaId}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-medium text-blue-900 mb-2">
-                    Trigger Logic:
-                  </h4>
-                  <p className="text-blue-800">
-                    Alert when <strong>{trigger.type}</strong> is{" "}
-                    <strong>{trigger.condition.toLowerCase()}</strong>{" "}
-                    <strong>
-                      {trigger.threshold} {trigger.unit}
-                    </strong>
-                  </p>
-                </div>
+                {sla.description && (
+                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="font-medium text-blue-900 mb-2">Mô tả:</h4>
+                    <p className="text-blue-800">{sla.description}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* Recent Activity */}
+            {/* Work Shifts */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Clock className="h-5 w-5" />
+                  <span>Ca làm việc ({shifts.length})</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {shifts.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">
+                    Chưa có ca làm việc nào được thiết lập
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {shifts.map((shift) => (
+                      <div
+                        key={shift.id}
+                        className="flex items-center justify-between p-4 rounded-lg border hover:bg-gray-50"
+                      >
+                        <div>
+                          <p className="font-medium text-black">{shift.name}</p>
+                          <p className="text-sm text-gray-600">
+                            {shift.startTime} - {shift.endTime}
+                          </p>
+                          {shift.breakTime > 0 && (
+                            <p className="text-xs text-gray-500">
+                              Nghỉ: {shift.breakTime} phút
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Users className="h-4 w-4 text-gray-400" />
+                          <span className="font-semibold text-[#1a80a2]">
+                            {shift.requiredWorker} người
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Tasks */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Activity className="h-5 w-5" />
-                  <span>Recent Activity</span>
+                  <span>Công việc ({tasks.length})</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {mockHistory.map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="flex items-center justify-between p-4 rounded-lg border hover:bg-gray-50"
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div
-                          className={`w-3 h-3 rounded-full ${
-                            entry.triggered ? "bg-red-500" : "bg-green-500"
-                          }`}
-                        />
+                {tasks.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">
+                    Chưa có công việc nào được thiết lập
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {tasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="flex items-center justify-between p-4 rounded-lg border hover:bg-gray-50"
+                      >
                         <div>
-                          <p className="font-medium text-black">
-                            {entry.date} at {entry.time}
-                          </p>
+                          <p className="font-medium text-black">{task.name}</p>
                           <p className="text-sm text-gray-600">
-                            Value: {entry.value} {trigger.unit} (Threshold:{" "}
-                            {entry.threshold})
+                            Lặp lại: {getRecurrenceText(task.recurrenceType)}
                           </p>
+                          {task.recurrenceConfig.interval > 1 && (
+                            <p className="text-xs text-gray-500">
+                              Mỗi {task.recurrenceConfig.interval}{" "}
+                              {task.recurrenceType.toLowerCase()}
+                            </p>
+                          )}
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
                         <Badge
                           variant="outline"
-                          className={getSeverityColor(entry.severity)}
+                          className="bg-green-50 text-green-700 border-green-200"
                         >
-                          {entry.severity}
-                        </Badge>
-                        <Badge
-                          variant={
-                            entry.triggered ? "destructive" : "secondary"
-                          }
-                          className={
-                            entry.triggered
-                              ? "bg-red-100 text-red-800"
-                              : "bg-green-100 text-green-800"
-                          }
-                        >
-                          {entry.triggered ? "Triggered" : "Normal"}
+                          {getRecurrenceText(task.recurrenceType)}
                         </Badge>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Performance Metrics */}
+            {/* Summary Stats */}
             <Card>
               <CardHeader>
-                <CardTitle>Performance Metrics</CardTitle>
+                <CardTitle>Tóm tắt</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
                   <p className="text-3xl font-bold text-[#1a80a2]">
-                    {mockMetrics.totalTriggers}
+                    {shifts.length}
                   </p>
-                  <p className="text-sm text-gray-600">Total Triggers</p>
+                  <p className="text-sm text-gray-600">Ca làm việc</p>
                 </div>
                 <div className="text-center">
                   <p className="text-3xl font-bold text-orange-600">
-                    {mockMetrics.triggersThisWeek}
+                    {getTotalWorkers()}
                   </p>
-                  <p className="text-sm text-gray-600">This Week</p>
+                  <p className="text-sm text-gray-600">Tổng nhân viên</p>
                 </div>
                 <div className="text-center">
                   <p className="text-3xl font-bold text-blue-600">
-                    {mockMetrics.averageValue}
+                    {tasks.length}
                   </p>
-                  <p className="text-sm text-gray-600">Average Value</p>
+                  <p className="text-sm text-gray-600">Công việc</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-green-600">
-                    {mockMetrics.complianceRate}%
-                  </p>
-                  <p className="text-sm text-gray-600">Compliance Rate</p>
+                  <div className="flex items-center justify-center space-x-2">
+                    <CheckCircle2 className="h-6 w-6 text-green-600" />
+                    <span className="text-green-600 font-semibold">
+                      Hoạt động
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600">Trạng thái</p>
                 </div>
               </CardContent>
             </Card>
@@ -383,30 +351,36 @@ export default function SLATriggerDetailPage() {
             {/* Quick Info */}
             <Card>
               <CardHeader>
-                <CardTitle>Quick Information</CardTitle>
+                <CardTitle>Thông tin chi tiết</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
                   <label className="text-sm font-medium text-gray-600">
-                    Last Triggered
+                    Loại môi trường
                   </label>
                   <p className="text-sm font-semibold">
-                    {mockMetrics.lastTriggered}
+                    {sla.environmentTypeId}
                   </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">
-                    Frequency
+                    Ngày tạo
                   </label>
                   <p className="text-sm font-semibold">
-                    {mockMetrics.triggerFrequency}
+                    {sla.createdAt
+                      ? new Date(sla.createdAt).toLocaleDateString("vi-VN")
+                      : "N/A"}
                   </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">
-                    Created Date
+                    Cập nhật lần cuối
                   </label>
-                  <p className="text-sm font-semibold">{trigger.createdAt}</p>
+                  <p className="text-sm font-semibold">
+                    {sla.updatedAt
+                      ? new Date(sla.updatedAt).toLocaleDateString("vi-VN")
+                      : "N/A"}
+                  </p>
                 </div>
               </CardContent>
             </Card>

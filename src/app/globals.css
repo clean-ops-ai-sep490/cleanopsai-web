@@ -85,3 +85,59 @@ body {
     transform: translateY(0);
   }
 }
+/* Primary scrollbar styles for dropdowns */
+.scrollbar-primary {
+  scrollbar-width: thin;
+  scrollbar-color: #1a80a2 #f1f1f1;
+}
+
+.scrollbar-primary::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-primary::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.scrollbar-primary::-webkit-scrollbar-thumb {
+  background: #1a80a2;
+  border-radius: 3px;
+}
+
+.scrollbar-primary::-webkit-scrollbar-thumb:hover {
+  background: #156a87;
+}
+/* Global hover styles for interactive elements */
+.hover-primary {
+  @apply hover:bg-[#e6f3f7] hover:text-[#1a80a2] transition-colors duration-200;
+}
+
+.hover-primary-strong {
+  @apply hover:bg-[#1a80a2] hover:text-white transition-colors duration-200;
+}
+
+/* Dropdown menu item hover - same as focus state */
+.dropdown-item-hover {
+  @apply hover:bg-[#e6f3f7] hover:text-[#1a80a2] focus:bg-[#e6f3f7] focus:text-[#1a80a2] transition-colors duration-200 cursor-pointer;
+}
+
+/* Selected state for command items */
+.command-item-selected {
+  @apply bg-[#e6f3f7] text-[#1a80a2];
+}
+/* Force override cmdk styles for consistent hover/selected states */
+[cmdk-item] {
+  color: black !important;
+}
+
+[cmdk-item]:hover,
+[cmdk-item][data-selected="true"] {
+  background-color: #e6f3f7 !important;
+  color: #1a80a2 !important;
+}
+
+[cmdk-item][aria-selected="true"] {
+  background-color: #e6f3f7 !important;
+  color: #1a80a2 !important;
+}

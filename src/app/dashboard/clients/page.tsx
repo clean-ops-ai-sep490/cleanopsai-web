@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { StandardDialog } from "@/components/ui/standard-dialog";
 import { Plus, Users, Mail, Building2 } from "lucide-react";
-import { getClients } from "@/lib/contract-api";
+import { getClients } from "@/lib/client-api";
 import { ClientForm } from "@/components/contracts/ClientForm";
 
 export default function ClientsPage() {

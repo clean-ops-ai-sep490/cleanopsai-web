@@ -1,7 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,9 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FormActions } from "@/components/ui/form-actions";
-import { toast } from "sonner";
-import { createContract, getClients } from "@/lib/contract-api";
-import type { ContractFormData, Client } from "@/types/contract";
+import { useContractForm } from "@/hooks/useContractForm";
 
 interface ContractFormProps {
   onSuccess?: () => void;
@@ -23,57 +19,16 @@ interface ContractFormProps {
 }
 
 export function ContractForm({ onSuccess, onCancel }: ContractFormProps) {
-  const [formData, setFormData] = useState<ContractFormData>({
-    name: "",
-    clientId: "",
-    file: undefined,
-  });
-
-  const queryClient = useQueryClient();
-
-  // Fetch clients
-  const { data: clients = [], isLoading: clientsLoading } = useQuery({
-    queryKey: ["clients"],
-    queryFn: getClients,
-  });
-
-  // Create contract mutation
-  const createContractMutation = useMutation({
-    mutationFn: createContract,
-    onSuccess: () => {
-      toast.success("Contract created successfully");
-      queryClient.invalidateQueries({ queryKey: ["contracts"] });
-      onSuccess?.();
-    },
-    onError: (error) => {
-      toast.error("Failed to create contract");
-      console.error("Contract creation error:", error);
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name || !formData.clientId) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    createContractMutation.mutate(formData);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    setFormData((prev) => ({ ...prev, file }));
-  };
-
-  const handleReset = () => {
-    setFormData({
-      name: "",
-      clientId: "",
-      file: undefined,
-    });
-  };
+  const {
+    formData,
+    clients,
+    clientsLoading,
+    isLoading,
+    handleSubmit,
+    handleFileChange,
+    handleReset,
+    updateFormData,
+  } = useContractForm(onSuccess);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -83,9 +38,7 @@ export function ContractForm({ onSuccess, onCancel }: ContractFormProps) {
           id="name"
           type="text"
           value={formData.name}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, name: e.target.value }))
-          }
+          onChange={(e) => updateFormData("name", e.target.value)}
           placeholder="Enter contract name"
           required
         />
@@ -95,9 +48,7 @@ export function ContractForm({ onSuccess, onCancel }: ContractFormProps) {
         <Label htmlFor="clientId">Client *</Label>
         <Select
           value={formData.clientId}
-          onValueChange={(value) =>
-            setFormData((prev) => ({ ...prev, clientId: value }))
-          }
+          onValueChange={(value) => updateFormData("clientId", value)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select a client" />
@@ -137,7 +88,7 @@ export function ContractForm({ onSuccess, onCancel }: ContractFormProps) {
         onReset={handleReset}
         onCancel={onCancel}
         submitLabel="Execute"
-        isLoading={createContractMutation.isPending}
+        isLoading={isLoading}
       />
     </form>
   );
