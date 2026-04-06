@@ -96,3 +96,18 @@ export async function getClientsPaginated(
     return { items: [], totalCount: 0 };
   }
 }
+
+export async function getClientById(id: string): Promise<Client> {
+  return api.get<Client>(`/Clients/${id}`);
+}
+
+export async function updateClient(
+  id: string,
+  data: { name: string; email: string },
+): Promise<Client> {
+  return api.put<Client>(`/Clients/${id}`, data);
+}
+
+export async function deleteClient(id: string): Promise<void> {
+  return api.delete(`/Clients/${id}`);
+}

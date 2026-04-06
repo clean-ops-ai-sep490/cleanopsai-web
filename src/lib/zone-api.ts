@@ -125,3 +125,18 @@ export async function getZones(): Promise<Zone[]> {
   console.log("Unexpected Zones API response structure:", response);
   return [];
 }
+
+export async function getZoneById(id: string): Promise<Zone> {
+  return api.get<Zone>(`/Zones/${id}`);
+}
+
+export async function updateZone(
+  id: string,
+  data: ZoneFormData,
+): Promise<Zone> {
+  return api.put<Zone>(`/Zones/${id}`, data);
+}
+
+export async function deleteZone(id: string): Promise<void> {
+  return api.delete(`/Zones/${id}`);
+}
