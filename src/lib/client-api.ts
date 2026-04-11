@@ -1,98 +1,69 @@
-import { api } from "./api";
+import { createSearchableApi } from "./api-crud-factory";
+import { getLocationsPaginated } from "./location-api";
 import type { Client } from "@/types/contract";
+import type { PaginatedRequest } from "@/types/common";
 
-export interface ClientsPaginatedRequest {
-  pageNumber?: number;
-  pageSize?: number;
-  search?: string;
-}
-
-export async function createClient(data: {
+// Client form data types
+export interface ClientCreateData {
   name: string;
   email: string;
-}): Promise<Client> {
-  return api.post<Client>("/Clients", data);
 }
 
-export async function getClients(): Promise<Client[]> {
-  const response = await api.get<Client[] | { data: Client[] } | any>(
-    "/Clients",
-  );
-
-  if (Array.isArray(response)) {
-    return response;
-  }
-
-  if (response && Array.isArray(response.content)) {
-    return response.content;
-  }
-
-  if (response && Array.isArray(response.data)) {
-    return response.data;
-  }
-
-  if (response && Array.isArray(response.items)) {
-    return response.items;
-  }
-
-  console.log("Unexpected Clients API response structure:", response);
-  return [];
+export interface ClientUpdateData {
+  name?: string;
+  email?: string;
 }
 
+// Legacy interface for backward compatibility
+export interface ClientsPaginatedRequest extends PaginatedRequest {}
+
+// Create CRUD API using factory
+const clientApi = createSearchableApi<
+  Client,
+  ClientCreateData,
+  ClientUpdateData
+>("/Clients");
+
+// Export individual functions for backward compatibility
+export const {
+  create: createClient,
+  getById: getClientById,
+  update: updateClient,
+  delete: deleteClient,
+  getAll: getClients,
+  getPaginated: getClientsPaginatedNew,
+  search: searchClients,
+} = clientApi;
+
+// Legacy function for backward compatibility
 export async function getClientsPaginated(
   params: ClientsPaginatedRequest = {},
 ): Promise<{ items: Client[]; totalCount: number }> {
-  const { pageNumber = 1, pageSize = 50, search } = params;
-
-  const queryParams = new URLSearchParams({
-    pageNumber: pageNumber.toString(),
-    pageSize: pageSize.toString(),
-  });
-
-  if (search) {
-    queryParams.append("search", search);
-  }
+  const { pageNumber = 1, pageSize = 50, search, ...rest } = params;
 
   try {
-    const response = await api.get<any>(`/Clients?${queryParams.toString()}`);
+    const response = await clientApi.getPaginated(pageNumber, pageSize, {
+      search,
+      ...rest,
+    });
 
-    console.log("Clients Paginated API Response:", response);
-
-    if (response && Array.isArray(response.content)) {
-      return {
-        items: response.content,
-        totalCount: response.totalElements || response.content.length,
-      };
-    }
-
-    if (response && Array.isArray(response.items)) {
-      return {
-        items: response.items,
-        totalCount: response.totalCount || response.items.length,
-      };
-    }
-
-    if (response && Array.isArray(response.data)) {
-      return {
-        items: response.data,
-        totalCount: response.totalCount || response.data.length,
-      };
-    }
-
-    if (Array.isArray(response)) {
-      return {
-        items: response,
-        totalCount: response.length,
-      };
-    }
-
-    console.log(
-      "Unexpected Clients Paginated API response structure:",
-      response,
-    );
-    return { items: [], totalCount: 0 };
+    return {
+      items: response.content,
+      totalCount: response.totalElements,
+    };
   } catch (error) {
     console.error("Failed to load clients:", error);
     return { items: [], totalCount: 0 };
+  }
+}
+
+// Get locations by client ID
+export async function getLocationsByClient(clientId: string) {
+  try {
+    const response = await getLocationsPaginated({ clientId, pageSize: 100 });
+    return response.items;
+  } catch (error) {
+    console.error("Failed to load locations by client:", error);
+    return [];
   }
 }
