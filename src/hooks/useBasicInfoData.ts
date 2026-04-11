@@ -1,16 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { Contract, WorkArea, Zone, Location } from "@/types/contract";
-import { getContractsPaginated } from "@/lib/contract-api";
+import { getContractsPaginated, getContractById } from "@/lib/contract-api";
 import {
   getWorkAreasPaginated,
   type WorkAreasPaginatedRequest,
 } from "@/lib/work-area-api";
 import { getZonesPaginated } from "@/lib/zone-api";
 import { getLocationsPaginated, getLocations } from "@/lib/location-api";
-import {
-  getEnvironmentTypesPaginated,
-  type EnvironmentType,
-} from "@/lib/environment-types";
+import { getEnvironmentTypesPaginated } from "@/lib/environment-type-api";
+import type { EnvironmentType } from "@/types/sop";
 
 export function useBasicInfoData() {
   const [selectedContract, setSelectedContract] = useState<Contract | null>(
@@ -26,7 +24,7 @@ export function useBasicInfoData() {
     null,
   );
 
-  const loadContracts = async (search?: string) => {
+  const loadContracts = useCallback(async (search?: string) => {
     try {
       const response = await getContractsPaginated({
         pageNumber: 1,
@@ -50,9 +48,9 @@ export function useBasicInfoData() {
         totalCount: 0,
       };
     }
-  };
+  }, []);
 
-  const loadWorkAreas = async (search?: string) => {
+  const loadWorkAreas = useCallback(async (search?: string) => {
     try {
       const response = await getWorkAreasPaginated({
         pageNumber: 1,
@@ -76,9 +74,9 @@ export function useBasicInfoData() {
         totalCount: 0,
       };
     }
-  };
+  }, []);
 
-  const loadLocations = async (search?: string) => {
+  const loadLocations = useCallback(async (search?: string) => {
     try {
       // Try paginated API first
       const response = await getLocationsPaginated({
@@ -160,9 +158,9 @@ export function useBasicInfoData() {
         totalCount: 0,
       };
     }
-  };
+  }, []);
 
-  const loadZones = async (search?: string) => {
+  const loadZones = useCallback(async (search?: string) => {
     try {
       const response = await getZonesPaginated({
         pageNumber: 1,
@@ -208,9 +206,9 @@ export function useBasicInfoData() {
         totalCount: 0,
       };
     }
-  };
+  }, []);
 
-  const loadEnvironmentTypes = async (search?: string) => {
+  const loadEnvironmentTypes = useCallback(async (search?: string) => {
     try {
       return await getEnvironmentTypesPaginated({
         pageNumber: 1,
@@ -226,62 +224,78 @@ export function useBasicInfoData() {
         pageSize: 50,
       };
     }
-  };
+  }, []);
 
-  const loadSelectedContract = async (contractId: string) => {
+  const loadSelectedContract = useCallback(async (contractId: string) => {
     try {
-      const response = await loadContracts();
-      const contract = response.items.find((c) => c.id === contractId);
+      console.log("loadSelectedContract called with:", contractId);
+      const contract = await getContractById(contractId);
+      console.log("Found contract:", contract);
       setSelectedContract(contract || null);
     } catch (error) {
       console.error("Failed to load selected contract:", error);
       setSelectedContract(null);
     }
-  };
+  }, []);
 
-  const loadSelectedWorkArea = async (workAreaId: string) => {
-    try {
-      const response = await loadWorkAreas();
-      const workArea = response.items.find((w) => w.id === workAreaId);
-      setSelectedWorkArea(workArea || null);
-    } catch (error) {
-      console.error("Failed to load selected work area:", error);
-      setSelectedWorkArea(null);
-    }
-  };
+  const loadSelectedWorkArea = useCallback(
+    async (workAreaId: string) => {
+      try {
+        const response = await loadWorkAreas();
+        const workArea = response.items.find((w) => w.id === workAreaId);
+        setSelectedWorkArea(workArea || null);
+      } catch (error) {
+        console.error("Failed to load selected work area:", error);
+        setSelectedWorkArea(null);
+      }
+    },
+    [loadWorkAreas],
+  );
 
-  const loadSelectedEnvironmentType = async (environmentTypeId: string) => {
-    try {
-      const response = await loadEnvironmentTypes();
-      const envType = response.items.find((e) => e.id === environmentTypeId);
-      setSelectedEnvironmentType(envType || null);
-    } catch (error) {
-      console.error("Failed to load selected environment type:", error);
-      setSelectedEnvironmentType(null);
-    }
-  };
+  const loadSelectedEnvironmentType = useCallback(
+    async (environmentTypeId: string) => {
+      try {
+        const response = await loadEnvironmentTypes();
+        const envType = response.items.find((e) => e.id === environmentTypeId);
+        setSelectedEnvironmentType(envType || null);
+      } catch (error) {
+        console.error("Failed to load selected environment type:", error);
+        setSelectedEnvironmentType(null);
+      }
+    },
+    [loadEnvironmentTypes],
+  );
 
-  const loadSelectedLocation = async (locationId: string) => {
-    try {
-      const response = await loadLocations();
-      const location = response.items.find((l) => l.id === locationId);
-      setSelectedLocation(location || null);
-    } catch (error) {
-      console.error("Failed to load selected location:", error);
-      setSelectedLocation(null);
-    }
-  };
+  const loadSelectedLocation = useCallback(
+    async (locationId: string) => {
+      try {
+        console.log("loadSelectedLocation called with:", locationId);
+        const response = await loadLocations();
+        console.log("loadSelectedLocation response:", response);
+        const location = response.items.find((l) => l.id === locationId);
+        console.log("Found location:", location);
+        setSelectedLocation(location || null);
+      } catch (error) {
+        console.error("Failed to load selected location:", error);
+        setSelectedLocation(null);
+      }
+    },
+    [loadLocations],
+  );
 
-  const loadSelectedZone = async (zoneId: string) => {
-    try {
-      const response = await loadZones();
-      const zone = response.items.find((z) => z.id === zoneId);
-      setSelectedZone(zone || null);
-    } catch (error) {
-      console.error("Failed to load selected zone:", error);
-      setSelectedZone(null);
-    }
-  };
+  const loadSelectedZone = useCallback(
+    async (zoneId: string) => {
+      try {
+        const response = await loadZones();
+        const zone = response.items.find((z) => z.id === zoneId);
+        setSelectedZone(zone || null);
+      } catch (error) {
+        console.error("Failed to load selected zone:", error);
+        setSelectedZone(null);
+      }
+    },
+    [loadZones],
+  );
 
   return {
     selectedContract,
