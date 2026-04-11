@@ -26,8 +26,11 @@ export default function LoginPage() {
         const roleStr = String(me.role ?? "").trim();
         const lower = roleStr.toLowerCase();
         const isSupporter = roleStr === "4" || roleStr === "Supporter" || lower === "supporter";
+        const isAdmin = roleStr === "0" || roleStr === "Admin" || lower === "admin";
         if (isSupporter) {
           router.push("/support/equipments");
+        } else if (isAdmin) {
+          router.push("/admin/steps");
         } else {
           router.push("/dashboard");
         }
