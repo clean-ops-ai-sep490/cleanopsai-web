@@ -49,8 +49,10 @@ export function SearchableSelect<T extends SearchableSelectItem>({
   const [cachedSelectedItem, setCachedSelectedItem] = React.useState<T | null>(
     null,
   );
+  const [popoverWidth, setPopoverWidth] = React.useState<number | undefined>();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
 
   const loadData = React.useCallback(async () => {
     setLoading(true);
@@ -91,10 +93,10 @@ export function SearchableSelect<T extends SearchableSelectItem>({
   }, [loadItems]);
 
   React.useEffect(() => {
-    if (open && items.length === 0) {
+    if ((open && items.length === 0) || (value && items.length === 0)) {
       loadData();
     }
-  }, [open, loadData, items.length]);
+  }, [open, loadData, items.length, value]);
 
   // Filter items based on search query
   React.useEffect(() => {
@@ -113,10 +115,19 @@ export function SearchableSelect<T extends SearchableSelectItem>({
     setSelectedIndex(-1);
   }, [items, searchQuery, displayFormatter]);
 
-  // Focus input when popover opens
+  // Focus input when popover opens and set width
   React.useEffect(() => {
-    if (open && inputRef.current) {
-      inputRef.current.focus();
+    if (open) {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+      // Set popover width to match trigger button width, with responsive constraints
+      if (triggerRef.current) {
+        const triggerWidth = triggerRef.current.offsetWidth;
+        const viewportWidth = window.innerWidth;
+        const maxWidth = Math.min(triggerWidth, viewportWidth - 32); // 16px padding on each side
+        setPopoverWidth(Math.max(maxWidth, 200)); // minimum 200px width
+      }
     }
   }, [open]);
 
@@ -188,19 +199,28 @@ export function SearchableSelect<T extends SearchableSelectItem>({
     <Popover open={open && !disabled} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          ref={triggerRef}
           variant="outline"
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
-          className={cn("w-full justify-between", className)}
+          className={cn("w-full justify-between h-8 px-3 py-1", className)}
           onKeyDown={handleKeyDown}
         >
           <span className="truncate">{displayText}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
-        <div className="flex flex-col bg-white">
+      <PopoverContent
+        className="p-0"
+        align="start"
+        side="bottom"
+        sideOffset={4}
+        avoidCollisions={true}
+        collisionPadding={8}
+        style={{ width: popoverWidth }}
+      >
+        <div className="flex flex-col bg-white min-w-0">
           {/* Search Input */}
           <div className="flex items-center border-b border-gray-200 px-3 bg-white">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50 text-gray-500" />
@@ -216,7 +236,7 @@ export function SearchableSelect<T extends SearchableSelectItem>({
           </div>
 
           {/* Items List */}
-          <div className="max-h-[300px] overflow-y-auto overflow-x-hidden bg-white">
+          <div className="max-h-[300px] overflow-y-auto overflow-x-hidden bg-white scrollbar-primary">
             {loading ? (
               <div className="py-6 text-center text-sm text-gray-600">
                 Đang tải...
