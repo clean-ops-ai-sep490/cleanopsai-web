@@ -1,6 +1,9 @@
+import { createSearchableApi } from "./api-crud-factory";
 import { api } from "./api";
 import type { Location, LocationFormData } from "@/types/contract";
+import type { PaginatedRequest, PaginatedResponse } from "@/types/common";
 
+// Legacy interfaces for backward compatibility
 export interface LocationsPaginatedResponse {
   items: Location[];
   totalCount: number;
@@ -8,83 +11,46 @@ export interface LocationsPaginatedResponse {
   pageSize: number;
 }
 
-export interface LocationsPaginatedRequest {
-  pageNumber?: number;
-  pageSize?: number;
-  search?: string;
+export interface LocationsPaginatedRequest extends PaginatedRequest {
   clientId?: string;
 }
 
+// Create CRUD API using factory
+const locationApi = createSearchableApi<
+  Location,
+  LocationFormData,
+  LocationFormData
+>("/Locations");
+
+// Export individual functions for backward compatibility
+export const {
+  create: createLocation,
+  getById: getLocationById,
+  update: updateLocation,
+  delete: deleteLocation,
+  getAll: getLocations,
+  getPaginated: getLocationsPaginatedNew,
+  search: searchLocations,
+} = locationApi;
+
+// Legacy function for backward compatibility
 export async function getLocationsPaginated(
   params: LocationsPaginatedRequest = {},
 ): Promise<LocationsPaginatedResponse> {
-  const { pageNumber = 1, pageSize = 50, search, clientId } = params;
-
-  const queryParams = new URLSearchParams({
-    pageNumber: pageNumber.toString(),
-    pageSize: pageSize.toString(),
-  });
-
-  if (search) {
-    queryParams.append("search", search);
-  }
-
-  if (clientId) {
-    queryParams.append("clientId", clientId);
-  }
+  const { pageNumber = 1, pageSize = 50, search, clientId, ...rest } = params;
 
   try {
-    const response = await api.get<any>(`/Locations?${queryParams.toString()}`);
+    const response = await locationApi.getPaginated(pageNumber, pageSize, {
+      search,
+      clientId,
+      ...rest,
+    });
 
-    console.log("Raw Locations API response:", response);
-
-    // Handle different response formats - prioritize 'content' for this API
-    if (response && Array.isArray(response.content)) {
-      console.log("Found content array:", response.content);
-      return {
-        items: response.content,
-        totalCount: response.totalElements || response.content.length,
-        pageNumber: response.pageNumber || pageNumber,
-        pageSize: response.pageSize || pageSize,
-      };
-    }
-
-    if (response && Array.isArray(response.items)) {
-      console.log("Found items array:", response.items);
-      return {
-        items: response.items,
-        totalCount: response.totalCount || response.items.length,
-        pageNumber: response.pageNumber || pageNumber,
-        pageSize: response.pageSize || pageSize,
-      };
-    }
-
-    if (Array.isArray(response)) {
-      console.log("Response is direct array:", response);
-      return {
-        items: response,
-        totalCount: response.length,
-        pageNumber,
-        pageSize,
-      };
-    }
-
-    if (response && Array.isArray(response.data)) {
-      console.log("Found data array:", response.data);
-      return {
-        items: response.data,
-        totalCount: response.data.length,
-        pageNumber,
-        pageSize,
-      };
-    }
-
-    console.log("Unexpected Locations API response structure:", response);
     return {
-      items: [],
-      totalCount: 0,
-      pageNumber,
-      pageSize,
+      items: response.content,
+      totalCount: response.totalElements,
+      pageNumber: response.pageNumber,
+      pageSize: response.pageSize,
     };
   } catch (error) {
     console.error("Failed to load locations:", error);
@@ -97,33 +63,36 @@ export async function getLocationsPaginated(
   }
 }
 
-export async function createLocation(
-  data: LocationFormData,
-): Promise<Location> {
-  return api.post<Location>("/Locations", data);
-}
+// Function to get locations by clientId using the correct endpoint
+export async function getLocationsByClientId(
+  clientId: string,
+  params: { pageNumber?: number; pageSize?: number } = {},
+): Promise<LocationsPaginatedResponse> {
+  const { pageNumber = 1, pageSize = 10 } = params;
 
-export async function getLocations(): Promise<Location[]> {
-  const response = await api.get<Location[] | { data: Location[] } | any>(
-    "/Locations",
-  );
+  try {
+    const queryString = new URLSearchParams({
+      pageNumber: pageNumber.toString(),
+      pageSize: pageSize.toString(),
+    });
 
-  if (Array.isArray(response)) {
-    return response;
+    const response = await api.get<any>(
+      `/Locations/client/${clientId}?${queryString.toString()}`,
+    );
+
+    return {
+      items: response.content || [],
+      totalCount: response.totalElements || 0,
+      pageNumber: response.pageNumber || pageNumber,
+      pageSize: response.pageSize || pageSize,
+    };
+  } catch (error) {
+    console.error("Failed to load locations by clientId:", error);
+    return {
+      items: [],
+      totalCount: 0,
+      pageNumber,
+      pageSize,
+    };
   }
-
-  if (response && Array.isArray(response.content)) {
-    return response.content;
-  }
-
-  if (response && Array.isArray(response.data)) {
-    return response.data;
-  }
-
-  if (response && Array.isArray(response.items)) {
-    return response.items;
-  }
-
-  console.log("Unexpected Locations API response structure:", response);
-  return [];
 }
