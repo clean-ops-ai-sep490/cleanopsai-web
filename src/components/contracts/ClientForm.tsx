@@ -1,63 +1,47 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormActions } from "@/components/ui/form-actions";
-import { toast } from "sonner";
 import { createClient } from "@/lib/client-api";
+import { useEntityForm } from "@/hooks/useEntityForm";
+import { validators } from "@/lib/validators/form-validators";
 
 interface ClientFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
+interface ClientFormData {
+  name: string;
+  email: string;
+}
+
 export function ClientForm({ onSuccess, onCancel }: ClientFormProps) {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-  });
-
-  const queryClient = useQueryClient();
-
-  // Create client mutation
-  const createClientMutation = useMutation({
-    mutationFn: createClient,
-    onSuccess: () => {
-      toast.success("Client created successfully");
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
-      onSuccess?.();
-    },
-    onError: (error) => {
-      toast.error("Failed to create client");
-      console.error("Client creation error:", error);
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name || !formData.email) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    createClientMutation.mutate(formData);
-  };
-
-  const handleInputChange =
-    (field: "name" | "email") => (e: React.ChangeEvent<HTMLInputElement>) => {
-      setFormData((prev) => ({ ...prev, [field]: e.target.value }));
-    };
-
-  const handleReset = () => {
-    setFormData({
+  const {
+    formData,
+    errors,
+    isLoading,
+    handleInputChange,
+    handleReset,
+    handleSubmit,
+  } = useEntityForm<ClientFormData>({
+    initialData: {
       name: "",
       email: "",
-    });
-  };
+    },
+    mutationFn: createClient,
+    queryKey: ["clients"],
+    onSuccess,
+    successMessage: "Client created successfully",
+    errorMessage: "Failed to create client",
+    validationRules: {
+      name: [validators.required("Tên client")],
+      email: [validators.required("Email"), validators.email],
+    },
+    validateOnChange: true,
+  });
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -71,6 +55,7 @@ export function ClientForm({ onSuccess, onCancel }: ClientFormProps) {
           placeholder="Enter client name"
           required
         />
+        {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
       </div>
 
       <div className="space-y-2">
@@ -83,13 +68,14 @@ export function ClientForm({ onSuccess, onCancel }: ClientFormProps) {
           placeholder="Enter client email"
           required
         />
+        {errors.email && <p className="text-sm text-red-600">{errors.email}</p>}
       </div>
 
       <FormActions
         onReset={handleReset}
         onCancel={onCancel}
         submitLabel="Execute"
-        isLoading={createClientMutation.isPending}
+        isLoading={isLoading}
       />
     </form>
   );

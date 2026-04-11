@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,72 +11,50 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { createWorkArea } from "@/lib/work-area-api";
-import { getZones } from "@/lib/zone-api";
+import { useEntityForm } from "@/hooks/useEntityForm";
+import { validators } from "@/lib/validators/form-validators";
 import type { WorkAreaFormData, Zone } from "@/types/contract";
 
 interface WorkAreaFormProps {
+  zones: Zone[];
+  zonesLoading: boolean;
   onSuccess?: () => void;
   onCancel?: () => void;
   defaultZoneId?: string;
 }
 
 export function WorkAreaForm({
+  zones,
+  zonesLoading,
   onSuccess,
   onCancel,
   defaultZoneId,
 }: WorkAreaFormProps) {
-  const [formData, setFormData] = useState<WorkAreaFormData>({
-    name: "",
-    zoneId: defaultZoneId || "",
-  });
-
-  const queryClient = useQueryClient();
-
-  // Fetch zones
-  const { data: zones = [], isLoading: zonesLoading } = useQuery({
-    queryKey: ["zones"],
-    queryFn: getZones,
-  });
-
-  // Create work area mutation
-  const createWorkAreaMutation = useMutation({
-    mutationFn: createWorkArea,
-    onSuccess: () => {
-      toast.success("Work area created successfully");
-      queryClient.invalidateQueries({ queryKey: ["workAreas"] });
-      onSuccess?.();
-    },
-    onError: (error) => {
-      toast.error("Failed to create work area");
-      console.error("Work area creation error:", error);
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name || !formData.zoneId) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    createWorkAreaMutation.mutate(formData);
-  };
-
-  const handleInputChange =
-    (field: keyof WorkAreaFormData) =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setFormData((prev) => ({ ...prev, [field]: e.target.value }));
-    };
-
-  const handleReset = () => {
-    setFormData({
+  const {
+    formData,
+    errors,
+    isLoading,
+    handleInputChange,
+    handleSelectChange,
+    handleReset,
+    handleSubmit,
+  } = useEntityForm<WorkAreaFormData>({
+    initialData: {
       name: "",
       zoneId: defaultZoneId || "",
-    });
-  };
+    },
+    mutationFn: createWorkArea,
+    queryKey: ["workAreas"],
+    onSuccess,
+    successMessage: "Work area created successfully",
+    errorMessage: "Failed to create work area",
+    validationRules: {
+      name: [validators.required("Tên work area")],
+      zoneId: [validators.required("Zone")],
+    },
+    validateOnChange: true,
+  });
 
   return (
     <Card className="p-6">
@@ -93,15 +69,14 @@ export function WorkAreaForm({
             placeholder="Enter work area name"
             required
           />
+          {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="zoneId">Zone *</Label>
           <Select
             value={formData.zoneId}
-            onValueChange={(value) =>
-              setFormData((prev) => ({ ...prev, zoneId: value }))
-            }
+            onValueChange={handleSelectChange("zoneId")}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select a zone" />
@@ -120,15 +95,14 @@ export function WorkAreaForm({
               )}
             </SelectContent>
           </Select>
+          {errors.zoneId && (
+            <p className="text-sm text-red-600">{errors.zoneId}</p>
+          )}
         </div>
 
         <div className="flex gap-2 pt-4">
-          <Button
-            type="submit"
-            disabled={createWorkAreaMutation.isPending}
-            className="flex-1"
-          >
-            {createWorkAreaMutation.isPending ? "Creating..." : "Execute"}
+          <Button type="submit" disabled={isLoading} className="flex-1">
+            {isLoading ? "Creating..." : "Execute"}
           </Button>
           <Button
             type="button"
