@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -15,62 +15,27 @@ import {
   CheckCircle2,
   Activity,
   Building,
-  MapPin,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
-import type { SLA, SLAShift, SLATask } from "@/types/sla";
-import {
-  getSLAById,
-  getSLAShiftsBySLA,
-  getSLATasksBySLA,
-  deleteSLA,
-} from "@/lib/sla-api";
-import { toast } from "sonner";
+import { useSLAWithDetails, useDeleteSLA } from "@/hooks/useSLAQuery";
 
 export default function SLADetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [sla, setSLA] = useState<SLA | null>(null);
-  const [shifts, setShifts] = useState<SLAShift[]>([]);
-  const [tasks, setTasks] = useState<SLATask[]>([]);
-  const [loading, setLoading] = useState(true);
+  const slaId = params.id as string;
+  const [slaDeleted, setSlaDeleted] = useState(false);
 
-  useEffect(() => {
-    if (params.id) {
-      loadSLAData(params.id as string);
-    }
-  }, [params.id]);
+  const { sla, shifts, tasks, isLoading, error } = useSLAWithDetails(slaId);
 
-  const loadSLAData = async (id: string) => {
-    try {
-      setLoading(true);
-      const [slaData, shiftsData, tasksData] = await Promise.all([
-        getSLAById(id),
-        getSLAShiftsBySLA(id),
-        getSLATasksBySLA(id),
-      ]);
-      setSLA(slaData);
-      setShifts(shiftsData);
-      setTasks(tasksData);
-    } catch (error) {
-      console.error("Failed to load SLA data:", error);
-      toast.error("Không thể tải thông tin SLA");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const deleteSOPMutation = useDeleteSLA(() => {
+    setSlaDeleted(true);
+    router.push("/dashboard/sla-trigger");
+  });
 
   const handleDelete = async () => {
     if (!sla || !confirm("Bạn có chắc chắn muốn xóa SLA này?")) return;
-
-    try {
-      await deleteSLA(sla.id);
-      toast.success("Đã xóa SLA thành công");
-      router.push("/dashboard/sla-trigger");
-    } catch (error) {
-      console.error("Failed to delete SLA:", error);
-      toast.error("Không thể xóa SLA");
-    }
+    deleteSOPMutation.mutate(sla.id);
   };
 
   const getTotalWorkers = () => {
@@ -92,32 +57,37 @@ export default function SLADetailPage() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1a80a2] mx-auto"></div>
-            <p className="mt-2 text-gray-600">Đang tải...</p>
-          </div>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-[#1a80a2]" />
+          <span className="ml-2 text-[#70808f]">Đang tải SLA...</span>
         </div>
       </DashboardLayout>
     );
   }
 
-  if (!sla) {
+  if (error || !sla) {
     return (
       <DashboardLayout>
         <div className="text-center py-12">
-          <p className="text-gray-600">Không tìm thấy SLA</p>
-          <Link href="/dashboard/sla-trigger">
-            <Button className="mt-4">Quay lại danh sách</Button>
-          </Link>
+          <p className="text-red-500 mb-4">
+            {error?.message?.includes("404")
+              ? "SLA không tồn tại hoặc đã bị xóa"
+              : "Không thể tải thông tin SLA"}
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => router.push("/dashboard/sla-trigger")}
+            className="border-[#e5e5e5]"
+          >
+            Quay lại danh sách
+          </Button>
         </div>
       </DashboardLayout>
     );
   }
-
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-6">
