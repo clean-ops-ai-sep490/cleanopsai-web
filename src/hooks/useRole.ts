@@ -5,6 +5,7 @@ export enum UserRole {
   Manager = "1",
   Supervisor = "2",
   Worker = "3",
+  Supporter = "4",
 }
 
 // Map role names to role IDs - handle all possible formats
@@ -14,16 +15,19 @@ const ROLE_MAP: Record<string, UserRole> = {
   "1": UserRole.Manager,
   "2": UserRole.Supervisor,
   "3": UserRole.Worker,
+  "4": UserRole.Supporter,
   // Text format - exact case (from backend)
   Admin: UserRole.Admin,
   Manager: UserRole.Manager,
   Supervisor: UserRole.Supervisor,
   Worker: UserRole.Worker,
+  Supporter: UserRole.Supporter,
   // Text format - lowercase
   admin: UserRole.Admin,
   manager: UserRole.Manager,
   supervisor: UserRole.Supervisor,
   worker: UserRole.Worker,
+  supporter: UserRole.Supporter,
 };
 
 // Normalize role to UserRole enum
@@ -62,7 +66,7 @@ export function useRole() {
   const isManager = () => hasRole(UserRole.Manager);
   const isSupervisor = () => hasRole(UserRole.Supervisor);
   const isWorker = () => hasRole(UserRole.Worker);
-
+  const isSupporter = () => hasRole(UserRole.Supporter);
   // Web app access: Only Admin and Manager
   const canAccessWebApp = () => hasRole([UserRole.Admin, UserRole.Manager]);
 
@@ -89,6 +93,7 @@ export function useRole() {
     isManager,
     isSupervisor,
     isWorker,
+    isSupporter,
     canAccessWebApp,
     canManageMasterData,
     canManageUsers,

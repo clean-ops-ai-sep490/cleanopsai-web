@@ -15,15 +15,37 @@ const certificationApi = createSearchableApi<
   UpdateCertificationData
 >("/Certifications");
 
-// Export individual functions for full CRUD operations
-export const {
-  create: createCertification,
-  getById: getCertificationById,
-  update: updateCertification,
-  delete: deleteCertification,
-  getAll: getAllCertifications,
-  search: searchCertifications,
-} = certificationApi;
+// Explicit wrappers for CRUD/search to match backend behavior
+export async function createCertification(data: CreateCertificationData): Promise<Certification> {
+  return certificationApi.create(data);
+}
+
+export async function getCertificationById(id: string): Promise<Certification> {
+  return certificationApi.getById(id);
+}
+
+export async function updateCertification(id: string, data: UpdateCertificationData): Promise<Certification> {
+  return certificationApi.update(id, data);
+}
+
+export async function deleteCertification(id: string): Promise<number> {
+  // Backend returns number of records deleted
+  const result = await api.delete<number>(`/Certifications/${encodeURIComponent(id)}`);
+  return result ?? 0;
+}
+
+export async function getAllCertifications(): Promise<Certification[]> {
+  return certificationApi.getAll();
+}
+
+export async function searchCertifications(
+  query: string,
+  pageNumber: number = 1,
+  pageSize: number = 10,
+  additionalParams: Record<string, any> = {},
+): Promise<PaginatedResponse<Certification>> {
+  return certificationApi.search(query, pageNumber, pageSize, additionalParams);
+}
 
 // Custom paginated function to maintain existing interface
 export async function getCertifications(
@@ -52,5 +74,22 @@ export async function getCertificationsByCategory(
   const response = await api.get<any>(
     `/Certifications/by-category?category=${encodeURIComponent(category)}`,
   );
+  return parseArrayResponse<Certification>(response);
+}
+
+// Get certifications by a list of ids
+export async function getCertificationsByIds(
+  ids: string[],
+): Promise<Certification[]> {
+  if (!ids || ids.length === 0) return [];
+  const query = ids.map((id) => `ids=${encodeURIComponent(id)}`).join("&");
+  const response = await api.get<any>(`/Certifications/batch?${query}`);
+  return parseArrayResponse<Certification>(response);
+}
+
+// Get certifications for a specific worker
+export async function getCertificationsByWorkerId(workerId: string): Promise<Certification[]> {
+  if (!workerId) return [];
+  const response = await api.get<any>(`/Certifications/worker/${encodeURIComponent(workerId)}/certifications`);
   return parseArrayResponse<Certification>(response);
 }
