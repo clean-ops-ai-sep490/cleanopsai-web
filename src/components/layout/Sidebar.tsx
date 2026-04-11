@@ -85,23 +85,6 @@ const navigation = [
       },
     ],
   },
-  {
-    title: "QUẢN TRỊ",
-    items: [
-      {
-        name: "Master Data",
-        href: "/dashboard/master-data",
-        icon: Settings,
-        roles: ["0"], // Admin only
-      },
-      {
-        name: "User Management",
-        href: "/dashboard/users",
-        icon: Users,
-        roles: ["0"], // Admin only
-      },
-    ],
-  },
 ];
 
 export function Sidebar() {
