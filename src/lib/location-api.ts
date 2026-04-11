@@ -96,3 +96,18 @@ export async function getLocationsByClientId(
     };
   }
 }
+
+export async function getLocationById(id: string): Promise<Location> {
+  return api.get<Location>(`/Locations/${id}`);
+}
+
+export async function updateLocation(
+  id: string,
+  data: LocationFormData,
+): Promise<Location> {
+  return api.put<Location>(`/Locations/${id}`, data);
+}
+
+export async function deleteLocation(id: string): Promise<void> {
+  return api.delete(`/Locations/${id}`);
+}

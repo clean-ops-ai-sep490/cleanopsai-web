@@ -76,3 +76,26 @@ export async function getContractsPaginated(params: {
     return { items: [], totalCount: 0 };
   }
 }
+
+export async function getContractById(id: string): Promise<Contract> {
+  return api.get<Contract>(`/Contracts/${id}`);
+}
+
+export async function updateContract(
+  id: string,
+  data: ContractFormData,
+): Promise<Contract> {
+  const formData = new FormData();
+  formData.append("name", data.name);
+  formData.append("clientId", data.clientId);
+
+  if (data.file) {
+    formData.append("file", data.file);
+  }
+
+  return api.put<Contract>(`/Contracts/${id}`, formData);
+}
+
+export async function deleteContract(id: string): Promise<void> {
+  return api.delete(`/Contracts/${id}`);
+}
