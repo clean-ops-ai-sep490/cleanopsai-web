@@ -26,7 +26,7 @@ export function DashboardHeader() {
   } = useLogout();
 
   return (
-    <header className="fixed top-0 left-[200px] right-0 h-[106px] bg-white border-b border-gray-200 z-10">
+    <header className="fixed top-0 left-[263px] right-0 h-[106px] bg-white border-b border-gray-200 z-10">
       <div className="flex items-center justify-between h-full px-8">
         {/* Left side - CleanOPS logo and user info */}
         <div className="flex items-center gap-6">
@@ -34,7 +34,7 @@ export function DashboardHeader() {
           <div className="text-left">
             <p className="text-[14px] text-gray-500 leading-tight">Welcome,</p>
             <p className="text-[18px] font-semibold text-gray-900 leading-tight">
-              {user?.fullName || "Nguyen Van A"}
+              {user?.fullName || "User"}
             </p>
           </div>
         </div>
