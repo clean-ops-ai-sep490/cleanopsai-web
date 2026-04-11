@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FormActions } from "@/components/ui/form-actions";
-import { toast } from "sonner";
+import { useEntityForm } from "@/hooks/useEntityForm";
+import { validators } from "@/lib/validators/form-validators";
 
 interface ZoneFormData {
   name: string;
@@ -19,54 +18,32 @@ interface ZoneFormProps {
 }
 
 export function ZoneForm({ onSuccess, onCancel }: ZoneFormProps) {
-  const [formData, setFormData] = useState<ZoneFormData>({
-    name: "",
-    description: "",
-  });
-
-  const queryClient = useQueryClient();
-
-  // Mock mutation - replace with actual API call
-  const createZoneMutation = useMutation({
+  const {
+    formData,
+    errors,
+    isLoading,
+    handleInputChange,
+    handleReset,
+    handleSubmit,
+  } = useEntityForm<ZoneFormData>({
+    initialData: {
+      name: "",
+      description: "",
+    },
     mutationFn: async (data: ZoneFormData) => {
-      // Simulate API call
+      // Mock mutation - replace with actual API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
       return data;
     },
-    onSuccess: () => {
-      toast.success("Zone created successfully");
-      queryClient.invalidateQueries({ queryKey: ["zones"] });
-      onSuccess?.();
+    queryKey: ["zones"],
+    onSuccess,
+    successMessage: "Zone created successfully",
+    errorMessage: "Failed to create zone",
+    validationRules: {
+      name: [validators.required("Tên zone")],
     },
-    onError: (error) => {
-      toast.error("Failed to create zone");
-      console.error("Zone creation error:", error);
-    },
+    validateOnChange: true,
   });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name.trim()) {
-      toast.error("Tên zone là bắt buộc");
-      return;
-    }
-
-    createZoneMutation.mutate(formData);
-  };
-
-  const handleInputChange =
-    (field: keyof ZoneFormData) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      setFormData((prev) => ({ ...prev, [field]: e.target.value }));
-    };
-
-  const handleReset = () => {
-    setFormData({
-      name: "",
-      description: "",
-    });
-  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -80,6 +57,7 @@ export function ZoneForm({ onSuccess, onCancel }: ZoneFormProps) {
           placeholder="VD: Khu vực ngoài cảnh, Khu vực trong nhà..."
           required
         />
+        {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
       </div>
 
       <div className="space-y-2">
@@ -91,6 +69,9 @@ export function ZoneForm({ onSuccess, onCancel }: ZoneFormProps) {
           placeholder="Mô tả chi tiết về zone"
           rows={3}
         />
+        {errors.description && (
+          <p className="text-sm text-red-600">{errors.description}</p>
+        )}
       </div>
 
       <FormActions
@@ -98,7 +79,7 @@ export function ZoneForm({ onSuccess, onCancel }: ZoneFormProps) {
         onCancel={onCancel}
         submitLabel="Thêm Zone"
         cancelLabel="Hủy"
-        isLoading={createZoneMutation.isPending}
+        isLoading={isLoading}
       />
     </form>
   );

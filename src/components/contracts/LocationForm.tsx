@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,79 +11,37 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { createLocation } from "@/lib/location-api";
-import { getClients } from "@/lib/client-api";
+import { useEntityForm } from "@/hooks/useEntityForm";
+import { validators } from "@/lib/validators/form-validators";
 import type { LocationFormData, Client } from "@/types/contract";
 
 interface LocationFormProps {
+  clients: Client[];
+  clientsLoading: boolean;
   onSuccess?: () => void;
   onCancel?: () => void;
   defaultClientId?: string;
 }
 
 export function LocationForm({
+  clients,
+  clientsLoading,
   onSuccess,
   onCancel,
   defaultClientId,
 }: LocationFormProps) {
-  const [formData, setFormData] = useState<LocationFormData>({
-    name: "",
-    address: "",
-    street: "",
-    commune: "",
-    province: "",
-    latitude: 0,
-    longitude: 0,
-    clientId: defaultClientId || "",
-  });
-
-  const queryClient = useQueryClient();
-
-  // Fetch clients
-  const { data: clients = [], isLoading: clientsLoading } = useQuery({
-    queryKey: ["clients"],
-    queryFn: getClients,
-  });
-
-  // Create location mutation
-  const createLocationMutation = useMutation({
-    mutationFn: createLocation,
-    onSuccess: () => {
-      toast.success("Location created successfully");
-      queryClient.invalidateQueries({ queryKey: ["locations"] });
-      onSuccess?.();
-    },
-    onError: (error) => {
-      toast.error("Failed to create location");
-      console.error("Location creation error:", error);
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name || !formData.address || !formData.clientId) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    createLocationMutation.mutate(formData);
-  };
-
-  const handleInputChange =
-    (field: keyof LocationFormData) =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value =
-        field === "latitude" || field === "longitude"
-          ? parseFloat(e.target.value) || 0
-          : e.target.value;
-
-      setFormData((prev) => ({ ...prev, [field]: value }));
-    };
-
-  const handleReset = () => {
-    setFormData({
+  const {
+    formData,
+    errors,
+    isLoading,
+    handleInputChange,
+    handleNumberChange,
+    handleSelectChange,
+    handleReset,
+    handleSubmit,
+  } = useEntityForm<LocationFormData>({
+    initialData: {
       name: "",
       address: "",
       street: "",
@@ -94,8 +50,21 @@ export function LocationForm({
       latitude: 0,
       longitude: 0,
       clientId: defaultClientId || "",
-    });
-  };
+    },
+    mutationFn: createLocation,
+    queryKey: ["locations"],
+    onSuccess,
+    successMessage: "Location created successfully",
+    errorMessage: "Failed to create location",
+    validationRules: {
+      name: [validators.required("Tên location")],
+      address: [validators.required("Địa chỉ")],
+      clientId: [validators.required("Client")],
+      latitude: [validators.numeric("Latitude")],
+      longitude: [validators.numeric("Longitude")],
+    },
+    validateOnChange: true,
+  });
 
   return (
     <Card className="p-6">
@@ -110,6 +79,7 @@ export function LocationForm({
             placeholder="Enter location name"
             required
           />
+          {errors.name && <p className="text-sm text-red-600">{errors.name}</p>}
         </div>
 
         <div className="space-y-2">
@@ -122,6 +92,9 @@ export function LocationForm({
             placeholder="Enter address"
             required
           />
+          {errors.address && (
+            <p className="text-sm text-red-600">{errors.address}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -167,9 +140,12 @@ export function LocationForm({
               type="number"
               step="any"
               value={formData.latitude}
-              onChange={handleInputChange("latitude")}
+              onChange={handleNumberChange("latitude")}
               placeholder="0.0"
             />
+            {errors.latitude && (
+              <p className="text-sm text-red-600">{errors.latitude}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -179,9 +155,12 @@ export function LocationForm({
               type="number"
               step="any"
               value={formData.longitude}
-              onChange={handleInputChange("longitude")}
+              onChange={handleNumberChange("longitude")}
               placeholder="0.0"
             />
+            {errors.longitude && (
+              <p className="text-sm text-red-600">{errors.longitude}</p>
+            )}
           </div>
         </div>
 
@@ -189,9 +168,7 @@ export function LocationForm({
           <Label htmlFor="clientId">Client *</Label>
           <Select
             value={formData.clientId}
-            onValueChange={(value) =>
-              setFormData((prev) => ({ ...prev, clientId: value }))
-            }
+            onValueChange={handleSelectChange("clientId")}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select a client" />
@@ -210,15 +187,14 @@ export function LocationForm({
               )}
             </SelectContent>
           </Select>
+          {errors.clientId && (
+            <p className="text-sm text-red-600">{errors.clientId}</p>
+          )}
         </div>
 
         <div className="flex gap-2 pt-4">
-          <Button
-            type="submit"
-            disabled={createLocationMutation.isPending}
-            className="flex-1"
-          >
-            {createLocationMutation.isPending ? "Creating..." : "Execute"}
+          <Button type="submit" disabled={isLoading} className="flex-1">
+            {isLoading ? "Creating..." : "Execute"}
           </Button>
           <Button
             type="button"

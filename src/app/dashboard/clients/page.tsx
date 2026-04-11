@@ -13,10 +13,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { StandardDialog } from "@/components/ui/standard-dialog";
-import { Plus, Users, Mail, Building2 } from "lucide-react";
+import { CreateClientDialog } from "@/components/clients/dialogs/CreateClientDialog";
+import { Plus, Mail, Building2 } from "lucide-react";
 import { getClients } from "@/lib/client-api";
-import { ClientForm } from "@/components/contracts/ClientForm";
 
 export default function ClientsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -62,23 +61,17 @@ export default function ClientsPage() {
             </h1>
             <p className="text-gray-600 mt-1">Quản lý thông tin khách hàng</p>
           </div>
-          <StandardDialog
-            open={isCreateDialogOpen}
-            onOpenChange={setIsCreateDialogOpen}
-            title="Create New Client"
-            maxWidth="sm"
+          <CreateClientDialog
+            isOpen={isCreateDialogOpen}
+            onClose={() => setIsCreateDialogOpen(false)}
+            onSuccess={handleCreateSuccess}
             trigger={
               <Button className="bg-[#1a80a2] hover:bg-[#1a80a2]/90">
                 <Plus className="h-4 w-4 mr-2" />
                 Thêm Khách Hàng
               </Button>
             }
-          >
-            <ClientForm
-              onSuccess={handleCreateSuccess}
-              onCancel={() => setIsCreateDialogOpen(false)}
-            />
-          </StandardDialog>
+          />
         </div>
 
         {/* Clients Table */}
@@ -96,23 +89,17 @@ export default function ClientsPage() {
                 <p className="text-gray-600 mb-6">
                   Get started by adding your first client to create contracts.
                 </p>
-                <StandardDialog
-                  open={isCreateDialogOpen}
-                  onOpenChange={setIsCreateDialogOpen}
-                  title="Create New Client"
-                  maxWidth="sm"
+                <CreateClientDialog
+                  isOpen={isCreateDialogOpen}
+                  onClose={() => setIsCreateDialogOpen(false)}
+                  onSuccess={handleCreateSuccess}
                   trigger={
                     <Button className="bg-[#1a80a2] hover:bg-[#1a80a2]/90">
                       <Plus className="h-4 w-4 mr-2" />
                       Add Your First Client
                     </Button>
                   }
-                >
-                  <ClientForm
-                    onSuccess={handleCreateSuccess}
-                    onCancel={() => setIsCreateDialogOpen(false)}
-                  />
-                </StandardDialog>
+                />
               </div>
             ) : (
               <Table>

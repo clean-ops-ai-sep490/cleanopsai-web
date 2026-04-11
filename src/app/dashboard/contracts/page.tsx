@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,41 +11,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { StandardDialog } from "@/components/ui/standard-dialog";
+import { CreateContractDialog } from "@/components/contracts/dialogs/CreateContractDialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus, FileText, MapPin } from "lucide-react";
-import { getContracts } from "@/lib/contract-api";
-import { getClients } from "@/lib/client-api";
-import { ContractForm } from "@/components/contracts/ContractForm";
+import { useContractsPage } from "@/hooks/useContractsPage";
 
 export default function ContractsPage() {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-
-  // Fetch contracts and clients
-  const { data: contracts = [], isLoading: contractsLoading } = useQuery({
-    queryKey: ["contracts"],
-    queryFn: getContracts,
-  });
-
-  const { data: clients = [] } = useQuery({
-    queryKey: ["clients"],
-    queryFn: getClients,
-  });
-
-  // Helper function to get client name
-  const getClientName = (clientId: string) => {
-    const client = clients.find((c) => c.id === clientId);
-    return client?.name || "Unknown Client";
-  };
-
-  const handleCreateSuccess = () => {
-    setIsCreateDialogOpen(false);
-  };
-
-  const handleViewContract = (contractId: string) => {
-    // This could also be a modal in the future
-    console.log("View contract:", contractId);
-  };
+  const {
+    contracts,
+    clients,
+    contractsLoading,
+    clientsLoading,
+    isCreateDialogOpen,
+    setIsCreateDialogOpen,
+    handleCreateSuccess,
+    handleViewContract,
+  } = useContractsPage();
 
   if (contractsLoading) {
     return (
@@ -84,22 +63,19 @@ export default function ContractsPage() {
               Quản lý hợp đồng và thông tin khách hàng
             </p>
           </div>
-          <StandardDialog
-            open={isCreateDialogOpen}
-            onOpenChange={setIsCreateDialogOpen}
-            title="Create New Contract"
+          <CreateContractDialog
+            isOpen={isCreateDialogOpen}
+            onClose={() => setIsCreateDialogOpen(false)}
+            onSuccess={handleCreateSuccess}
+            clients={clients}
+            clientsLoading={clientsLoading}
             trigger={
               <Button className="bg-[#1a80a2] hover:bg-[#1a80a2]/90">
                 <Plus className="h-4 w-4 mr-2" />
                 Tạo Hợp Đồng
               </Button>
             }
-          >
-            <ContractForm
-              onSuccess={handleCreateSuccess}
-              onCancel={() => setIsCreateDialogOpen(false)}
-            />
-          </StandardDialog>
+          />
         </div>
 
         {/* Contracts Table */}
@@ -118,22 +94,19 @@ export default function ContractsPage() {
                   Get started by creating your first contract and setting up
                   locations.
                 </p>
-                <StandardDialog
-                  open={isCreateDialogOpen}
-                  onOpenChange={setIsCreateDialogOpen}
-                  title="Create New Contract"
+                <CreateContractDialog
+                  isOpen={isCreateDialogOpen}
+                  onClose={() => setIsCreateDialogOpen(false)}
+                  onSuccess={handleCreateSuccess}
+                  clients={clients}
+                  clientsLoading={clientsLoading}
                   trigger={
                     <Button className="bg-[#1a80a2] hover:bg-[#1a80a2]/90">
                       <Plus className="h-4 w-4 mr-2" />
                       Create Your First Contract
                     </Button>
                   }
-                >
-                  <ContractForm
-                    onSuccess={handleCreateSuccess}
-                    onCancel={() => setIsCreateDialogOpen(false)}
-                  />
-                </StandardDialog>
+                />
               </div>
             ) : (
               <Table>
@@ -162,7 +135,7 @@ export default function ContractsPage() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{getClientName(contract.clientId)}</TableCell>
+                      <TableCell>{contract.clientName}</TableCell>
                       <TableCell>
                         <Badge
                           variant="default"

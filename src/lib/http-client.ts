@@ -99,7 +99,19 @@ class HttpClient {
     if (response.status === 204) {
       return undefined as T;
     }
-    return response.json() as Promise<T>;
+
+    const text = await response.text();
+    if (!text) {
+      // If response is empty, return null instead of undefined for GET requests
+      return null as T;
+    }
+
+    try {
+      return JSON.parse(text) as T;
+    } catch (error) {
+      // If JSON parsing fails, throw an error
+      throw new Error(`Invalid JSON response: ${text}`);
+    }
   }
 
   private async request<T>(

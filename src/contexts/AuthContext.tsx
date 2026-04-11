@@ -42,6 +42,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     try {
       const me = await getMe();
+      console.log("=== AuthContext: User fetched ===");
+      console.log("User data from API:", me);
+      console.log("User role:", me.role, `(type: ${typeof me.role})`);
+      console.log("================================");
       setUser(me);
     } catch {
       setUser(null);

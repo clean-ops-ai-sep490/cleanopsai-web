@@ -6,8 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { TimePicker } from "@/components/ui/time-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Clock, Users, Plus, Trash2 } from "lucide-react";
 import type { SLAStaffRequirement } from "@/types/sla";
+import { PREDEFINED_SHIFTS, type WorkShift } from "@/types/work-shifts";
 
 interface StaffRequirementStepProps {
   staffRequirements: SLAStaffRequirement[];
@@ -41,6 +49,26 @@ export function StaffRequirementStep({
       return req;
     });
     onStaffRequirementsChange(updated);
+  };
+
+  const handleShiftSelect = (index: number, shiftId: string) => {
+    const selectedShift = PREDEFINED_SHIFTS.find(
+      (shift) => shift.id === shiftId,
+    );
+    if (selectedShift) {
+      const updated = staffRequirements.map((req, i) => {
+        if (i === index) {
+          return {
+            ...req,
+            name: selectedShift.name,
+            startTime: selectedShift.startTime,
+            endTime: selectedShift.endTime,
+          };
+        }
+        return req;
+      });
+      onStaffRequirementsChange(updated);
+    }
   };
 
   const removeStaffRequirement = (index: number) => {
@@ -85,8 +113,10 @@ export function StaffRequirementStep({
           <h2 className="text-xl font-semibold text-black">
             Ca làm việc và nhân sự
           </h2>
-          <Button onClick={addStaffRequirement} variant="outline" size="sm">
-            <Plus className="h-4 w-4 mr-2" />
+          <Button
+            onClick={addStaffRequirement}
+            className="bg-[#1a80a2] hover:bg-[#1a80a2]/90"
+          >
             Thêm ca làm việc
           </Button>
         </div>
@@ -98,30 +128,31 @@ export function StaffRequirementStep({
               Chưa có ca làm việc
             </h3>
             <p className="text-gray-600 mb-4">Thêm ca làm việc đầu tiên</p>
-            <Button
-              onClick={addStaffRequirement}
-              className="bg-[#1a80a2] hover:bg-[#1a80a2]/90"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Thêm ca làm việc
-            </Button>
           </div>
         ) : (
           <div className="space-y-4">
             {staffRequirements.map((requirement, index) => (
-              <Card key={index} className="border">
+              <Card key={index}>
                 <CardContent className="pt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor={`name-${index}`}>Tên ca làm việc</Label>
-                      <Input
-                        id={`name-${index}`}
-                        placeholder="VD: Ca sáng"
-                        value={requirement.name}
-                        onChange={(e) =>
-                          updateStaffRequirement(index, "name", e.target.value)
+                      <Label htmlFor={`shift-${index}`}>Chọn ca làm việc</Label>
+                      <Select
+                        onValueChange={(value) =>
+                          handleShiftSelect(index, value)
                         }
-                      />
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Chọn ca" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PREDEFINED_SHIFTS.map((shift) => (
+                            <SelectItem key={shift.id} value={shift.id}>
+                              {shift.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="space-y-2">

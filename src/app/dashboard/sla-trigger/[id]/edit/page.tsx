@@ -1,47 +1,79 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useSLAEdit } from "@/hooks/useSLAEdit";
+import { useSLA, useUpdateSLA } from "@/hooks/useSLAQuery";
 
 export default function EditSLAPage() {
   const params = useParams();
-  const { sla, loading, saving, formData, handleSubmit, handleInputChange } =
-    useSLAEdit(params.id as string);
+  const router = useRouter();
+  const slaId = params.id as string;
 
-  if (loading) {
+  const { data: sla, isLoading, error } = useSLA(slaId);
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+  });
+
+  const updateSLAMutation = useUpdateSLA((updatedSLA) => {
+    router.push(`/dashboard/sla-trigger/${updatedSLA.id}`);
+  });
+
+  // Update form data when SLA loads
+  useEffect(() => {
+    if (sla) {
+      setFormData({
+        name: sla.name,
+        description: sla.description || "",
+      });
+    }
+  }, [sla]);
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sla) return;
+    updateSLAMutation.mutate({ id: sla.id, data: formData });
+  };
+
+  if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1a80a2] mx-auto"></div>
-            <p className="mt-2 text-gray-600">Đang tải...</p>
-          </div>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-[#1a80a2]" />
+          <span className="ml-2 text-[#70808f]">Đang tải SLA...</span>
         </div>
       </DashboardLayout>
     );
   }
 
-  if (!sla) {
+  if (error || !sla) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <p className="text-gray-600">Không tìm thấy SLA</p>
-            <Link href="/dashboard/sla-trigger">
-              <Button variant="outline" className="mt-4">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Quay lại danh sách
-              </Button>
-            </Link>
-          </div>
+        <div className="text-center py-12">
+          <p className="text-red-500 mb-4">
+            {error?.message?.includes("404")
+              ? "SLA không tồn tại hoặc đã bị xóa"
+              : "Không thể tải thông tin SLA"}
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => router.push("/dashboard/sla-trigger")}
+            className="border-[#e5e5e5]"
+          >
+            Quay lại danh sách
+          </Button>
         </div>
       </DashboardLayout>
     );
@@ -103,10 +135,10 @@ export default function EditSLAPage() {
                     Hủy
                   </Button>
                 </Link>
-                <Button type="submit" disabled={saving}>
-                  {saving ? (
+                <Button type="submit" disabled={updateSLAMutation.isPending}>
+                  {updateSLAMutation.isPending ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
                       Đang lưu...
                     </>
                   ) : (

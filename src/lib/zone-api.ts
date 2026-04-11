@@ -1,6 +1,10 @@
+import { createSearchableApi } from "./api-crud-factory";
+import { parseArrayResponse } from "./api-response-parser";
 import { api } from "./api";
 import type { Zone, ZoneFormData } from "@/types/contract";
+import type { PaginatedRequest } from "@/types/common";
 
+// Legacy interfaces for backward compatibility
 export interface ZonesPaginatedResponse {
   items: Zone[];
   totalCount: number;
@@ -8,86 +12,75 @@ export interface ZonesPaginatedResponse {
   pageSize: number;
 }
 
-export interface ZonesPaginatedRequest {
-  pageNumber?: number;
-  pageSize?: number;
-  search?: string;
+export interface ZonesPaginatedRequest extends PaginatedRequest {
   locationId?: string;
 }
 
+// Create CRUD API using factory with consistent endpoint casing
+const zoneApi = createSearchableApi<Zone, ZoneFormData, ZoneFormData>("/Zones");
+
+// Export individual functions for backward compatibility
+export const {
+  create: createZone,
+  getById: getZoneById,
+  update: updateZone,
+  delete: deleteZone,
+  getAll: getZones,
+  getPaginated: getZonesPaginatedNew,
+  search: searchZones,
+} = zoneApi;
+
+// Legacy function for backward compatibility with location-specific endpoint
 export async function getZonesPaginated(
   params: ZonesPaginatedRequest = {},
 ): Promise<ZonesPaginatedResponse> {
-  const { pageNumber = 1, pageSize = 50, search, locationId } = params;
-
-  let url = "/Zones";
-  const queryParams = new URLSearchParams({
-    pageNumber: pageNumber.toString(),
-    pageSize: pageSize.toString(),
-  });
-
-  // Use specific endpoint for location-based filtering
-  if (locationId) {
-    url = `/Zones/location/${locationId}`;
-  }
-
-  if (search) {
-    queryParams.append("search", search);
-  }
+  const { pageNumber = 1, pageSize = 50, search, locationId, ...rest } = params;
 
   try {
-    const response = await api.get<any>(`${url}?${queryParams.toString()}`);
+    let response;
 
-    console.log("Raw Zones API response:", response);
+    // Use specific endpoint for location-based filtering
+    if (locationId) {
+      const queryParams = new URLSearchParams({
+        pageNumber: pageNumber.toString(),
+        pageSize: pageSize.toString(),
+      });
 
-    // Handle different response formats - prioritize 'content' for consistency
-    if (response && Array.isArray(response.content)) {
-      console.log("Found content array:", response.content);
+      if (search) {
+        queryParams.append("search", search);
+      }
+
+      response = await api.get<any>(
+        `/Zones/location/${locationId}?${queryParams.toString()}`,
+      );
+
+      // Parse response using centralized parser
+      const items = parseArrayResponse<Zone>(response);
+
       return {
-        items: response.content,
-        totalCount: response.totalElements || response.content.length,
-        pageNumber: response.pageNumber || pageNumber,
-        pageSize: response.pageSize || pageSize,
-      };
-    }
-
-    if (response && Array.isArray(response.items)) {
-      console.log("Found items array:", response.items);
-      return {
-        items: response.items,
-        totalCount: response.totalCount || response.items.length,
-        pageNumber: response.pageNumber || pageNumber,
-        pageSize: response.pageSize || pageSize,
-      };
-    }
-
-    if (Array.isArray(response)) {
-      console.log("Response is direct array:", response);
-      return {
-        items: response,
-        totalCount: response.length,
+        items,
+        totalCount: items.length,
         pageNumber,
         pageSize,
       };
-    }
-
-    if (response && Array.isArray(response.data)) {
-      console.log("Found data array:", response.data);
-      return {
-        items: response.data,
-        totalCount: response.data.length,
+    } else {
+      // Use standard CRUD API
+      const paginatedResponse = await zoneApi.getPaginated(
         pageNumber,
         pageSize,
+        {
+          search,
+          ...rest,
+        },
+      );
+
+      return {
+        items: paginatedResponse.content,
+        totalCount: paginatedResponse.totalElements,
+        pageNumber: paginatedResponse.pageNumber,
+        pageSize: paginatedResponse.pageSize,
       };
     }
-
-    console.log("Unexpected Zones API response structure:", response);
-    return {
-      items: [],
-      totalCount: 0,
-      pageNumber,
-      pageSize,
-    };
   } catch (error) {
     console.error("Failed to load zones:", error);
     return {
@@ -97,46 +90,4 @@ export async function getZonesPaginated(
       pageSize,
     };
   }
-}
-
-export async function createZone(data: ZoneFormData): Promise<Zone> {
-  return api.post<Zone>("/Zones", data);
-}
-
-export async function getZones(): Promise<Zone[]> {
-  const response = await api.get<Zone[] | { data: Zone[] } | any>("/Zones");
-
-  if (Array.isArray(response)) {
-    return response;
-  }
-
-  if (response && Array.isArray(response.content)) {
-    return response.content;
-  }
-
-  if (response && Array.isArray(response.data)) {
-    return response.data;
-  }
-
-  if (response && Array.isArray(response.items)) {
-    return response.items;
-  }
-
-  console.log("Unexpected Zones API response structure:", response);
-  return [];
-}
-
-export async function getZoneById(id: string): Promise<Zone> {
-  return api.get<Zone>(`/Zones/${id}`);
-}
-
-export async function updateZone(
-  id: string,
-  data: ZoneFormData,
-): Promise<Zone> {
-  return api.put<Zone>(`/Zones/${id}`, data);
-}
-
-export async function deleteZone(id: string): Promise<void> {
-  return api.delete(`/Zones/${id}`);
 }

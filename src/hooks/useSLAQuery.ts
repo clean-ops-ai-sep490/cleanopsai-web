@@ -1,0 +1,84 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+  getSLAById,
+  updateSLA,
+  deleteSLA,
+  getSLAShiftsBySLA,
+  getSLATasksBySLA,
+} from "@/lib/sla-api";
+import type { SLA } from "@/types/sla";
+
+// Get single SLA
+export function useSLA(id: string, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ["slas", id],
+    queryFn: () => getSLAById(id),
+    enabled: options?.enabled !== undefined ? options.enabled : !!id,
+  });
+}
+
+// Get SLA with related data
+export function useSLAWithDetails(id: string) {
+  const slaQuery = useSLA(id);
+
+  const shiftsQuery = useQuery({
+    queryKey: ["sla-shifts", id],
+    queryFn: () => getSLAShiftsBySLA(id),
+    enabled: !!id,
+  });
+
+  const tasksQuery = useQuery({
+    queryKey: ["sla-tasks", id],
+    queryFn: () => getSLATasksBySLA(id),
+    enabled: !!id,
+  });
+
+  return {
+    sla: slaQuery.data,
+    shifts: shiftsQuery.data || [],
+    tasks: tasksQuery.data || [],
+    isLoading:
+      slaQuery.isLoading || shiftsQuery.isLoading || tasksQuery.isLoading,
+    error: slaQuery.error || shiftsQuery.error || tasksQuery.error,
+  };
+}
+
+// Update SLA
+export function useUpdateSLA(onSuccess?: (sla: SLA) => void) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      updateSLA(id, data),
+    onSuccess: (data, variables) => {
+      toast.success("Cập nhật SLA thành công!");
+      queryClient.invalidateQueries({ queryKey: ["slas"] });
+      queryClient.invalidateQueries({ queryKey: ["slas", variables.id] });
+      onSuccess?.(data);
+    },
+    onError: (error) => {
+      toast.error("Không thể cập nhật SLA");
+      console.error("SLA update error:", error);
+    },
+  });
+}
+
+// Delete SLA
+export function useDeleteSLA(onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteSLA,
+    onSuccess: (_, deletedId) => {
+      toast.success("Đã xóa SLA thành công");
+      queryClient.removeQueries({ queryKey: ["slas", deletedId] });
+      queryClient.invalidateQueries({ queryKey: ["slas"] });
+      onSuccess?.();
+    },
+    onError: (error) => {
+      toast.error("Không thể xóa SLA");
+      console.error("SLA deletion error:", error);
+    },
+  });
+}

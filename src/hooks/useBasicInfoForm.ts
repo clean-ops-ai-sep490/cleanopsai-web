@@ -1,14 +1,25 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState, useRef } from "react";
 import type { SLABasicInfo } from "@/types/sla";
 import type { WorkArea, Zone } from "@/types/contract";
 import { useBasicInfoData } from "./useBasicInfoData";
 import { getZonesPaginated } from "@/lib/zone-api";
 import { getWorkAreasPaginated } from "@/lib/work-area-api";
+import { getLocationsByClientId } from "@/lib/location-api";
 
 export function useBasicInfoForm(
   data: SLABasicInfo,
   onChange: (data: SLABasicInfo) => void,
 ) {
+  const [locationName, setLocationName] = useState<string>("");
+  const onChangeRef = useRef(onChange);
+  const dataRef = useRef(data);
+
+  // Keep refs up to date
+  useEffect(() => {
+    onChangeRef.current = onChange;
+    dataRef.current = data;
+  });
+
   const {
     selectedContract,
     selectedWorkArea,
@@ -16,51 +27,125 @@ export function useBasicInfoForm(
     selectedZone,
     selectedLocation,
     loadContracts,
-    loadWorkAreas,
     loadEnvironmentTypes,
-    loadZones,
-    loadLocations,
     loadSelectedContract,
     loadSelectedWorkArea,
     loadSelectedEnvironmentType,
     loadSelectedZone,
-    loadSelectedLocation,
   } = useBasicInfoData();
+
+  const getLocationNameByClientId = useCallback(
+    async (clientId: string) => {
+      try {
+        console.log("Loading location for clientId:", clientId);
+        const response = await getLocationsByClientId(clientId, {
+          pageNumber: 1,
+          pageSize: 1,
+        });
+
+        if (response.items && response.items.length > 0) {
+          const firstLocation = response.items[0];
+          console.log("Found location:", firstLocation.name);
+          setLocationName(firstLocation.name);
+          onChangeRef.current({
+            ...dataRef.current,
+            locationId: firstLocation.id || "",
+            zoneId: "",
+            workAreaId: "",
+          });
+        } else {
+          console.log("No location found for clientId:", clientId);
+          setLocationName("");
+          onChangeRef.current({
+            ...dataRef.current,
+            locationId: "",
+            zoneId: "",
+            workAreaId: "",
+          });
+        }
+      } catch (error) {
+        console.error("Failed to get location by clientId:", error);
+        setLocationName("");
+        onChangeRef.current({
+          ...dataRef.current,
+          locationId: "",
+          zoneId: "",
+          workAreaId: "",
+        });
+      }
+    },
+    [], // No dependencies - stable function
+  );
 
   // Load selected items when IDs change
   useEffect(() => {
-    if (data.contractId) {
+    if (data.contractId && selectedContract?.id !== data.contractId) {
       loadSelectedContract(data.contractId);
     }
-  }, [data.contractId]);
+  }, [data.contractId, selectedContract?.id, loadSelectedContract]);
+
+  // Trigger location loading when contract is loaded and matches current contractId
+  useEffect(() => {
+    if (
+      data.contractId &&
+      selectedContract?.id === data.contractId &&
+      selectedContract?.clientId
+    ) {
+      console.log(
+        "Contract loaded and matches, loading location for clientId:",
+        selectedContract.clientId,
+      );
+      getLocationNameByClientId(selectedContract.clientId);
+    } else if (!data.contractId) {
+      // Clear location when no contract is selected
+      setLocationName("");
+    }
+  }, [
+    data.contractId,
+    selectedContract?.id,
+    selectedContract?.clientId,
+    getLocationNameByClientId,
+  ]);
 
   useEffect(() => {
-    if (data.workAreaId) {
+    if (data.workAreaId && selectedWorkArea?.id !== data.workAreaId) {
       loadSelectedWorkArea(data.workAreaId);
     }
-  }, [data.workAreaId]);
+  }, [data.workAreaId, selectedWorkArea?.id, loadSelectedWorkArea]);
 
   useEffect(() => {
-    if (data.environmentTypeId) {
+    if (
+      data.environmentTypeId &&
+      selectedEnvironmentType?.id !== data.environmentTypeId
+    ) {
       loadSelectedEnvironmentType(data.environmentTypeId);
     }
-  }, [data.environmentTypeId]);
+  }, [
+    data.environmentTypeId,
+    selectedEnvironmentType?.id,
+    loadSelectedEnvironmentType,
+  ]);
 
   useEffect(() => {
-    if (data.locationId) {
-      loadSelectedLocation(data.locationId);
-    }
-  }, [data.locationId]);
-
-  useEffect(() => {
-    if (data.zoneId) {
+    if (data.zoneId && selectedZone?.id !== data.zoneId) {
       loadSelectedZone(data.zoneId);
     }
-  }, [data.zoneId]);
+  }, [data.zoneId, selectedZone?.id, loadSelectedZone]);
 
   const handleInputChange = (field: keyof SLABasicInfo, value: string) => {
     // Handle hierarchical clearing based on field changes
-    if (field === "locationId") {
+    if (field === "contractId") {
+      // When contract changes, clear all dependent fields immediately
+      console.log("Contract changing to:", value);
+      setLocationName(""); // Clear location name immediately
+      onChange({
+        ...data,
+        [field]: value,
+        locationId: "",
+        zoneId: "",
+        workAreaId: "",
+      });
+    } else if (field === "locationId") {
       onChange({ ...data, [field]: value, zoneId: "", workAreaId: "" });
     } else if (field === "zoneId") {
       onChange({ ...data, [field]: value, workAreaId: "" });
@@ -79,11 +164,8 @@ export function useBasicInfoForm(
   // Create filtered loaders based on hierarchical selection
   const loadFilteredZones = useCallback(
     async (search?: string) => {
-      console.log("loadFilteredZones called with locationId:", data.locationId);
-
       // If no location is selected, return empty list
       if (!data.locationId) {
-        console.log("No locationId, returning empty zones");
         return {
           items: [],
           totalCount: 0,
@@ -91,10 +173,6 @@ export function useBasicInfoForm(
       }
 
       try {
-        console.log(
-          "Calling getZonesPaginated with locationId:",
-          data.locationId,
-        );
         const response = await getZonesPaginated({
           pageNumber: 1,
           pageSize: 100,
@@ -102,23 +180,17 @@ export function useBasicInfoForm(
           locationId: data.locationId,
         });
 
-        console.log("Filtered zones response:", response);
-
         const validZones = (response.items || [])
           .filter((zone): zone is Zone & { id: string } => {
-            // Check for different possible id field names
             const hasId =
               zone &&
               (zone.id !== undefined ||
                 (zone as any).Id !== undefined ||
                 (zone as any).ID !== undefined ||
                 (zone as any).zoneId !== undefined);
-
-            console.log("Zone item:", zone, "hasId:", hasId);
             return hasId;
           })
           .map((zone) => {
-            // Normalize the id field
             const normalizedZone = { ...zone };
             if (!normalizedZone.id) {
               normalizedZone.id =
@@ -126,8 +198,6 @@ export function useBasicInfoForm(
             }
             return normalizedZone as Zone & { id: string };
           });
-
-        console.log("Valid zones after filter:", validZones);
 
         return {
           items: validZones,
@@ -142,16 +212,13 @@ export function useBasicInfoForm(
       }
     },
     [data.locationId],
-  ); // Re-create when locationId changes
+  );
 
   // Create a filtered work areas loader based on selected zone
   const loadFilteredWorkAreas = useCallback(
     async (search?: string) => {
-      console.log("loadFilteredWorkAreas called with zoneId:", data.zoneId);
-
       // If no zone is selected, return empty list
       if (!data.zoneId) {
-        console.log("No zoneId, returning empty work areas");
         return {
           items: [],
           totalCount: 0,
@@ -159,16 +226,12 @@ export function useBasicInfoForm(
       }
 
       try {
-        console.log("Calling getWorkAreasPaginated with zoneId:", data.zoneId);
-        // Use the zone-specific endpoint
         const response = await getWorkAreasPaginated({
           pageNumber: 1,
           pageSize: 1000,
           search,
           zoneId: data.zoneId,
         });
-
-        console.log("Filtered work areas response:", response);
 
         const validWorkAreas = (response.items || []).filter(
           (workArea): workArea is WorkArea & { id: string } =>
@@ -188,7 +251,7 @@ export function useBasicInfoForm(
       }
     },
     [data.zoneId],
-  ); // Re-create when zoneId changes
+  );
 
   return {
     selectedContract,
@@ -196,11 +259,11 @@ export function useBasicInfoForm(
     selectedEnvironmentType,
     selectedZone,
     selectedLocation,
+    locationName,
     loadContracts,
     loadWorkAreas: loadFilteredWorkAreas,
     loadEnvironmentTypes,
     loadZones: loadFilteredZones,
-    loadLocations,
     handleInputChange,
     formatWorkAreaDisplay,
   };

@@ -16,16 +16,11 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
   const [loading, setLoading] = useState(true);
 
   const {
-    selectedContract,
-    selectedWorkArea,
-    selectedEnvironmentType,
-    selectedZone,
-    selectedLocation,
+    locationName,
     loadContracts,
     loadWorkAreas,
     loadEnvironmentTypes,
     loadZones,
-    loadLocations,
     handleInputChange,
     formatWorkAreaDisplay,
   } = useBasicInfoForm(data, onChange);
@@ -74,6 +69,20 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="locationId">Địa điểm</Label>
+            <Input
+              id="locationId"
+              value={locationName}
+              placeholder={
+                data.contractId && !locationName
+                  ? "Đang tải địa điểm..."
+                  : "Được chọn từ hợp đồng"
+              }
+              readOnly
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="environmentTypeId">Loại môi trường</Label>
             <SearchableSelect
               value={data.environmentTypeId}
@@ -84,18 +93,6 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
               searchPlaceholder="Tìm kiếm loại môi trường..."
               emptyMessage="Không tìm thấy loại môi trường nào."
               loadItems={loadEnvironmentTypes}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="locationId">Địa điểm</Label>
-            <SearchableSelect
-              value={data.locationId}
-              onValueChange={(value) => handleInputChange("locationId", value)}
-              placeholder="Chọn địa điểm"
-              searchPlaceholder="Tìm kiếm địa điểm..."
-              emptyMessage="Không tìm thấy địa điểm nào."
-              loadItems={loadLocations}
             />
           </div>
 
@@ -129,7 +126,7 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
       </div>
 
       {/* Summary Card */}
-      {data.contractId &&
+      {/* {data.contractId &&
         data.slaName &&
         data.locationId &&
         data.zoneId &&
@@ -182,7 +179,7 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
               </div>
             </div>
           </div>
-        )}
+        )} */}
     </div>
   );
 }
