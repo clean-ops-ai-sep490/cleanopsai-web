@@ -24,13 +24,13 @@ const navigation = [
         name: "Dashboard",
         href: "/dashboard",
         icon: LayoutDashboard,
-        roles: ["0", "1"], // Admin, Manager
+        roles: ["1"], // Admin, Manager
       },
       {
         name: "Sự cố & Yêu cầu",
         href: "/dashboard/incidents",
         icon: AlertTriangle,
-        roles: ["0", "1"], // Admin, Manager
+        roles: [ "1"], // Admin, Manager
       },
     ],
   },
@@ -41,19 +41,19 @@ const navigation = [
         name: "SLA Trigger",
         href: "/dashboard/sla-trigger",
         icon: Zap,
-        roles: ["0", "1"], // Admin, Manager
+        roles: [ "1"], // Admin, Manager
       },
       {
         name: "Workflow Builder",
         href: "/dashboard/workflow",
         icon: Workflow,
-        roles: ["0", "1"], // Admin, Manager
+        roles: [ "1"], // Admin, Manager
       },
       {
         name: "Task Schedule",
         href: "/dashboard/task-schedule",
         icon: Calendar,
-        roles: ["0", "1"], // Admin, Manager
+        roles: [ "1"], // Admin, Manager
       },
     ],
   },
@@ -64,7 +64,7 @@ const navigation = [
         name: "Tìm nhân sự",
         href: "/dashboard/staff-search",
         icon: Users,
-        roles: ["0", "1"], // Admin, Manager
+        roles: [ "1"], // Admin, Manager
       },
     ],
   },
@@ -75,13 +75,13 @@ const navigation = [
         name: "Hợp đồng",
         href: "/dashboard/contracts",
         icon: FileText,
-        roles: ["0", "1"], // Admin, Manager
+        roles: [ "1"], // Admin, Manager
       },
       {
         name: "Khách hàng",
         href: "/dashboard/clients",
         icon: Building2,
-        roles: ["0", "1"], // Admin, Manager
+        roles: [ "1"], // Admin, Manager
       },
     ],
   },

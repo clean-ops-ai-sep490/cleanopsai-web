@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { getMe } from "@/lib/auth-api";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
@@ -19,7 +20,21 @@ export default function LoginPage() {
 
     try {
       await login({ email, password });
-      router.push("/dashboard");
+      // Fetch fresh user from API to determine redirect target
+      try {
+        const me = await getMe();
+        const roleStr = String(me.role ?? "").trim();
+        const lower = roleStr.toLowerCase();
+        const isSupporter = roleStr === "4" || roleStr === "Supporter" || lower === "supporter";
+        if (isSupporter) {
+          router.push("/support/equipments");
+        } else {
+          router.push("/dashboard");
+        }
+      } catch (err) {
+        // fallback
+        router.push("/dashboard");
+      }
     } catch {
       setError("Invalid email or password");
     } finally {

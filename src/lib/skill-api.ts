@@ -9,15 +9,36 @@ const skillApi = createSearchableApi<Skill, CreateSkillData, UpdateSkillData>(
   "/Skills",
 );
 
-// Export individual functions for backward compatibility
-export const {
-  create: createSkill,
-  getById: getSkillById,
-  update: updateSkill,
-  delete: deleteSkill,
-  getAll: getAllSkills,
-  search: searchSkills,
-} = skillApi;
+// Explicit wrappers for CRUD/search to match backend behavior
+export async function createSkill(data: CreateSkillData): Promise<Skill> {
+  return skillApi.create(data);
+}
+
+export async function getSkillById(id: string): Promise<Skill> {
+  return skillApi.getById(id);
+}
+
+export async function updateSkill(id: string, data: UpdateSkillData): Promise<Skill> {
+  return skillApi.update(id, data);
+}
+
+export async function deleteSkill(id: string): Promise<number> {
+  const result = await api.delete<number>(`/Skills/${encodeURIComponent(id)}`);
+  return result ?? 0;
+}
+
+export async function getAllSkills(): Promise<Skill[]> {
+  return skillApi.getAll();
+}
+
+export async function searchSkills(
+  query: string,
+  pageNumber: number = 1,
+  pageSize: number = 10,
+  additionalParams: Record<string, any> = {},
+): Promise<PaginatedResponse<Skill>> {
+  return skillApi.search(query, pageNumber, pageSize, additionalParams);
+}
 
 // Custom paginated function to maintain existing interface
 export async function getSkills(
@@ -46,5 +67,20 @@ export async function getSkillsByCategoryId(
   const response = await api.get<any>(
     `/Skills/by-category?category=${encodeURIComponent(category)}`,
   );
+  return parseArrayResponse<Skill>(response);
+}
+
+// Get skills by a list of ids
+export async function getSkillsByIds(ids: string[]): Promise<Skill[]> {
+  if (!ids || ids.length === 0) return [];
+  const query = ids.map((id) => `ids=${encodeURIComponent(id)}`).join("&");
+  const response = await api.get<any>(`/Skills/batch?${query}`);
+  return parseArrayResponse<Skill>(response);
+}
+
+// Get skills for a specific worker
+export async function getSkillsByWorkerId(workerId: string): Promise<Skill[]> {
+  if (!workerId) return [];
+  const response = await api.get<any>(`/Skills/worker/${encodeURIComponent(workerId)}/skills`);
   return parseArrayResponse<Skill>(response);
 }
