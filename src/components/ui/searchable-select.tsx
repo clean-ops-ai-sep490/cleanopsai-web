@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown, Search } from "lucide-react";
+import { Check, ChevronsUpDown, Search, Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useInfiniteSelect } from "@/hooks/useInfiniteSelect";
+import type { PaginatedResponse } from "@/types/common";
 
 // SearchableSelect interface
 export interface SearchableSelectItem {
@@ -25,8 +27,20 @@ interface SearchableSelectProps<T extends SearchableSelectItem> {
   emptyMessage?: string;
   className?: string;
   disabled?: boolean;
-  loadItems: (search?: string) => Promise<{ items: T[]; totalCount: number }>;
+  // Legacy support - will be converted to infinite loading
+  loadItems?: (search?: string) => Promise<{ items: T[]; totalCount: number }>;
+  // New infinite loading props
+  queryKey?: (string | number)[];
+  queryFn?: (
+    page: number,
+    pageSize: number,
+    searchQuery?: string,
+    filters?: Record<string, any>,
+  ) => Promise<PaginatedResponse<T>>;
   displayFormatter?: (item: T) => string;
+  filters?: Record<string, any>;
+  pageSize?: number;
+  useInfiniteLoading?: boolean;
 }
 
 export function SearchableSelect<T extends SearchableSelectItem>({
@@ -38,23 +52,75 @@ export function SearchableSelect<T extends SearchableSelectItem>({
   className,
   disabled = false,
   loadItems,
+  queryKey,
+  queryFn,
   displayFormatter,
+  filters = {},
+  pageSize = 20,
+  useInfiniteLoading = false,
 }: SearchableSelectProps<T>) {
   const [open, setOpen] = React.useState(false);
-  const [items, setItems] = React.useState<T[]>([]);
-  const [loading, setLoading] = React.useState(false);
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [filteredItems, setFilteredItems] = React.useState<T[]>([]);
   const [selectedIndex, setSelectedIndex] = React.useState(-1);
-  const [cachedSelectedItem, setCachedSelectedItem] = React.useState<T | null>(
-    null,
-  );
   const [popoverWidth, setPopoverWidth] = React.useState<number | undefined>();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
 
+  // Legacy state for non-infinite loading
+  const [items, setItems] = React.useState<T[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [filteredItems, setFilteredItems] = React.useState<T[]>([]);
+  const [cachedSelectedItem, setCachedSelectedItem] = React.useState<T | null>(
+    null,
+  );
+
+  // Always call useInfiniteSelect hook, but conditionally enable it
+  const infiniteSelect = useInfiniteSelect<T>({
+    queryKey: queryKey || ["default"],
+    queryFn:
+      queryFn ||
+      (() =>
+        Promise.resolve({
+          content: [],
+          pageNumber: 1,
+          pageSize: 0,
+          totalElements: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        })),
+    pageSize,
+    filters,
+    enabled: open && useInfiniteLoading && !!queryKey && !!queryFn,
+  });
+
+  // Use infinite loading data if enabled and available, otherwise use legacy data
+  const shouldUseInfiniteLoading = useInfiniteLoading && queryKey && queryFn;
+  const displayItems = shouldUseInfiniteLoading
+    ? infiniteSelect.items
+    : filteredItems;
+  const isLoading = shouldUseInfiniteLoading
+    ? infiniteSelect.isLoading
+    : loading;
+  const isFetchingMore = shouldUseInfiniteLoading
+    ? infiniteSelect.isFetchingNextPage
+    : false;
+  const hasNextPage = shouldUseInfiniteLoading
+    ? infiniteSelect.hasNextPage
+    : false;
+  const isError = shouldUseInfiniteLoading ? infiniteSelect.isError : false;
+  const currentSearchQuery = shouldUseInfiniteLoading
+    ? infiniteSelect.searchQuery
+    : searchQuery;
+  const setCurrentSearchQuery = shouldUseInfiniteLoading
+    ? infiniteSelect.setSearchQuery
+    : setSearchQuery;
+
+  // Legacy data loading function
   const loadData = React.useCallback(async () => {
+    if (!loadItems || useInfiniteLoading) return;
+
     setLoading(true);
     try {
       const response = await loadItems();
@@ -67,17 +133,17 @@ export function SearchableSelect<T extends SearchableSelectItem>({
     } finally {
       setLoading(false);
     }
-  }, [loadItems]);
+  }, [loadItems, useInfiniteLoading]);
 
   // Cache selected item when items are loaded
   React.useEffect(() => {
-    if (value && items.length > 0) {
-      const selectedItem = items.find((item) => item.id === value);
+    if (value && displayItems.length > 0) {
+      const selectedItem = displayItems.find((item) => item.id === value);
       if (selectedItem) {
         setCachedSelectedItem(selectedItem);
       }
     }
-  }, [value, items]);
+  }, [value, displayItems]);
 
   // Clear cached item when value is cleared
   React.useEffect(() => {
@@ -86,20 +152,28 @@ export function SearchableSelect<T extends SearchableSelectItem>({
     }
   }, [value]);
 
-  // Reset items when loadItems function changes (e.g., when locationId changes)
+  // Reset items when loadItems function changes (legacy mode)
   React.useEffect(() => {
-    setItems([]);
-    setFilteredItems([]);
-  }, [loadItems]);
+    if (!useInfiniteLoading) {
+      setItems([]);
+      setFilteredItems([]);
+    }
+  }, [loadItems, useInfiniteLoading]);
 
+  // Load data when popover opens (legacy mode)
   React.useEffect(() => {
-    if ((open && items.length === 0) || (value && items.length === 0)) {
+    if (
+      !useInfiniteLoading &&
+      ((open && items.length === 0) || (value && items.length === 0))
+    ) {
       loadData();
     }
-  }, [open, loadData, items.length, value]);
+  }, [open, loadData, items.length, value, useInfiniteLoading]);
 
-  // Filter items based on search query
+  // Filter items based on search query (legacy mode)
   React.useEffect(() => {
+    if (useInfiniteLoading) return;
+
     if (!searchQuery) {
       setFilteredItems(items);
     } else {
@@ -111,9 +185,8 @@ export function SearchableSelect<T extends SearchableSelectItem>({
       });
       setFilteredItems(filtered);
     }
-    // Reset selected index when items change
     setSelectedIndex(-1);
-  }, [items, searchQuery, displayFormatter]);
+  }, [items, searchQuery, displayFormatter, useInfiniteLoading]);
 
   // Focus input when popover opens and set width
   React.useEffect(() => {
@@ -131,6 +204,11 @@ export function SearchableSelect<T extends SearchableSelectItem>({
     }
   }, [open]);
 
+  // Reset selected index when items change
+  React.useEffect(() => {
+    setSelectedIndex(-1);
+  }, [displayItems]);
+
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!open) return;
@@ -139,19 +217,19 @@ export function SearchableSelect<T extends SearchableSelectItem>({
       case "ArrowDown":
         e.preventDefault();
         setSelectedIndex((prev) =>
-          prev < filteredItems.length - 1 ? prev + 1 : 0,
+          prev < displayItems.length - 1 ? prev + 1 : 0,
         );
         break;
       case "ArrowUp":
         e.preventDefault();
         setSelectedIndex((prev) =>
-          prev > 0 ? prev - 1 : filteredItems.length - 1,
+          prev > 0 ? prev - 1 : displayItems.length - 1,
         );
         break;
       case "Enter":
         e.preventDefault();
-        if (selectedIndex >= 0 && selectedIndex < filteredItems.length) {
-          const selectedItem = filteredItems[selectedIndex];
+        if (selectedIndex >= 0 && selectedIndex < displayItems.length) {
+          const selectedItem = displayItems[selectedIndex];
           onValueChange(selectedItem.id === value ? "" : selectedItem.id);
           setOpen(false);
         }
@@ -187,13 +265,42 @@ export function SearchableSelect<T extends SearchableSelectItem>({
     setSelectedIndex(index);
   };
 
+  // Handle scroll for infinite loading
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!shouldUseInfiniteLoading) return;
+    infiniteSelect.handleScroll(e);
+  };
+
   const selectedItem =
-    items.find((item) => item.id === value) || cachedSelectedItem;
+    displayItems.find((item) => item.id === value) || cachedSelectedItem;
   const displayText = selectedItem
     ? displayFormatter
       ? displayFormatter(selectedItem)
       : selectedItem.name
     : placeholder;
+
+  // Loading skeleton component
+  const LoadingSkeleton = () => (
+    <div className="p-1">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div
+          key={index}
+          className="flex items-center px-2 py-1.5 rounded-md animate-pulse"
+        >
+          <div className="w-4 h-4 bg-gray-200 rounded mr-2"></div>
+          <div className="h-4 bg-gray-200 rounded flex-1"></div>
+        </div>
+      ))}
+    </div>
+  );
+
+  // Loading more indicator
+  const LoadingMore = () => (
+    <div className="flex items-center justify-center py-3 text-sm text-gray-500">
+      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+      Đang tải thêm...
+    </div>
+  );
 
   return (
     <Popover open={open && !disabled} onOpenChange={setOpen}>
@@ -228,49 +335,69 @@ export function SearchableSelect<T extends SearchableSelectItem>({
               ref={inputRef}
               type="text"
               placeholder={searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={currentSearchQuery}
+              onChange={(e) => setCurrentSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               className="flex h-11 w-full rounded-md bg-white py-3 text-sm text-black outline-none placeholder:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
 
           {/* Items List */}
-          <div className="max-h-[300px] overflow-y-auto overflow-x-hidden bg-white scrollbar-primary">
-            {loading ? (
-              <div className="py-6 text-center text-sm text-gray-600">
-                Đang tải...
+          <div
+            ref={
+              shouldUseInfiniteLoading ? infiniteSelect.scrollRef : undefined
+            }
+            onScroll={handleScroll}
+            className="max-h-[300px] overflow-y-auto overflow-x-hidden bg-white scrollbar-primary"
+          >
+            {isError ? (
+              <div className="py-6 text-center text-sm text-red-500">
+                Có lỗi xảy ra khi tải dữ liệu
               </div>
-            ) : filteredItems.length === 0 ? (
+            ) : isLoading ? (
+              <LoadingSkeleton />
+            ) : displayItems.length === 0 ? (
               <div className="py-6 text-center text-sm text-gray-600">
                 {emptyMessage}
               </div>
             ) : (
-              <div className="p-1" ref={listRef}>
-                {filteredItems.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className={cn(
-                      "relative flex cursor-default select-none items-center rounded-md px-2 py-1.5 text-sm outline-none transition-colors duration-200",
-                      // Keyboard selection styling
-                      selectedIndex === index
-                        ? "bg-[#e6f3f7] text-[#1a80a2]"
-                        : "text-black hover:bg-[#e6f3f7] hover:text-[#1a80a2]",
-                    )}
-                    onClick={() => handleItemClick(item)}
-                    onMouseEnter={() => handleItemMouseEnter(index)}
-                    onMouseLeave={() => setSelectedIndex(-1)}
-                  >
-                    <Check
+              <>
+                <div className="p-1" ref={listRef}>
+                  {displayItems.map((item, index) => (
+                    <div
+                      key={item.id}
                       className={cn(
-                        "mr-2 h-4 w-4",
-                        value === item.id ? "opacity-100" : "opacity-0",
+                        "relative flex cursor-default select-none items-center rounded-md px-2 py-1.5 text-sm outline-none transition-colors duration-200",
+                        // Keyboard selection styling
+                        selectedIndex === index
+                          ? "bg-[#e6f3f7] text-[#1a80a2]"
+                          : "text-black hover:bg-[#e6f3f7] hover:text-[#1a80a2]",
                       )}
-                    />
-                    {displayFormatter ? displayFormatter(item) : item.name}
-                  </div>
-                ))}
-              </div>
+                      onClick={() => handleItemClick(item)}
+                      onMouseEnter={() => handleItemMouseEnter(index)}
+                      onMouseLeave={() => setSelectedIndex(-1)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          value === item.id ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                      {displayFormatter ? displayFormatter(item) : item.name}
+                    </div>
+                  ))}
+                </div>
+                {/* Loading more indicator */}
+                {isFetchingMore && <LoadingMore />}
+                {/* End of list indicator */}
+                {shouldUseInfiniteLoading &&
+                  !hasNextPage &&
+                  displayItems.length > 0 && (
+                    <div className="py-2 text-center text-xs text-gray-400 border-t border-gray-100">
+                      Đã hiển thị tất cả kết quả
+                    </div>
+                  )}
+              </>
             )}
           </div>
         </div>

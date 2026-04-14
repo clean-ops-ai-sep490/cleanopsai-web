@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown, X, Search } from "lucide-react";
+import { Check, ChevronsUpDown, X, Search, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useInfiniteSelect } from "@/hooks/useInfiniteSelect";
+import type { PaginatedResponse } from "@/types/common";
 
 export interface MultiSelectOption {
   value: string;
@@ -18,7 +20,8 @@ export interface MultiSelectOption {
 }
 
 interface MultiSelectProps {
-  options: MultiSelectOption[];
+  // Legacy props
+  options?: MultiSelectOption[];
   value?: string[];
   onValueChange: (value: string[]) => void;
   placeholder?: string;
@@ -27,6 +30,18 @@ interface MultiSelectProps {
   className?: string;
   disabled?: boolean;
   maxDisplay?: number;
+
+  // New infinite loading props
+  queryKey?: (string | number)[];
+  queryFn?: (
+    page: number,
+    pageSize: number,
+    searchQuery?: string,
+    filters?: Record<string, any>,
+  ) => Promise<PaginatedResponse<MultiSelectOption>>;
+  filters?: Record<string, any>;
+  pageSize?: number;
+  useInfiniteLoading?: boolean;
 }
 
 export function MultiSelect({
@@ -39,6 +54,11 @@ export function MultiSelect({
   className,
   disabled = false,
   maxDisplay = 2,
+  queryKey,
+  queryFn,
+  filters = {},
+  pageSize = 20,
+  useInfiniteLoading = false,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -51,20 +71,65 @@ export function MultiSelect({
   // Ensure value is always an array
   const safeValue = Array.isArray(value) ? value : [];
 
-  // Filter options based on search
+  // Always call useInfiniteSelect hook, but conditionally enable it
+  const infiniteSelect = useInfiniteSelect<MultiSelectOption>({
+    queryKey: queryKey || ["default"],
+    queryFn:
+      queryFn ||
+      (() =>
+        Promise.resolve({
+          content: [],
+          pageNumber: 1,
+          pageSize: 0,
+          totalElements: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        })),
+    pageSize,
+    filters,
+    enabled: open && useInfiniteLoading && !!queryKey && !!queryFn,
+  });
+
+  // Use infinite loading data if enabled and available, otherwise use legacy options
+  const shouldUseInfiniteLoading = useInfiniteLoading && queryKey && queryFn;
+  const displayOptions = shouldUseInfiniteLoading
+    ? infiniteSelect.items
+    : options;
+  const isLoading = shouldUseInfiniteLoading ? infiniteSelect.isLoading : false;
+  const isFetchingMore = shouldUseInfiniteLoading
+    ? infiniteSelect.isFetchingNextPage
+    : false;
+  const hasNextPage = shouldUseInfiniteLoading
+    ? infiniteSelect.hasNextPage
+    : false;
+  const isError = shouldUseInfiniteLoading ? infiniteSelect.isError : false;
+  const currentSearchQuery = shouldUseInfiniteLoading
+    ? infiniteSelect.searchQuery
+    : searchQuery;
+  const setCurrentSearchQuery = shouldUseInfiniteLoading
+    ? infiniteSelect.setSearchQuery
+    : setSearchQuery;
+
+  // Filter options based on search (legacy mode)
   const filteredOptions = React.useMemo(() => {
+    if (shouldUseInfiniteLoading) return displayOptions;
     if (!searchQuery) return options;
     return options.filter(
       (option) =>
         option.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
         option.description?.toLowerCase().includes(searchQuery.toLowerCase()),
     );
-  }, [options, searchQuery]);
+  }, [options, searchQuery, shouldUseInfiniteLoading, displayOptions]);
+
+  const finalOptions = shouldUseInfiniteLoading
+    ? displayOptions
+    : filteredOptions;
 
   // Reset selected index when filtered options change
   React.useEffect(() => {
     setSelectedIndex(-1);
-  }, [filteredOptions]);
+  }, [finalOptions]);
 
   // Focus input when popover opens and set width
   React.useEffect(() => {
@@ -90,19 +155,19 @@ export function MultiSelect({
       case "ArrowDown":
         e.preventDefault();
         setSelectedIndex((prev) =>
-          prev < filteredOptions.length - 1 ? prev + 1 : 0,
+          prev < finalOptions.length - 1 ? prev + 1 : 0,
         );
         break;
       case "ArrowUp":
         e.preventDefault();
         setSelectedIndex((prev) =>
-          prev > 0 ? prev - 1 : filteredOptions.length - 1,
+          prev > 0 ? prev - 1 : finalOptions.length - 1,
         );
         break;
       case "Enter":
         e.preventDefault();
-        if (selectedIndex >= 0 && selectedIndex < filteredOptions.length) {
-          const selectedOption = filteredOptions[selectedIndex];
+        if (selectedIndex >= 0 && selectedIndex < finalOptions.length) {
+          const selectedOption = finalOptions[selectedIndex];
           handleSelect(selectedOption.value);
         }
         break;
@@ -150,11 +215,40 @@ export function MultiSelect({
     setSelectedIndex(index);
   };
 
-  const selectedOptions = options.filter((option) =>
-    safeValue.includes(option.value),
-  );
-  const displayOptions = selectedOptions.slice(0, maxDisplay);
+  // Handle scroll for infinite loading
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!shouldUseInfiniteLoading) return;
+    infiniteSelect.handleScroll(e);
+  };
+
+  const selectedOptions = (
+    shouldUseInfiniteLoading ? displayOptions : options
+  ).filter((option) => safeValue.includes(option.value));
+  const displaySelectedOptions = selectedOptions.slice(0, maxDisplay);
   const remainingCount = selectedOptions.length - maxDisplay;
+
+  // Loading skeleton component
+  const LoadingSkeleton = () => (
+    <div className="p-1">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div
+          key={index}
+          className="flex items-center px-2 py-1.5 rounded-md animate-pulse"
+        >
+          <div className="w-4 h-4 bg-gray-200 rounded mr-2"></div>
+          <div className="h-4 bg-gray-200 rounded flex-1"></div>
+        </div>
+      ))}
+    </div>
+  );
+
+  // Loading more indicator
+  const LoadingMore = () => (
+    <div className="flex items-center justify-center py-3 text-sm text-gray-500">
+      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+      Đang tải thêm...
+    </div>
+  );
 
   return (
     <Popover open={open && !disabled} onOpenChange={setOpen}>
@@ -176,7 +270,7 @@ export function MultiSelect({
               <span className="text-gray-500 truncate">{placeholder}</span>
             ) : (
               <>
-                {displayOptions.map((option) => (
+                {displaySelectedOptions.map((option) => (
                   <Badge
                     key={option.value}
                     variant="secondary"
@@ -233,54 +327,78 @@ export function MultiSelect({
               ref={inputRef}
               type="text"
               placeholder={searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={currentSearchQuery}
+              onChange={(e) => setCurrentSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               className="flex h-11 w-full rounded-md bg-white py-3 text-sm text-black outline-none placeholder:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
 
           {/* Items List */}
-          <div className="max-h-[300px] overflow-y-auto overflow-x-hidden bg-white scrollbar-primary">
-            {filteredOptions.length === 0 ? (
+          <div
+            ref={
+              shouldUseInfiniteLoading ? infiniteSelect.scrollRef : undefined
+            }
+            onScroll={handleScroll}
+            className="max-h-[300px] overflow-y-auto overflow-x-hidden bg-white scrollbar-primary"
+          >
+            {isError ? (
+              <div className="py-6 text-center text-sm text-red-500">
+                Có lỗi xảy ra khi tải dữ liệu
+              </div>
+            ) : isLoading ? (
+              <LoadingSkeleton />
+            ) : finalOptions.length === 0 ? (
               <div className="py-6 text-center text-sm text-gray-600">
                 {emptyText}
               </div>
             ) : (
-              <div className="p-1" ref={listRef}>
-                {filteredOptions.map((option, index) => (
-                  <div
-                    key={option.value}
-                    className={cn(
-                      "relative flex cursor-default select-none items-start rounded-md px-2 py-1.5 text-sm outline-none transition-colors duration-200",
-                      // Keyboard selection styling
-                      selectedIndex === index
-                        ? "bg-[#e6f3f7] text-[#1a80a2]"
-                        : "text-black hover:bg-[#e6f3f7] hover:text-[#1a80a2]",
-                    )}
-                    onClick={() => handleItemClick(option)}
-                    onMouseEnter={() => handleItemMouseEnter(index)}
-                    onMouseLeave={() => setSelectedIndex(-1)}
-                  >
-                    <Check
+              <>
+                <div className="p-1" ref={listRef}>
+                  {finalOptions.map((option, index) => (
+                    <div
+                      key={option.value}
                       className={cn(
-                        "mr-2 h-4 w-4 mt-0.5 flex-shrink-0",
-                        safeValue.includes(option.value)
-                          ? "opacity-100"
-                          : "opacity-0",
+                        "relative flex cursor-default select-none items-start rounded-md px-2 py-1.5 text-sm outline-none transition-colors duration-200",
+                        // Keyboard selection styling
+                        selectedIndex === index
+                          ? "bg-[#e6f3f7] text-[#1a80a2]"
+                          : "text-black hover:bg-[#e6f3f7] hover:text-[#1a80a2]",
                       )}
-                    />
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <span className="font-medium">{option.label}</span>
-                      {option.description && (
-                        <span className="text-xs text-gray-500 mt-0.5">
-                          {option.description}
-                        </span>
-                      )}
+                      onClick={() => handleItemClick(option)}
+                      onMouseEnter={() => handleItemMouseEnter(index)}
+                      onMouseLeave={() => setSelectedIndex(-1)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4 mt-0.5 flex-shrink-0",
+                          safeValue.includes(option.value)
+                            ? "opacity-100"
+                            : "opacity-0",
+                        )}
+                      />
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="font-medium">{option.label}</span>
+                        {option.description && (
+                          <span className="text-xs text-gray-500 mt-0.5">
+                            {option.description}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                {/* Loading more indicator */}
+                {isFetchingMore && <LoadingMore />}
+                {/* End of list indicator */}
+                {shouldUseInfiniteLoading &&
+                  !hasNextPage &&
+                  finalOptions.length > 0 && (
+                    <div className="py-2 text-center text-xs text-gray-400 border-t border-gray-100">
+                      Đã hiển thị tất cả kết quả
+                    </div>
+                  )}
+              </>
             )}
           </div>
         </div>
