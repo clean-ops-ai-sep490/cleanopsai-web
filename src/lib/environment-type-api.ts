@@ -61,6 +61,6 @@ export async function getEnvironmentTypesPaginated(
 export async function getEnvironmentTypes(
   params: PaginationParams = {},
 ): Promise<PaginatedResponse<EnvironmentType>> {
-  const { pageNumber = 1, pageSize = 100, search } = params;
+  const { pageNumber = 1, pageSize = 10, search } = params;
   return environmentTypeApi.getPaginated(pageNumber, pageSize, { search });
 }
