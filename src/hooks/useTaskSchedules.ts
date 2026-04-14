@@ -64,6 +64,30 @@ export function useCreateTaskSchedule() {
   });
 }
 
+// Create task schedule with work area supervisor assignment mutation
+export function useCreateTaskScheduleWithAssignment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      data: CreateTaskScheduleData & { supervisorId: string },
+    ) => {
+      const { createTaskScheduleWithAssignment } =
+        await import("@/lib/task-schedule-api");
+      return createTaskScheduleWithAssignment(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: taskScheduleKeys.lists() });
+      // Also invalidate work area supervisor queries if they exist
+      queryClient.invalidateQueries({ queryKey: ["workAreaSupervisors"] });
+      toast.success("Tạo lịch trình và phân công giám sát thành công");
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Có lỗi xảy ra khi tạo lịch trình");
+    },
+  });
+}
+
 // Update task schedule mutation
 export function useUpdateTaskSchedule() {
   const queryClient = useQueryClient();
