@@ -17,6 +17,7 @@ export enum WorkflowFrequency {
 export interface TaskSchedule {
   id: string;
   sopId: string;
+  slaId: string;
   slaTaskId: string;
   slaShiftId: string;
   workAreaId: string;
@@ -38,7 +39,7 @@ export interface TaskSchedule {
 
 // Recurrence configuration
 export interface RecurrenceConfig {
-  times: string[];
+  times: string[]; // Format: "HH:MM:SS" (24-hour format)
   daysOfWeek: string[]; // e.g., ["Sunday"]
   daysOfMonth: number[];
   monthDays: MonthDay[];
