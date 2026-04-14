@@ -59,7 +59,7 @@ export async function getContractsPaginated(params: {
   pageSize?: number;
   search?: string;
 }): Promise<{ items: Contract[]; totalCount: number }> {
-  const { pageNumber = 1, pageSize = 50, search, ...rest } = params;
+  const { pageNumber = 1, pageSize = 10, search, ...rest } = params;
 
   try {
     const response = await contractApi.getPaginated(pageNumber, pageSize, {

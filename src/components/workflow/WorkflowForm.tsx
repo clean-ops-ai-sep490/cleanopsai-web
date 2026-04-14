@@ -14,7 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getEnvironmentTypes } from "@/lib/environment-type-api";
+import {
+  getEnvironmentTypes,
+  getEnvironmentTypesPaginated,
+} from "@/lib/environment-type-api";
 import { getSkillCategories, getSkillsByCategoryId } from "@/lib/skill-api";
 import {
   getCertificationCategories,
@@ -194,24 +197,20 @@ export function WorkflowForm({ formData, onChange }: WorkflowFormProps) {
     onChange({ ...formData, [field]: value });
   };
 
-  // Environment types loader for SearchableSelect
-  const loadEnvironmentTypes = async () => {
-    return {
-      items: environmentTypes.map((env) => ({ id: env.id, name: env.name })),
-      totalCount: environmentTypes.length,
-    };
-  };
-
   // Prepare options for multi-select components
-  const skillOptions = availableSkills.map((skill) => ({
-    value: skill.id,
-    label: skill.name,
-  }));
+  const skillOptions = availableSkills
+    .filter((skill) => skill && skill.id && skill.name)
+    .map((skill) => ({
+      value: skill.id,
+      label: skill.name,
+    }));
 
-  const certificationOptions = availableCertifications.map((cert) => ({
-    value: cert.id,
-    label: cert.name,
-  }));
+  const certificationOptions = availableCertifications
+    .filter((cert) => cert && cert.id && cert.name)
+    .map((cert) => ({
+      value: cert.id,
+      label: cert.name,
+    }));
 
   return (
     <Card className="bg-[#f9fafb] rounded-[5px] p-6">
@@ -250,7 +249,42 @@ export function WorkflowForm({ formData, onChange }: WorkflowFormProps) {
               loadingEnvironments ? "Đang tải..." : "Chọn loại môi trường"
             }
             disabled={loadingEnvironments}
-            loadItems={loadEnvironmentTypes}
+            queryKey={["environment-types", "workflow"]}
+            queryFn={async (page, pageSize, searchQuery) => {
+              try {
+                // Use the new API function that returns PaginatedResponse format
+                const response = await getEnvironmentTypes({
+                  pageNumber: page,
+                  pageSize,
+                  search: searchQuery,
+                });
+
+                // Ensure content is an array and filter out invalid items
+                const validContent = Array.isArray(response.content)
+                  ? response.content.filter(
+                      (item) => item && item.id && item.name,
+                    )
+                  : [];
+
+                return {
+                  ...response,
+                  content: validContent,
+                };
+              } catch (error) {
+                console.error("Failed to load environment types:", error);
+                return {
+                  content: [],
+                  pageNumber: page,
+                  pageSize,
+                  totalElements: 0,
+                  totalPages: 0,
+                  hasNextPage: false,
+                  hasPreviousPage: false,
+                };
+              }
+            }}
+            useInfiniteLoading={true}
+            pageSize={10}
             className="bg-[#f5f5f5] border-[#e5e5e5] h-[30px]"
           />
         </div>
@@ -273,11 +307,13 @@ export function WorkflowForm({ formData, onChange }: WorkflowFormProps) {
               />
             </SelectTrigger>
             <SelectContent>
-              {skillCategories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {cat.name}
-                </SelectItem>
-              ))}
+              {skillCategories
+                .filter((cat) => cat && cat.id && cat.name)
+                .map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>
@@ -319,11 +355,13 @@ export function WorkflowForm({ formData, onChange }: WorkflowFormProps) {
               />
             </SelectTrigger>
             <SelectContent>
-              {certificationCategories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {cat.name}
-                </SelectItem>
-              ))}
+              {certificationCategories
+                .filter((cat) => cat && cat.id && cat.name)
+                .map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>

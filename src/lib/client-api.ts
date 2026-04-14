@@ -39,7 +39,7 @@ export const {
 export async function getClientsPaginated(
   params: ClientsPaginatedRequest = {},
 ): Promise<{ items: Client[]; totalCount: number }> {
-  const { pageNumber = 1, pageSize = 50, search, ...rest } = params;
+  const { pageNumber = 1, pageSize = 10, search, ...rest } = params;
 
   try {
     const response = await clientApi.getPaginated(pageNumber, pageSize, {
@@ -60,7 +60,7 @@ export async function getClientsPaginated(
 // Get locations by client ID
 export async function getLocationsByClient(clientId: string) {
   try {
-    const response = await getLocationsPaginated({ clientId, pageSize: 100 });
+    const response = await getLocationsPaginated({ clientId, pageSize: 50 });
     return response.items;
   } catch (error) {
     console.error("Failed to load locations by client:", error);

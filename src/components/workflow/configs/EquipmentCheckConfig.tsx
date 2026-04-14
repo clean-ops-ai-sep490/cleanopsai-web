@@ -1,8 +1,9 @@
 "use client";
 
+import { useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { MultiSelect } from "@/components/ui/multi-select";
-import { useEquipments } from "@/hooks/useEquipments";
+import { getEquipments } from "@/lib/equipment-api";
 import type { WorkflowStep } from "../WorkflowStepList";
 
 interface EquipmentCheckConfigProps {
@@ -27,26 +28,18 @@ export function EquipmentCheckConfig({
   step,
   onUpdateStepConfigDetail,
 }: EquipmentCheckConfigProps) {
-  const { data: equipmentsData, isLoading } = useEquipments({
-    pageSize: 100,
-  });
-
   const configDetail = getConfigDetail(step);
   const selectedEquipmentIds = configDetail.requiredEquipment || [];
 
-  const equipmentOptions = (equipmentsData?.content || []).map((equipment) => ({
-    value: equipment.id,
-    label: equipment.name,
-    description: `${equipment.type} - ${equipment.description}`,
-  }));
+  // Store equipment data to map IDs to names
+  const equipmentDataRef = useRef<Map<string, string>>(new Map());
 
   const handleEquipmentChange = (selectedIds: string[]) => {
-    const selectedEquipments = (equipmentsData?.content || [])
-      .filter((equipment) => selectedIds.includes(equipment.id))
-      .map((equipment) => ({
-        id: equipment.id,
-        name: equipment.name,
-      }));
+    // Use stored equipment data to get names
+    const selectedEquipments = selectedIds.map((id) => ({
+      id,
+      name: equipmentDataRef.current.get(id) || id, // Use stored name or fallback to id
+    }));
 
     onUpdateStepConfigDetail(step.id, {
       ...configDetail,
@@ -69,34 +62,42 @@ export function EquipmentCheckConfig({
         </p>
         <div className="mt-2">
           <MultiSelect
-            options={equipmentOptions}
             value={currentSelectedIds}
             onValueChange={handleEquipmentChange}
-            placeholder={
-              isLoading ? "Đang tải thiết bị..." : "Chọn thiết bị..."
-            }
+            placeholder="Chọn thiết bị..."
             searchPlaceholder="Tìm kiếm thiết bị..."
             emptyText="Không tìm thấy thiết bị"
-            disabled={isLoading}
+            queryKey={["equipments", "workflow"]}
+            queryFn={async (page, pageSize, searchQuery) => {
+              const response = await getEquipments({
+                pageNumber: page,
+                pageSize,
+                search: searchQuery,
+              });
+
+              // Store equipment data for later use
+              response.content.forEach((equipment) => {
+                equipmentDataRef.current.set(equipment.id, equipment.name);
+              });
+
+              return {
+                content: response.content.map((equipment) => ({
+                  value: equipment.id,
+                  label: equipment.name,
+                  description: `${equipment.type} - ${equipment.description}`,
+                })),
+                pageNumber: page,
+                pageSize,
+                totalElements: response.totalElements,
+                totalPages: response.totalPages,
+                hasNextPage: response.hasNextPage,
+                hasPreviousPage: response.hasPreviousPage,
+              };
+            }}
+            useInfiniteLoading={true}
+            pageSize={10}
           />
         </div>
-        {selectedEquipmentIds.length > 0 && (
-          <div className="mt-3">
-            <p className="text-xs text-gray-500 mb-2">
-              Đã chọn {selectedEquipmentIds.length} thiết bị:
-            </p>
-            <div className="space-y-1">
-              {selectedEquipmentIds.map((equipment: any, index: number) => (
-                <div
-                  key={equipment.id || index}
-                  className="text-xs text-gray-700 bg-gray-100 rounded px-2 py-1"
-                >
-                  {equipment.name}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

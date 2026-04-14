@@ -1,4 +1,4 @@
-import { createContract, getContracts, getContract } from "@/lib/contract-api";
+import { createContract, getContracts } from "@/lib/contract-api";
 import { getClients } from "@/lib/client-api";
 import type { ContractFormData, Contract, Client } from "@/types/contract";
 

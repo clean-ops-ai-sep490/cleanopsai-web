@@ -5,16 +5,18 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { useCreateTaskSchedule } from "@/hooks/useTaskSchedules";
+import { useCreateTaskScheduleWithAssignment } from "@/hooks/useTaskSchedules";
 import { CreateTaskScheduleData } from "@/types/schedule";
 import { TaskScheduleForm } from "./TaskScheduleForm";
 
 export function TaskScheduleCreateContainer() {
   const router = useRouter();
-  const createMutation = useCreateTaskSchedule();
+  const createMutation = useCreateTaskScheduleWithAssignment();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (data: CreateTaskScheduleData) => {
+  const handleSubmit = async (
+    data: CreateTaskScheduleData & { supervisorId: string },
+  ) => {
     setIsSubmitting(true);
     try {
       await createMutation.mutateAsync(data);

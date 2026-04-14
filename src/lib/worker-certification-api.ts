@@ -1,6 +1,6 @@
 import { parseArrayResponse } from "./api-response-parser";
 import { api } from "./api";
-import type { Certification } from "./certification-api";
+import { Certification } from "@/types/skill";
 
 export interface WorkerCertification {
   id: string;

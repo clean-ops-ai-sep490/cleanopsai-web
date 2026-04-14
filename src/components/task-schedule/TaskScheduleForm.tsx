@@ -22,37 +22,38 @@ import { StatusSection } from "./forms/StatusSection";
 // Validation schema
 const taskScheduleSchema = z.object({
   sopId: z.string().min(1, "SOP là bắt buộc"),
+  slaId: z.string().min(1, "SLA là bắt buộc"),
   slaTaskId: z.string().min(1, "SLA Task là bắt buộc"),
   slaShiftId: z.string().min(1, "SLA Shift là bắt buộc"),
+  locationId: z.string().min(1, "Địa điểm là bắt buộc"),
+  locationAddress: z.string(), // Address của location đã chọn
+  zoneId: z.string().min(1, "Zone là bắt buộc"),
   workAreaId: z.string().min(1, "Khu vực làm việc là bắt buộc"),
   workAreaDetailId: z.string().min(1, "Chi tiết khu vực là bắt buộc"),
   name: z.string().min(1, "Tên lịch trình là bắt buộc"),
   description: z.string(),
   assigneeId: z.string().min(1, "Người thực hiện là bắt buộc"),
   assigneeName: z.string().min(1, "Tên người thực hiện là bắt buộc"),
+  supervisorId: z.string().min(1, "Người giám sát là bắt buộc"),
   displayLocation: z.string().min(1, "Địa điểm hiển thị là bắt buộc"),
   durationMinutes: z.number().min(1, "Thời gian thực hiện phải lớn hơn 0"),
   recurrenceType: z.string().min(1, "Loại lặp lại là bắt buộc"),
   contractStartDate: z.string().min(1, "Ngày bắt đầu hợp đồng là bắt buộc"),
   contractEndDate: z.string().min(1, "Ngày kết thúc hợp đồng là bắt buộc"),
   isActive: z.boolean(),
+  // WorkAreaDetail creation fields
+  workAreaDetailName: z.string().min(1, "Tên chi tiết khu vực là bắt buộc"),
+  workAreaDetailArea: z.number().min(0, "Diện tích là bắt buộc"),
 });
 
 type TaskScheduleFormData = z.infer<typeof taskScheduleSchema>;
 
 interface TaskScheduleFormProps {
-  initialData?: Partial<CreateTaskScheduleData>;
-  onSubmit: (data: CreateTaskScheduleData) => void;
+  initialData?: Partial<CreateTaskScheduleData & { supervisorId: string }>;
+  onSubmit: (data: CreateTaskScheduleData & { supervisorId: string }) => void;
   isSubmitting?: boolean;
   submitButtonText?: string;
 }
-
-// Mock data for auto-fill
-const mockWorkers = [
-  { value: "worker-1", label: "Nguyễn Văn A" },
-  { value: "worker-2", label: "Trần Thị B" },
-  { value: "worker-3", label: "Lê Văn C" },
-];
 
 export function TaskScheduleForm({
   initialData,
@@ -83,18 +84,6 @@ export function TaskScheduleForm({
       ...initialData,
     },
   });
-
-  const assigneeId = watch("assigneeId");
-
-  // Auto-fill assignee name when assignee is selected
-  useEffect(() => {
-    if (assigneeId) {
-      const worker = mockWorkers.find((w) => w.value === assigneeId);
-      if (worker) {
-        setValue("assigneeName", worker.label);
-      }
-    }
-  }, [assigneeId, setValue]);
 
   // Time management functions
   const addTime = () => {
@@ -129,14 +118,24 @@ export function TaskScheduleForm({
   };
 
   const onFormSubmit = (data: TaskScheduleFormData) => {
+    // Convert times from HH:MM to HH:MM:SS format for API
+    const formattedTimes = times.map((time) => {
+      // If time is already in HH:MM:SS format, keep it
+      if (time.split(":").length === 3) {
+        return time;
+      }
+      // If time is in HH:MM format, add :00 seconds
+      return `${time}:00`;
+    });
+
     const recurrenceConfig: RecurrenceConfig = {
-      times,
+      times: formattedTimes,
       daysOfWeek: selectedDaysOfWeek,
       daysOfMonth,
       monthDays: [], // Can be extended later
     };
 
-    const submitData: CreateTaskScheduleData = {
+    const submitData: CreateTaskScheduleData & { supervisorId: string } = {
       ...data,
       recurrenceConfig,
     };
@@ -162,6 +161,7 @@ export function TaskScheduleForm({
           <WorkAreaSection
             register={register}
             setValue={setValue}
+            watch={watch}
             errors={errors}
           />
         </Card>
@@ -171,6 +171,7 @@ export function TaskScheduleForm({
           <AssignmentSection
             register={register}
             setValue={setValue}
+            watch={watch}
             errors={errors}
           />
         </Card>

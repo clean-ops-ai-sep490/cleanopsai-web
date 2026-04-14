@@ -1,8 +1,9 @@
 "use client";
 
+import { useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { MultiSelect } from "@/components/ui/multi-select";
-import { usePPEs } from "@/hooks/usePPEs";
+import { getPPEs } from "@/lib/ppe-api";
 import type { WorkflowStep } from "../WorkflowStepList";
 
 interface PPECheckConfigProps {
@@ -27,26 +28,18 @@ export function PPECheckConfig({
   step,
   onUpdateStepConfigDetail,
 }: PPECheckConfigProps) {
-  const { data: ppesData, isLoading } = usePPEs({
-    pageSize: 50,
-  });
-
   const configDetail = getConfigDetail(step);
   const selectedPPEs = configDetail.requiredPPE || [];
 
-  const ppeOptions = (ppesData?.content || []).map((ppe) => ({
-    value: ppe.actionKey, // Use actionKey instead of id
-    label: ppe.name,
-    description: `${ppe.actionKey} - ${ppe.description}`,
-  }));
+  // Store PPE data to map actionKeys to names
+  const ppeDataRef = useRef<Map<string, string>>(new Map());
 
   const handlePPEChange = (selectedActionKeys: string[]) => {
-    const selectedPPEItems = (ppesData?.content || [])
-      .filter((ppe) => selectedActionKeys.includes(ppe.actionKey))
-      .map((ppe) => ({
-        actionKey: ppe.actionKey,
-        name: ppe.name,
-      }));
+    // Use stored PPE data to get names
+    const selectedPPEItems = selectedActionKeys.map((actionKey) => ({
+      actionKey,
+      name: ppeDataRef.current.get(actionKey) || actionKey, // Use stored name or fallback to actionKey
+    }));
 
     onUpdateStepConfigDetail(step.id, {
       ...configDetail,
@@ -69,34 +62,42 @@ export function PPECheckConfig({
         </p>
         <div className="mt-2">
           <MultiSelect
-            options={ppeOptions}
             value={currentSelectedActionKeys}
             onValueChange={handlePPEChange}
-            placeholder={
-              isLoading ? "Đang tải PPE..." : "Chọn thiết bị bảo hộ..."
-            }
+            placeholder="Chọn thiết bị bảo hộ..."
             searchPlaceholder="Tìm kiếm thiết bị bảo hộ..."
             emptyText="Không tìm thấy thiết bị bảo hộ"
-            disabled={isLoading}
+            queryKey={["ppes", "workflow"]}
+            queryFn={async (page, pageSize, searchQuery) => {
+              const response = await getPPEs({
+                pageNumber: page,
+                pageSize,
+                search: searchQuery,
+              });
+
+              // Store PPE data for later use
+              response.content.forEach((ppe) => {
+                ppeDataRef.current.set(ppe.actionKey, ppe.name);
+              });
+
+              return {
+                content: response.content.map((ppe) => ({
+                  value: ppe.actionKey,
+                  label: ppe.name,
+                  description: `${ppe.actionKey} - ${ppe.description}`,
+                })),
+                pageNumber: page,
+                pageSize,
+                totalElements: response.totalElements,
+                totalPages: response.totalPages,
+                hasNextPage: response.hasNextPage,
+                hasPreviousPage: response.hasPreviousPage,
+              };
+            }}
+            useInfiniteLoading={true}
+            pageSize={10}
           />
         </div>
-        {selectedPPEs.length > 0 && (
-          <div className="mt-3">
-            <p className="text-xs text-gray-500 mb-2">
-              Đã chọn {selectedPPEs.length} thiết bị bảo hộ:
-            </p>
-            <div className="space-y-1">
-              {selectedPPEs.map((ppe: any, index: number) => (
-                <div
-                  key={ppe.actionKey || index}
-                  className="text-xs text-gray-700 bg-gray-100 rounded px-2 py-1"
-                >
-                  {ppe.name} ({ppe.actionKey})
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -7,47 +7,44 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Plus,
-  Search,
-  Loader2,
-  Clock,
-  MapPin,
-  User,
-  Calendar,
-  MoreVertical,
-} from "lucide-react";
+import { PaginationWithInfo } from "@/components/ui/pagination";
+import { Search, Loader2, Clock, MapPin, User, Calendar } from "lucide-react";
 import {
   useTaskSchedules,
   useActivateTaskSchedule,
   useDeactivateTaskSchedule,
 } from "@/hooks/useTaskSchedules";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { usePaginatedData } from "@/hooks/usePagination";
+import { Switch } from "@/components/ui/switch";
 
 export default function TaskScheduleListPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [pageNumber, setPageNumber] = useState(1);
-  const pageSize = 12;
+
+  // Initialize pagination
+  const pagination = usePaginatedData({
+    initialPageSize: 12,
+  });
 
   const {
     data: taskSchedulesData,
     isLoading,
     error,
   } = useTaskSchedules({
-    pageNumber,
-    pageSize,
+    pageNumber: pagination.currentPage,
+    pageSize: pagination.pageSize,
     search: searchQuery || undefined,
+  });
+
+  // Update pagination data when response changes
+  const paginatedTaskSchedules = usePaginatedData({
+    data: taskSchedulesData,
+    initialPageSize: 12,
   });
 
   const activateMutation = useActivateTaskSchedule();
   const deactivateMutation = useDeactivateTaskSchedule();
 
-  const taskSchedules = taskSchedulesData?.content || [];
+  const taskSchedules = paginatedTaskSchedules.items;
 
   const handleToggleStatus = (schedule: any) => {
     if (schedule.isActive) {
@@ -69,8 +66,7 @@ export default function TaskScheduleListPage() {
         </div>
         <Link href="/dashboard/task-schedule/create">
           <Button className="bg-[#1a80a2] hover:bg-[#308cab] text-white h-[40px] rounded-[5px] px-6 flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Tạo lịch trình mới
+            Tạo task mới
           </Button>
         </Link>
       </div>
@@ -85,7 +81,7 @@ export default function TaskScheduleListPage() {
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
-              setPageNumber(1); // Reset to first page when searching
+              pagination.goToFirstPage(); // Reset to first page when searching
             }}
           />
         </div>
@@ -116,7 +112,7 @@ export default function TaskScheduleListPage() {
       )}
 
       {/* Empty State */}
-      {!isLoading && !error && taskSchedules.length === 0 && (
+      {!isLoading && !error && paginatedTaskSchedules.isEmpty && (
         <div className="text-center py-12">
           <p className="text-[#70808f] mb-4">
             {searchQuery
@@ -127,7 +123,7 @@ export default function TaskScheduleListPage() {
       )}
 
       {/* Task Schedule List */}
-      {!isLoading && !error && taskSchedules.length > 0 && (
+      {!isLoading && !error && !paginatedTaskSchedules.isEmpty && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {taskSchedules.map((schedule) => (
@@ -145,7 +141,7 @@ export default function TaskScheduleListPage() {
                     </h3>
                   </Link>
 
-                  <div className="flex items-center gap-2 ml-2">
+                  <div className="flex items-center gap-3 ml-2">
                     <Badge
                       variant={schedule.isActive ? "default" : "secondary"}
                       className={
@@ -157,42 +153,27 @@ export default function TaskScheduleListPage() {
                       {schedule.isActive ? "Hoạt động" : "Tạm dừng"}
                     </Badge>
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link
-                            href={`/dashboard/task-schedule/${schedule.id}`}
-                          >
-                            Xem chi tiết
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link
-                            href={`/dashboard/task-schedule/${schedule.id}/edit`}
-                          >
-                            Chỉnh sửa
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleToggleStatus(schedule)}
-                          disabled={
-                            activateMutation.isPending ||
-                            deactivateMutation.isPending
-                          }
-                        >
-                          {schedule.isActive ? "Tạm dừng" : "Kích hoạt"}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStatus(schedule)}
+                        disabled={
+                          activateMutation.isPending ||
+                          deactivateMutation.isPending
+                        }
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#1a80a2] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                          schedule.isActive ? "bg-[#1a80a2]" : "bg-gray-200"
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            schedule.isActive
+                              ? "translate-x-6"
+                              : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -240,30 +221,15 @@ export default function TaskScheduleListPage() {
           </div>
 
           {/* Pagination */}
-          {taskSchedulesData && taskSchedulesData.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-8">
-              <Button
-                variant="outline"
-                disabled={!taskSchedulesData.hasPreviousPage}
-                onClick={() => setPageNumber(pageNumber - 1)}
-                className="border-[#e5e5e5]"
-              >
-                Trước
-              </Button>
-
-              <span className="text-sm text-[#70808f] px-4">
-                Trang {taskSchedulesData.pageNumber} /{" "}
-                {taskSchedulesData.totalPages}
-              </span>
-
-              <Button
-                variant="outline"
-                disabled={!taskSchedulesData.hasNextPage}
-                onClick={() => setPageNumber(pageNumber + 1)}
-                className="border-[#e5e5e5]"
-              >
-                Sau
-              </Button>
+          {paginatedTaskSchedules.totalPages > 1 && (
+            <div className="mt-8">
+              <PaginationWithInfo
+                currentPage={paginatedTaskSchedules.currentPage}
+                totalPages={paginatedTaskSchedules.totalPages}
+                pageSize={paginatedTaskSchedules.pageSize}
+                totalElements={paginatedTaskSchedules.totalElements}
+                onPageChange={paginatedTaskSchedules.setPage}
+              />
             </div>
           )}
         </>

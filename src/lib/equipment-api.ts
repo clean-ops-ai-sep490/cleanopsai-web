@@ -1,5 +1,8 @@
 import { createSearchableApi } from "./api-crud-factory";
-import { parseArrayResponse, parsePaginatedResponse } from "./api-response-parser";
+import {
+  parseArrayResponse,
+  parsePaginatedResponse,
+} from "./api-response-parser";
 import { api } from "./api";
 import type { PaginatedResponse, PaginationParams } from "@/types/common";
 
@@ -31,7 +34,9 @@ const equipmentApi = createSearchableApi<
 >("/Equipments");
 
 // Explicit wrappers for CRUD/search to ensure functions are available
-export async function createEquipment(data: CreateEquipmentData): Promise<Equipment> {
+export async function createEquipment(
+  data: CreateEquipmentData,
+): Promise<Equipment> {
   return equipmentApi.create(data);
 }
 
@@ -39,13 +44,18 @@ export async function getEquipmentById(id: string): Promise<Equipment> {
   return equipmentApi.getById(id);
 }
 
-export async function updateEquipment(id: string, data: UpdateEquipmentData): Promise<Equipment> {
+export async function updateEquipment(
+  id: string,
+  data: UpdateEquipmentData,
+): Promise<Equipment> {
   return equipmentApi.update(id, data);
 }
 
 export async function deleteEquipment(id: string): Promise<number> {
   // Backend controller returns an integer indicating number of records deleted
-  const result = await api.delete<number>(`/Equipments/${encodeURIComponent(id)}`);
+  const result = await api.delete<number>(
+    `/Equipments/${encodeURIComponent(id)}`,
+  );
   return result ?? 0;
 }
 
@@ -66,7 +76,7 @@ export async function searchEquipments(
 export async function getEquipments(
   params: PaginationParams = {},
 ): Promise<PaginatedResponse<Equipment>> {
-  const { pageNumber = 1, pageSize = 100, search } = params;
+  const { pageNumber = 1, pageSize = 10, search } = params;
   return equipmentApi.getPaginated(pageNumber, pageSize, { search });
 }
 
@@ -78,7 +88,9 @@ export async function getEquipmentTypes(): Promise<string[]> {
 
 // Get equipments by type
 export async function getEquipmentsByType(type: string): Promise<Equipment[]> {
-  const response = await api.get<any>(`/Equipments/by-type?type=${encodeURIComponent(type)}`);
+  const response = await api.get<any>(
+    `/Equipments/by-type?type=${encodeURIComponent(type)}`,
+  );
   return parseArrayResponse<Equipment>(response);
 }
 
@@ -101,6 +113,8 @@ export async function searchEquipmentsByKeyword(
   params.append("pageNumber", String(pageNumber));
   params.append("pageSize", String(pageSize));
 
-  const response = await api.get<any>(`/Equipments/search?${params.toString()}`);
+  const response = await api.get<any>(
+    `/Equipments/search?${params.toString()}`,
+  );
   return parsePaginatedResponse<Equipment>(response, pageNumber, pageSize);
 }

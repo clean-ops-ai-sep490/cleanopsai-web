@@ -1,4 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useBaseQuery,
+  useBaseSearchQuery,
+  useBaseMutation,
+} from "./useBaseQuery";
 import {
   getSkills,
   getAllSkills,
@@ -13,66 +17,53 @@ import type { PaginationParams } from "@/types/common";
 import type { CreateSkillData, UpdateSkillData } from "@/types/skill";
 
 export function useSkills(params?: PaginationParams) {
-  return useQuery({
-    queryKey: ["skills", params],
-    queryFn: () => getSkills(params),
-  });
+  return useBaseQuery(["skills", params], () => getSkills(params));
 }
 
 export function useAllSkills() {
-  return useQuery({
-    queryKey: ["skills", "all"],
-    queryFn: () => getAllSkills(),
-  });
+  return useBaseQuery(["skills", "all"], () => getAllSkills());
 }
 
-export function useSearchSkills(keyword?: string | null, pageNumber = 1, pageSize = 10) {
-  return useQuery({
-    queryKey: ["skills", "search", keyword, pageNumber, pageSize],
-    queryFn: () => searchSkills(keyword ?? "", pageNumber, pageSize),
-    keepPreviousData: true,
-  });
+export function useSearchSkills(
+  keyword?: string | null,
+  pageNumber = 1,
+  pageSize = 10,
+) {
+  return useBaseSearchQuery(
+    ["skills", "search", keyword, pageNumber, pageSize],
+    () => searchSkills(keyword ?? "", pageNumber, pageSize),
+  );
 }
 
 export function useCreateSkill() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: CreateSkillData) => createSkill(data),
-    onSuccess: () => qc.invalidateQueries(["skills"]),
-  });
+  return useBaseMutation(
+    (data: CreateSkillData) => createSkill(data),
+    [["skills"]],
+  );
 }
 
 export function useUpdateSkill() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateSkillData }) =>
+  return useBaseMutation(
+    ({ id, data }: { id: string; data: UpdateSkillData }) =>
       updateSkill(id, data),
-    onSuccess: () => qc.invalidateQueries(["skills"]),
-  });
+    [["skills"]],
+  );
 }
 
 export function useDeleteSkill() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => deleteSkill(id),
-    onSuccess: (deletedCount: number) => {
-      if ((deletedCount ?? 0) > 0) qc.invalidateQueries(["skills"]);
-    },
-  });
+  return useBaseMutation((id: string) => deleteSkill(id), [["skills"]]);
 }
 
 export function useSkillsByCategory(category: string) {
-  return useQuery({
-    queryKey: ["skills", "category", category],
-    queryFn: () => getSkillsByCategoryId(category),
-    enabled: !!category && category !== "all",
-  });
+  return useBaseQuery(
+    ["skills", "category", category],
+    () => getSkillsByCategoryId(category),
+    { enabled: !!category && category !== "all" },
+  );
 }
 
 export function useSkillCategories() {
-  return useQuery({
-    queryKey: ["skills", "categories"],
-    queryFn: getSkillCategories,
-  });
+  return useBaseQuery(["skills", "categories"], getSkillCategories);
 }
+
 export default useSkills;

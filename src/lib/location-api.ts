@@ -1,7 +1,7 @@
 import { createSearchableApi } from "./api-crud-factory";
 import { api } from "./api";
 import type { Location, LocationFormData } from "@/types/contract";
-import type { PaginatedRequest, PaginatedResponse } from "@/types/common";
+import type { PaginatedRequest } from "@/types/common";
 
 // Legacy interfaces for backward compatibility
 export interface LocationsPaginatedResponse {
@@ -37,7 +37,7 @@ export const {
 export async function getLocationsPaginated(
   params: LocationsPaginatedRequest = {},
 ): Promise<LocationsPaginatedResponse> {
-  const { pageNumber = 1, pageSize = 50, search, clientId, ...rest } = params;
+  const { pageNumber = 1, pageSize = 10, search, clientId, ...rest } = params;
 
   try {
     const response = await locationApi.getPaginated(pageNumber, pageSize, {
@@ -95,19 +95,4 @@ export async function getLocationsByClientId(
       pageSize,
     };
   }
-}
-
-export async function getLocationById(id: string): Promise<Location> {
-  return api.get<Location>(`/Locations/${id}`);
-}
-
-export async function updateLocation(
-  id: string,
-  data: LocationFormData,
-): Promise<Location> {
-  return api.put<Location>(`/Locations/${id}`, data);
-}
-
-export async function deleteLocation(id: string): Promise<void> {
-  return api.delete(`/Locations/${id}`);
 }

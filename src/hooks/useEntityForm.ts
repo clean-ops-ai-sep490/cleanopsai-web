@@ -1,252 +1,105 @@
 import { useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 
 export interface UseEntityFormOptions<T> {
   initialData: T;
-  mutationFn: (data: T) => Promise<any>;
-  queryKey: string[];
-  onSuccess?: (data?: any) => void;
+  validationRules?: Record<keyof T, (value: any) => string | null>;
+  onSuccess?: (data: any) => void;
   onError?: (error: any) => void;
-  validationRules?: Record<string, ((value: any) => string | null)[]>;
-  successMessage?: string;
-  errorMessage?: string;
-  validateOnChange?: boolean;
 }
 
-export interface UseEntityFormReturn<T> {
-  formData: T;
-  setFormData: React.Dispatch<React.SetStateAction<T>>;
-  errors: Record<string, string>;
-  isLoading: boolean;
-  isValid: boolean;
-  handleInputChange: (
-    field: keyof T,
-  ) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  handleSelectChange: (field: keyof T) => (value: string) => void;
-  handleNumberChange: (
-    field: keyof T,
-  ) => (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleReset: () => void;
-  handleSubmit: (e: React.FormEvent) => void;
-  validateField: (field: keyof T) => void;
-  validateForm: () => boolean;
-  clearErrors: () => void;
-  setFieldValue: (field: keyof T, value: any) => void;
-}
-
-/**
- * Generic form hook for entity CRUD operations
- * Eliminates duplicate form logic across components
- */
-export function useEntityForm<T extends Record<string, any>>(
-  options: UseEntityFormOptions<T>,
-): UseEntityFormReturn<T> {
-  const {
-    initialData,
-    mutationFn,
-    queryKey,
-    onSuccess,
-    onError,
-    validationRules = {},
-    successMessage = "Thao tác thành công",
-    errorMessage = "Thao tác thất bại",
-    validateOnChange = false,
-  } = options;
-
+export function useEntityForm<T extends Record<string, any>>({
+  initialData,
+  validationRules = {},
+  onSuccess,
+  onError,
+}: UseEntityFormOptions<T>) {
   const [formData, setFormData] = useState<T>(initialData);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const queryClient = useQueryClient();
 
-  // Mutation for form submission
-  const mutation = useMutation({
-    mutationFn,
-    onSuccess: (data) => {
-      toast.success(successMessage);
-      queryClient.invalidateQueries({ queryKey });
-      onSuccess?.(data);
-    },
-    onError: (error) => {
-      toast.error(errorMessage);
-      console.error("Form submission error:", error);
-      onError?.(error);
-    },
-  });
+  const updateField = useCallback(
+    (field: keyof T, value: any) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
 
-  // Validate single field
-  const validateField = useCallback(
-    (field: keyof T) => {
-      const fieldKey = String(field);
-      const fieldRules = validationRules[fieldKey];
-      if (!fieldRules) return;
-
-      const fieldValue = formData[field];
-      let fieldError: string | null = null;
-
-      for (const rule of fieldRules) {
-        fieldError = rule(fieldValue);
-        if (fieldError) break;
+      // Clear error when field is updated
+      if (errors[field]) {
+        setErrors((prev) => ({ ...prev, [field]: undefined }));
       }
-
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        if (fieldError) {
-          newErrors[fieldKey] = fieldError;
-        } else {
-          delete newErrors[fieldKey];
-        }
-        return newErrors;
-      });
     },
-    [formData, validationRules],
+    [errors],
   );
 
-  // Validate entire form
-  const validateFormData = useCallback((): boolean => {
-    const newErrors: Record<string, string> = {};
+  const validateField = useCallback(
+    (field: keyof T, value: any): string | null => {
+      const validator = validationRules[field];
+      return validator ? validator(value) : null;
+    },
+    [validationRules],
+  );
 
-    Object.keys(validationRules).forEach((fieldKey) => {
-      const fieldRules = validationRules[fieldKey];
-      if (!fieldRules) return;
+  const validateForm = useCallback((): boolean => {
+    const newErrors: Partial<Record<keyof T, string>> = {};
+    let isValid = true;
 
-      const fieldValue = formData[fieldKey as keyof T];
-
-      for (const rule of fieldRules) {
-        const error = rule(fieldValue);
-        if (error) {
-          newErrors[fieldKey] = error;
-          break;
-        }
+    Object.keys(validationRules).forEach((field) => {
+      const error = validateField(field as keyof T, formData[field]);
+      if (error) {
+        newErrors[field as keyof T] = error;
+        isValid = false;
       }
     });
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, [formData, validationRules]);
+    return isValid;
+  }, [formData, validationRules, validateField]);
 
-  // Handle input change for text inputs
-  const handleInputChange = useCallback(
-    (field: keyof T) =>
-      (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const value = e.target.value;
-        setFormData((prev) => ({ ...prev, [field]: value }));
+  const handleSubmit = useCallback(
+    async (
+      submitFn: (data: T) => Promise<any>,
+      queryKeysToInvalidate: string[][] = [],
+    ) => {
+      if (!validateForm()) {
+        return;
+      }
 
-        if (validateOnChange) {
-          // Clear error for this field first
-          setErrors((prev) => {
-            const newErrors = { ...prev };
-            delete newErrors[String(field)];
-            return newErrors;
-          });
-          // Validate after state update
-          setTimeout(() => validateField(field), 0);
-        }
-      },
-    [validateOnChange, validateField],
-  );
+      setIsSubmitting(true);
+      try {
+        const result = await submitFn(formData);
 
-  // Handle select change
-  const handleSelectChange = useCallback(
-    (field: keyof T) => (value: string) => {
-      setFormData((prev) => ({ ...prev, [field]: value }));
-
-      if (validateOnChange) {
-        setErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors[String(field)];
-          return newErrors;
+        // Invalidate queries
+        queryKeysToInvalidate.forEach((queryKey) => {
+          queryClient.invalidateQueries({ queryKey });
         });
-        setTimeout(() => validateField(field), 0);
+
+        onSuccess?.(result);
+        return result;
+      } catch (error) {
+        onError?.(error);
+        throw error;
+      } finally {
+        setIsSubmitting(false);
       }
     },
-    [validateOnChange, validateField],
+    [formData, validateForm, queryClient, onSuccess, onError],
   );
 
-  // Handle number input change
-  const handleNumberChange = useCallback(
-    (field: keyof T) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value === "" ? 0 : parseFloat(e.target.value) || 0;
-      setFormData((prev) => ({ ...prev, [field]: value }));
-
-      if (validateOnChange) {
-        setErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors[String(field)];
-          return newErrors;
-        });
-        setTimeout(() => validateField(field), 0);
-      }
-    },
-    [validateOnChange, validateField],
-  );
-
-  // Set field value programmatically
-  const setFieldValue = useCallback(
-    (field: keyof T, value: any) => {
-      setFormData((prev) => ({ ...prev, [field]: value }));
-
-      if (validateOnChange) {
-        setErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors[String(field)];
-          return newErrors;
-        });
-        setTimeout(() => validateField(field), 0);
-      }
-    },
-    [validateOnChange, validateField],
-  );
-
-  // Reset form to initial state
   const handleReset = useCallback(() => {
     setFormData(initialData);
     setErrors({});
   }, [initialData]);
 
-  // Clear all errors
-  const clearErrors = useCallback(() => {
-    setErrors({});
-  }, []);
-
-  // Handle form submission
-  const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-
-      // Validate form before submission
-      const isValid = validateFormData();
-
-      if (!isValid) {
-        const firstErrorKey = Object.keys(errors)[0];
-        if (firstErrorKey && errors[firstErrorKey]) {
-          toast.error(errors[firstErrorKey]);
-        }
-        return;
-      }
-
-      mutation.mutate(formData);
-    },
-    [formData, validateFormData, errors, mutation],
-  );
-
-  // Check if form is valid
-  const isValid = Object.keys(errors).length === 0;
-
   return {
     formData,
     setFormData,
     errors,
-    isLoading: mutation.isPending,
-    isValid,
-    handleInputChange,
-    handleSelectChange,
-    handleNumberChange,
-    handleReset,
-    handleSubmit,
+    isSubmitting,
+    updateField,
     validateField,
-    validateForm: validateFormData,
-    clearErrors,
-    setFieldValue,
+    validateForm,
+    handleSubmit,
+    handleReset,
   };
 }
