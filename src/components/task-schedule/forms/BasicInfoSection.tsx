@@ -33,7 +33,9 @@ export function BasicInfoSection({ register, errors }: BasicInfoSectionProps) {
               className="bg-white border-[#e5e5e5]"
             />
             {errors.name && (
-              <p className="text-sm text-red-500">{errors.name.message}</p>
+              <p className="text-sm text-red-500">
+                {(errors.name as any)?.message || "Trường này là bắt buộc"}
+              </p>
             )}
           </div>
 
@@ -50,7 +52,8 @@ export function BasicInfoSection({ register, errors }: BasicInfoSectionProps) {
             />
             {errors.durationMinutes && (
               <p className="text-sm text-red-500">
-                {errors.durationMinutes.message}
+                {(errors.durationMinutes as any)?.message ||
+                  "Trường này là bắt buộc"}
               </p>
             )}
           </div>
