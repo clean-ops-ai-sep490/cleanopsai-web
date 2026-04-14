@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import type { SLABasicInfo } from "@/types/sla";
-import { useBasicInfoForm } from "@/hooks/useBasicInfoForm";
+import { useSLAFormData } from "@/hooks/useSLAFormData";
+import { getContractsPaginated } from "@/lib/contract-api";
+import { getEnvironmentTypes } from "@/lib/environment-type-api";
+import { getZonesPaginated } from "@/lib/zone-api";
+import { getWorkAreasPaginated } from "@/lib/work-area-api";
 
 interface BasicInfoStepProps {
   data: SLABasicInfo;
@@ -16,20 +20,21 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
   const [loading, setLoading] = useState(true);
 
   const {
+    contracts,
+    environmentTypes,
+    zones,
+    workAreas,
     locationName,
-    loadContracts,
-    loadWorkAreas,
-    loadEnvironmentTypes,
-    loadZones,
+    isLoading,
     handleInputChange,
     formatWorkAreaDisplay,
-  } = useBasicInfoForm(data, onChange);
+  } = useSLAFormData(data, onChange);
 
   useEffect(() => {
     setLoading(false);
   }, []);
 
-  if (loading) {
+  if (loading || isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1a80a2]"></div>
@@ -53,7 +58,28 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
               placeholder="Chọn hợp đồng"
               searchPlaceholder="Tìm kiếm hợp đồng..."
               emptyMessage="Không tìm thấy hợp đồng nào."
-              loadItems={loadContracts}
+              queryKey={["contracts", "infinite"]}
+              queryFn={async (page, pageSize, searchQuery) => {
+                const response = await getContractsPaginated({
+                  pageNumber: page,
+                  pageSize,
+                  search: searchQuery,
+                });
+                return {
+                  content: response.items.map((item) => ({
+                    ...item,
+                    id: item.id!,
+                  })),
+                  pageNumber: page,
+                  pageSize,
+                  totalElements: response.totalCount,
+                  totalPages: Math.ceil(response.totalCount / pageSize),
+                  hasNextPage: page * pageSize < response.totalCount,
+                  hasPreviousPage: page > 1,
+                };
+              }}
+              useInfiniteLoading={true}
+              pageSize={10}
             />
           </div>
 
@@ -92,7 +118,42 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
               placeholder="Chọn loại môi trường"
               searchPlaceholder="Tìm kiếm loại môi trường..."
               emptyMessage="Không tìm thấy loại môi trường nào."
-              loadItems={loadEnvironmentTypes}
+              queryKey={["environment-types", "infinite"]}
+              queryFn={async (page, pageSize, searchQuery) => {
+                try {
+                  // Use the same API function as workflow form
+                  const response = await getEnvironmentTypes({
+                    pageNumber: page,
+                    pageSize,
+                    search: searchQuery,
+                  });
+
+                  // Ensure content is an array and filter out invalid items
+                  const validContent = Array.isArray(response.content)
+                    ? response.content.filter(
+                        (item) => item && item.id && item.name,
+                      )
+                    : [];
+
+                  return {
+                    ...response,
+                    content: validContent,
+                  };
+                } catch (error) {
+                  console.error("Failed to load environment types:", error);
+                  return {
+                    content: [],
+                    pageNumber: page,
+                    pageSize,
+                    totalElements: 0,
+                    totalPages: 0,
+                    hasNextPage: false,
+                    hasPreviousPage: false,
+                  };
+                }
+              }}
+              useInfiniteLoading={true}
+              pageSize={10}
             />
           </div>
 
@@ -104,7 +165,30 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
               placeholder="Chọn khu vực"
               searchPlaceholder="Tìm kiếm khu vực..."
               emptyMessage="Không tìm thấy khu vực nào."
-              loadItems={loadZones}
+              queryKey={["zones", "infinite", data.locationId]}
+              queryFn={async (page, pageSize, searchQuery) => {
+                const response = await getZonesPaginated({
+                  pageNumber: page,
+                  pageSize,
+                  search: searchQuery,
+                  locationId: data.locationId,
+                });
+                return {
+                  content: response.items.map((item) => ({
+                    ...item,
+                    id: item.id!,
+                  })),
+                  pageNumber: page,
+                  pageSize,
+                  totalElements: response.totalCount,
+                  totalPages: Math.ceil(response.totalCount / pageSize),
+                  hasNextPage: page * pageSize < response.totalCount,
+                  hasPreviousPage: page > 1,
+                };
+              }}
+              filters={{ locationId: data.locationId }}
+              useInfiniteLoading={true}
+              pageSize={10}
               disabled={!data.locationId}
             />
           </div>
@@ -117,8 +201,31 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
               placeholder="Chọn khu vực làm việc"
               searchPlaceholder="Tìm kiếm khu vực làm việc..."
               emptyMessage="Không tìm thấy khu vực làm việc nào."
-              loadItems={loadWorkAreas}
+              queryKey={["work-areas", "infinite", data.zoneId]}
+              queryFn={async (page, pageSize, searchQuery) => {
+                const response = await getWorkAreasPaginated({
+                  pageNumber: page,
+                  pageSize,
+                  search: searchQuery,
+                  zoneId: data.zoneId,
+                });
+                return {
+                  content: response.items.map((item) => ({
+                    ...item,
+                    id: item.id!,
+                  })),
+                  pageNumber: page,
+                  pageSize,
+                  totalElements: response.totalCount,
+                  totalPages: Math.ceil(response.totalCount / pageSize),
+                  hasNextPage: page * pageSize < response.totalCount,
+                  hasPreviousPage: page > 1,
+                };
+              }}
+              filters={{ zoneId: data.zoneId }}
               displayFormatter={formatWorkAreaDisplay}
+              useInfiniteLoading={true}
+              pageSize={10}
               disabled={!data.zoneId}
             />
           </div>
