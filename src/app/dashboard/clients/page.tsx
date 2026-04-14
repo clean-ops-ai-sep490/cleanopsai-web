@@ -13,21 +13,40 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PaginationWithInfo } from "@/components/ui/pagination";
 import { CreateClientDialog } from "@/components/clients/dialogs/CreateClientDialog";
 import { Plus, Mail, Building2 } from "lucide-react";
-import { getClients } from "@/lib/client-api";
+import { getClientsPaginatedNew } from "@/lib/client-api";
+import { useListQuery } from "@/hooks/usePaginatedQuery";
 
 export default function ClientsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  // Fetch clients
-  const { data: clients = [], isLoading: clientsLoading } = useQuery({
+  // Use the simplified paginated query hook
+  const {
+    items: clients,
+    totalElements,
+    totalPages,
+    currentPage,
+    pageSize,
+    setPage,
+    isEmpty,
+    isLoading: clientsLoading,
+    refetch,
+  } = useListQuery({
     queryKey: ["clients"],
-    queryFn: getClients,
+    queryFn: getClientsPaginatedNew,
+  });
+
+  // Fetch clients for the create dialog (use larger page size for selection)
+  const { data: clientsResponse, isLoading: clientsLoading2 } = useQuery({
+    queryKey: ["clients-for-selection"],
+    queryFn: () => getClientsPaginatedNew(1, 500),
   });
 
   const handleCreateSuccess = () => {
     setIsCreateDialogOpen(false);
+    refetch();
   };
 
   if (clientsLoading) {
@@ -61,7 +80,7 @@ export default function ClientsPage() {
             </h1>
             <p className="text-gray-600 mt-1">Quản lý thông tin khách hàng</p>
           </div>
-          <CreateClientDialog
+          {/* <CreateClientDialog
             isOpen={isCreateDialogOpen}
             onClose={() => setIsCreateDialogOpen(false)}
             onSuccess={handleCreateSuccess}
@@ -71,18 +90,18 @@ export default function ClientsPage() {
                 Thêm Khách Hàng
               </Button>
             }
-          />
+          /> */}
         </div>
 
         {/* Clients Table */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Clients ({clients.length})</span>
+              <span>Clients ({totalElements})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {clients.length === 0 ? (
+            {isEmpty ? (
               <div className="text-center py-8">
                 <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">No clients found</h3>
@@ -102,49 +121,68 @@ export default function ClientsPage() {
                 />
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Client Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {clients.map((client) => (
-                    <TableRow key={client.id} className="hover:bg-gray-50">
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-gray-500" />
-                          <div>
-                            <p className="font-semibold text-black">
-                              {client.name}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              ID: {client.id}
-                            </p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-gray-500" />
-                          {client.email}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        {new Date().toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" className="h-8 px-2">
-                          View Details
-                        </Button>
-                      </TableCell>
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Client Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {clients.map((client) => (
+                      <TableRow key={client.id} className="hover:bg-gray-50">
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-gray-500" />
+                            <div>
+                              <p className="font-semibold text-black">
+                                {client.name}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                ID: {client.id}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-gray-500" />
+                            {client.email}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">
+                          {new Date().toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2"
+                          >
+                            View Details
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="mt-6">
+                    <PaginationWithInfo
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      pageSize={pageSize}
+                      totalElements={totalElements}
+                      onPageChange={setPage}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

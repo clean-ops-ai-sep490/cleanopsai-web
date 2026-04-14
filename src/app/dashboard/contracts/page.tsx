@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,22 +13,62 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PaginationWithInfo } from "@/components/ui/pagination";
 import { CreateContractDialog } from "@/components/contracts/dialogs/CreateContractDialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus, FileText, MapPin } from "lucide-react";
-import { useContractsPage } from "@/hooks/useContractsPage";
+import { getContractsPaginatedNew } from "@/lib/contract-api";
+import { getClientsPaginated } from "@/lib/client-api";
+import { usePaginatedData } from "@/hooks/usePagination";
 
 export default function ContractsPage() {
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  // Initialize pagination for contracts
+  const contractsPagination = usePaginatedData({
+    initialPageSize: 10,
+  });
+
+  // Fetch contracts with pagination
   const {
-    contracts,
-    clients,
-    contractsLoading,
-    clientsLoading,
-    isCreateDialogOpen,
-    setIsCreateDialogOpen,
-    handleCreateSuccess,
-    handleViewContract,
-  } = useContractsPage();
+    data: contractsResponse,
+    isLoading: contractsLoading,
+    refetch: refetchContracts,
+  } = useQuery({
+    queryKey: [
+      "contracts",
+      contractsPagination.currentPage,
+      contractsPagination.pageSize,
+    ],
+    queryFn: () =>
+      getContractsPaginatedNew(
+        contractsPagination.currentPage,
+        contractsPagination.pageSize,
+      ),
+  });
+
+  // Update pagination data when response changes
+  const paginatedContracts = usePaginatedData({
+    data: contractsResponse,
+    initialPageSize: 10,
+  });
+
+  // Fetch clients for the create dialog (use normal pagination)
+  const { data: clientsResponse, isLoading: clientsLoading } = useQuery({
+    queryKey: ["clients-for-selection"],
+    queryFn: () => getClientsPaginated({ pageSize: 50 }),
+  });
+  const clients = clientsResponse?.items || [];
+
+  const handleCreateSuccess = () => {
+    setIsCreateDialogOpen(false);
+    refetchContracts();
+  };
+
+  const handleViewContract = (contractId: string) => {
+    // Navigation logic could be added here
+    console.log("View contract:", contractId);
+  };
 
   if (contractsLoading) {
     return (
@@ -63,7 +105,7 @@ export default function ContractsPage() {
               Quản lý hợp đồng và thông tin khách hàng
             </p>
           </div>
-          <CreateContractDialog
+          {/* <CreateContractDialog
             isOpen={isCreateDialogOpen}
             onClose={() => setIsCreateDialogOpen(false)}
             onSuccess={handleCreateSuccess}
@@ -75,18 +117,18 @@ export default function ContractsPage() {
                 Tạo Hợp Đồng
               </Button>
             }
-          />
+          /> */}
         </div>
 
         {/* Contracts Table */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Contracts ({contracts.length})</span>
+              <span>Contracts ({paginatedContracts.totalElements})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {contracts.length === 0 ? (
+            {paginatedContracts.isEmpty ? (
               <div className="text-center py-8">
                 <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">No contracts found</h3>
@@ -109,60 +151,77 @@ export default function ContractsPage() {
                 />
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Contract Name</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {contracts.map((contract) => (
-                    <TableRow key={contract.id} className="hover:bg-gray-50">
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-gray-500" />
-                          <div>
-                            <p className="font-semibold text-black">
-                              {contract.name}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              ID: {contract.id}
-                            </p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{contract.clientName}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="default"
-                          className="bg-green-100 text-green-800 hover:bg-green-100"
-                        >
-                          Active
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        {new Date().toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end space-x-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewContract(contract.id!)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <MapPin className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Contract Name</TableHead>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedContracts.items.map((contract) => (
+                      <TableRow key={contract.id} className="hover:bg-gray-50">
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-gray-500" />
+                            <div>
+                              <p className="font-semibold text-black">
+                                {contract.name}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                ID: {contract.id}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{contract.clientName || "N/A"}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="default"
+                            className="bg-green-100 text-green-800 hover:bg-green-100"
+                          >
+                            Active
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">
+                          {contract.createdAt
+                            ? new Date(contract.createdAt).toLocaleDateString()
+                            : "N/A"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end space-x-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewContract(contract.id!)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <MapPin className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                {/* Pagination */}
+                {paginatedContracts.totalPages > 1 && (
+                  <div className="mt-6">
+                    <PaginationWithInfo
+                      currentPage={paginatedContracts.currentPage}
+                      totalPages={paginatedContracts.totalPages}
+                      pageSize={paginatedContracts.pageSize}
+                      totalElements={paginatedContracts.totalElements}
+                      onPageChange={paginatedContracts.setPage}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
