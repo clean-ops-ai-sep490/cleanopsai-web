@@ -11,6 +11,7 @@ export function AdminSidebar() {
   const items = [
     { name: "Người dùng", href: "/admin/users", icon: Users },
     { name: "Bước", href: "/admin/steps", icon: Workflow  },
+    { name: "Điểm kiểm tra", href: "/admin/workarea-checkin", icon: Workflow  },
   ];
 
   return (

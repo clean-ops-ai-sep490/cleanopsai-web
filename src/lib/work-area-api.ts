@@ -78,18 +78,3 @@ export async function getWorkAreasPaginated(
     return { items: [], totalCount: 0 };
   }
 }
-
-export async function getWorkAreaById(id: string): Promise<WorkArea> {
-  return api.get<WorkArea>(`/WorkAreas/${id}`);
-}
-
-export async function updateWorkArea(
-  id: string,
-  data: WorkAreaFormData,
-): Promise<WorkArea> {
-  return api.put<WorkArea>(`/WorkAreas/${id}`, data);
-}
-
-export async function deleteWorkArea(id: string): Promise<void> {
-  return api.delete(`/WorkAreas/${id}`);
-}
