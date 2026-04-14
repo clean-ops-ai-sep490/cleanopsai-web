@@ -30,7 +30,7 @@ export const {
 export async function getWorkAreasPaginated(
   params: WorkAreasPaginatedRequest = {},
 ): Promise<{ items: WorkArea[]; totalCount: number }> {
-  const { pageNumber = 1, pageSize = 50, search, zoneId, ...rest } = params;
+  const { pageNumber = 1, pageSize = 10, search, zoneId, ...rest } = params;
 
   try {
     let response;
@@ -77,19 +77,4 @@ export async function getWorkAreasPaginated(
     console.error("Failed to load work areas:", error);
     return { items: [], totalCount: 0 };
   }
-}
-
-export async function getWorkAreaById(id: string): Promise<WorkArea> {
-  return api.get<WorkArea>(`/WorkAreas/${id}`);
-}
-
-export async function updateWorkArea(
-  id: string,
-  data: WorkAreaFormData,
-): Promise<WorkArea> {
-  return api.put<WorkArea>(`/WorkAreas/${id}`, data);
-}
-
-export async function deleteWorkArea(id: string): Promise<void> {
-  return api.delete(`/WorkAreas/${id}`);
 }
