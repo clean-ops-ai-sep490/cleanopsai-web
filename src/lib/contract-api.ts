@@ -59,7 +59,7 @@ export async function getContractsPaginated(params: {
   pageSize?: number;
   search?: string;
 }): Promise<{ items: Contract[]; totalCount: number }> {
-  const { pageNumber = 1, pageSize = 50, search, ...rest } = params;
+  const { pageNumber = 1, pageSize = 10, search, ...rest } = params;
 
   try {
     const response = await contractApi.getPaginated(pageNumber, pageSize, {
@@ -75,27 +75,4 @@ export async function getContractsPaginated(params: {
     console.error("Failed to load contracts:", error);
     return { items: [], totalCount: 0 };
   }
-}
-
-export async function getContractById(id: string): Promise<Contract> {
-  return api.get<Contract>(`/Contracts/${id}`);
-}
-
-export async function updateContract(
-  id: string,
-  data: ContractFormData,
-): Promise<Contract> {
-  const formData = new FormData();
-  formData.append("name", data.name);
-  formData.append("clientId", data.clientId);
-
-  if (data.file) {
-    formData.append("file", data.file);
-  }
-
-  return api.put<Contract>(`/Contracts/${id}`, formData);
-}
-
-export async function deleteContract(id: string): Promise<void> {
-  return api.delete(`/Contracts/${id}`);
 }
