@@ -24,6 +24,7 @@ import {
 
 import { StandardDialog } from "@/components/ui/standard-dialog";
 import StepForm from "./StepForm";
+import { toast } from "sonner";
 
 export default function StepsPage() {
   const [keyword, setKeyword] = useState("");
@@ -39,18 +40,26 @@ export default function StepsPage() {
   const deleteMutation = useDeleteStep();
 
   const handleSubmit = async (form: any) => {
+  try {
     if (editing) {
       await updateMutation.mutateAsync({
         id: editing.id,
         data: form,
       });
+
+      toast.success("Cập nhật thành công");
     } else {
       await createMutation.mutateAsync(form);
+
+      toast.success("Thêm mới thành công");
     }
 
     setOpen(false);
     setEditing(null);
-  };
+  } catch (error) {
+    toast.error("Có lỗi xảy ra, vui lòng thử lại");
+  }
+};
 
   const handleDelete = async (id: string) => {
     if (!confirm("Bạn có chắc muốn xóa bước này không?")) return;

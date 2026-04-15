@@ -13,6 +13,7 @@ export function AdminSidebar() {
     { name: "Bước", href: "/admin/steps", icon: Workflow  },
     { name: "Điểm kiểm tra", href: "/admin/workarea-checkin", icon: MapPin  },
     { name: "Cấp chứng chỉ và kỹ năng", href: "/admin/qualifications", icon: BadgeCheck },
+    { name: "Vị trí", href: "/admin/locations", icon: MapPin },
   ];
 
   return (

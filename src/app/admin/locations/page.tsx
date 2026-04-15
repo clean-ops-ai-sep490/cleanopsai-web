@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,108 +13,77 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { Plus, Edit2, Trash2, Unlock } from "lucide-react";
+import { Plus, Edit2, Trash2 } from "lucide-react";
 
-import { useAuth } from "@/hooks/useAuth";
+import {
+  useLocations,
+  useCreateLocation,
+  useUpdateLocation,
+  useDeleteLocation,
+} from "@/hooks/useLocations";
+
 import { StandardDialog } from "@/components/ui/standard-dialog";
-import UserForm from "./UserForm";
+import LocationForm from "./LocationForm";
 import { toast } from "sonner";
 
-export default function UsersPage() {
-  const {
-    getUsers,
-    register,
-    updateUser,
-    deleteUser,
-    unlockUser,
-  } = useAuth();
-
-  const [data, setData] = useState<any>(null);
-
-  // filters
+export default function LocationsPage() {
   const [keyword, setKeyword] = useState("");
-  const [role, setRole] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
 
-  // ================= LOAD DATA =================
-  const load = async () => {
-    const res = await getUsers({
-      keyword,
-      role, // 👈 IMPORTANT FILTER
-      pageNumber,
-      pageSize: 10,
-    });
-    setData(res);
-  };
+  
 
-  useEffect(() => {
-    load();
-  }, [keyword, role, pageNumber]);
+  const { data, isLoading } = useLocations({
+    pageNumber,
+    pageSize: 10,
+  });
+  const totalPages = Math.ceil(
+  (data?.totalCount ?? 0) / (data?.pageSize ?? 10)
+);
 
-  // ================= HANDLERS =================
+const hasNextPage = (data?.pageNumber ?? 1) < totalPages;
+const hasPreviousPage = (data?.pageNumber ?? 1) > 1;
+
+  const createMutation = useCreateLocation();
+  const updateMutation = useUpdateLocation();
+  const deleteMutation = useDeleteLocation();
+
   const handleSubmit = async (form: any) => {
   try {
     if (editing) {
-      await updateUser(editing.id, {
-        fullName: form.fullName,
-        role: form.role,
+      await updateMutation.mutateAsync({
+        id: editing.id,
+        data: form,
       });
 
-      toast.success("Cập nhật user thành công");
+      toast.success("Cập nhật vị trí thành công");
     } else {
-      await register(form);
+      await createMutation.mutateAsync(form);
 
-      toast.success("Tạo user thành công");
+      toast.success("Thêm vị trí thành công");
     }
 
     setOpen(false);
     setEditing(null);
-    load();
-  } catch (error) {
+  } catch (err) {
     toast.error("Có lỗi xảy ra, vui lòng thử lại");
   }
 };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Xóa user này?")) return;
-    await deleteUser(id);
-    load();
+    if (!confirm("Xóa location này?")) return;
+    await deleteMutation.mutateAsync(id);
   };
 
-  const handleUnlock = async (id: string) => {
-    await unlockUser(id);
-    load();
-  };
-
-  // ================= UI =================
   return (
     <div className="min-h-screen p-6">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Quản lý người dùng</h1>
+
         {/* HEADER */}
-        <div className="flex gap-3 mb-6 items-center">
-          <Input
-            placeholder="Tìm user..."
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-          />
-
-          {/* ROLE FILTER */}
-          <select
-            className="border rounded px-3 py-2"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-          >
-            <option value="">Tất cả role</option>
-            <option value="Admin">Admin</option>
-            <option value="Supporter">Supporter</option>
-            <option value="Worker">Worker</option>
-            <option value="Supervisor">Supervisor</option>
-          </select>
-
+        <div className="flex gap-3 mb-6 justify-between items-center">
+        <h1 className="text-2xl font-bold mb-6">Quản lý vị trí</h1>
           <Button
             onClick={() => {
               setEditing(null);
@@ -122,7 +91,7 @@ export default function UsersPage() {
             }}
           >
             <Plus className="w-4 h-4 mr-2" />
-            Thêm user
+            Thêm vị trí
           </Button>
         </div>
 
@@ -130,7 +99,7 @@ export default function UsersPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Users ({data?.totalElements ?? 0})
+              Vị trí ({data?.totalCount ?? 0})
             </CardTitle>
           </CardHeader>
 
@@ -138,9 +107,10 @@ export default function UsersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Họ tên</TableHead>
-                  <TableHead>Role</TableHead>
+                  <TableHead>Tên</TableHead>
+                  <TableHead>Địa chỉ</TableHead>
+                  <TableHead>Tỉnh (TP)</TableHead>
+                  <TableHead>Khách hàng</TableHead>
                   <TableHead className="text-right">
                     Hành động
                   </TableHead>
@@ -148,33 +118,27 @@ export default function UsersPage() {
               </TableHeader>
 
               <TableBody>
-                {data?.content?.map((u: any) => (
-                  <TableRow key={u.id}>
-                    <TableCell>{u.email}</TableCell>
-                    <TableCell>{u.fullName}</TableCell>
-                    <TableCell>{u.role}</TableCell>
-
+                {data?.items?.map((l: any) => (
+                  <TableRow key={l.id}>
+                    <TableCell>{l.name}</TableCell>
+                    <TableCell>{l.address}</TableCell>
+                    <TableCell>{l.province}</TableCell>
+                    <TableCell>{l.clientName}</TableCell>
                     <TableCell className="text-right flex justify-end gap-2">
                       <Button
                         variant="ghost"
                         onClick={() => {
-                          setEditing(u);
+                          setEditing(l);
                           setOpen(true);
                         }}
                       >
                         <Edit2 className="w-4 h-4" />
                       </Button>
 
-                      {u.status === "Locked" && (
-  <Button onClick={() => handleUnlock(u.id)}>
-    <Unlock className="w-4 h-4" />
-  </Button>
-)}
-
                       <Button
                         variant="ghost"
                         className="text-red-500"
-                        onClick={() => handleDelete(u.id)}
+                        onClick={() => handleDelete(l.id)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -187,18 +151,18 @@ export default function UsersPage() {
             {/* PAGINATION */}
             <div className="flex justify-between mt-4">
               <Button
-                disabled={!data?.hasPreviousPage}
+                disabled={!hasPreviousPage}
                 onClick={() => setPageNumber((p) => p - 1)}
               >
                 Trước
               </Button>
 
               <div className="text-sm text-gray-500">
-                Trang {data?.pageNumber} / {data?.totalPages}
+                Trang {data?.pageNumber} / {totalPages}
               </div>
 
               <Button
-                disabled={!data?.hasNextPage}
+                disabled={!hasNextPage}
                 onClick={() => setPageNumber((p) => p + 1)}
               >
                 Sau
@@ -212,9 +176,9 @@ export default function UsersPage() {
       <StandardDialog
         open={open}
         onOpenChange={setOpen}
-        title={editing ? "Cập nhật user" : "Thêm user"}
+        title={editing ? "Cập nhật vị trí" : "Thêm vị trí"}
       >
-        <UserForm
+        <LocationForm
           initialData={editing}
           onSubmit={handleSubmit}
           onCancel={() => setOpen(false)}

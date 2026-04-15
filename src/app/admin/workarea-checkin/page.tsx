@@ -12,6 +12,7 @@ import { StandardDialog } from "@/components/ui/standard-dialog";
 import WorkareaCheckinPointForm from "./WorkareaCheckinForm";
 import { useWorkareaCheckin } from "@/hooks/useWorkareaCheckin";
 import { useWorkArea } from "@/hooks/useWorkarea";
+import { toast } from "sonner";
 
 export default function WorkareaCheckinPointsPage() {
   const [open, setOpen] = useState(false);
@@ -44,11 +45,21 @@ export default function WorkareaCheckinPointsPage() {
   }, [qrModal]);
 
   const handleSubmit = async (form: any) => {
-    if (editing) await update(editing.id, form);
-    else await create(form);
+  try {
+    if (editing) {
+      await update(editing.id, form);
+      toast.success("Cập nhật thành công");
+    } else {
+      await create(form);
+      toast.success("Thêm mới thành công");
+    }
+
     setOpen(false);
     setEditing(null);
-  };
+  } catch (error) {
+    toast.error("Có lỗi xảy ra, vui lòng thử lại");
+  }
+};
 
   const handleDelete = async (id: string) => {
     if (!confirm("Xóa check-in point này?")) return;
