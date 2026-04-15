@@ -84,7 +84,7 @@ export default function UsersPage() {
   return (
     <div className="min-h-screen p-6">
       <div className="max-w-6xl mx-auto">
-
+        <h1 className="text-2xl font-bold mb-6">Quản lý người dùng</h1>
         {/* HEADER */}
         <div className="flex gap-3 mb-6 items-center">
           <Input
