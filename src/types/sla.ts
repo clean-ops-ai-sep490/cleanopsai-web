@@ -152,16 +152,9 @@ export interface SLATaskRequirement {
   recurrenceType: "Daily" | "Weekly" | "Monthly" | "Yearly";
   recurrenceConfig: {
     interval: number;
-    daysOfWeek?: (
-      | "Sunday"
-      | "Monday"
-      | "Tuesday"
-      | "Wednesday"
-      | "Thursday"
-      | "Friday"
-      | "Saturday"
-    )[];
+    daysOfWeek?: string[];
     daysOfMonth?: number[];
+    selectedMonth?: number; // For Yearly recurrence
     monthDays?: { month: number; day: number }[];
   };
 }

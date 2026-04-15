@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -51,6 +51,25 @@ export function SLACreateContainer() {
     { number: 2, title: "Bố trí nhân sự", active: currentStep === 2 },
     { number: 3, title: "Cấu hình công việc", active: currentStep === 3 },
   ];
+
+  // Memoize onChange functions to prevent unnecessary re-renders
+  const handleBasicInfoChange = useCallback((newData: SLABasicInfo) => {
+    setBasicInfo(newData);
+  }, []);
+
+  const handleStaffRequirementsChange = useCallback(
+    (newData: SLAStaffRequirement[]) => {
+      setStaffRequirements(newData);
+    },
+    [],
+  );
+
+  const handleTaskRequirementsChange = useCallback(
+    (newData: SLATaskRequirement[]) => {
+      setTaskRequirements(newData);
+    },
+    [],
+  );
 
   const handleNext = () => {
     if (currentStep < 3) {
@@ -169,20 +188,20 @@ export function SLACreateContainer() {
       <Card>
         <CardContent className="p-8">
           {currentStep === 1 && (
-            <BasicInfoStep data={basicInfo} onChange={setBasicInfo} />
+            <BasicInfoStep data={basicInfo} onChange={handleBasicInfoChange} />
           )}
 
           {currentStep === 2 && (
             <StaffRequirementStep
               staffRequirements={staffRequirements}
-              onStaffRequirementsChange={setStaffRequirements}
+              onStaffRequirementsChange={handleStaffRequirementsChange}
             />
           )}
 
           {currentStep === 3 && (
             <TaskRequirementStep
               taskRequirements={taskRequirements}
-              onTaskRequirementsChange={setTaskRequirements}
+              onTaskRequirementsChange={handleTaskRequirementsChange}
             />
           )}
         </CardContent>

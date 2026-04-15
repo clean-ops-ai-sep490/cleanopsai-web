@@ -30,7 +30,7 @@ export const {
 export async function getWorkAreasPaginated(
   params: WorkAreasPaginatedRequest = {},
 ): Promise<{ items: WorkArea[]; totalCount: number }> {
-  const { pageNumber = 1, pageSize = 50, search, zoneId, ...rest } = params;
+  const { pageNumber = 1, pageSize = 10, search, zoneId, ...rest } = params;
 
   try {
     let response;

@@ -1,11 +1,9 @@
 "use client";
 
-import { UseFormSetValue, UseFormWatch, FieldErrors } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
+import { TimePicker } from "@/components/ui/time-picker";
 import {
   Select,
   SelectContent,
@@ -13,45 +11,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Clock } from "lucide-react";
 
-interface RecurrenceSectionProps {
-  setValue: UseFormSetValue<any>;
-  watch: UseFormWatch<any>;
-  errors: FieldErrors<any>;
-  times: string[];
-  setTimes: (times: string[]) => void;
-  selectedDaysOfWeek: string[];
-  setSelectedDaysOfWeek: (days: string[]) => void;
-  daysOfMonth: number[];
-  setDaysOfMonth: (days: number[]) => void;
-  newTime: string;
-  setNewTime: (time: string) => void;
-  newDayOfMonth: string;
-  setNewDayOfMonth: (day: string) => void;
-  addTime: () => void;
-  removeTime: (time: string) => void;
-  addDayOfMonth: () => void;
-  removeDayOfMonth: (day: number) => void;
-  toggleDayOfWeek: (day: string) => void;
-}
-
-const recurrenceTypes = [
-  { value: "Daily", label: "Hàng ngày" },
-  { value: "Weekly", label: "Hàng tuần" },
-  { value: "Monthly", label: "Hàng tháng" },
-  { value: "Yearly", label: "Hàng năm" },
-];
-
-const daysOfWeek = [
-  { value: "Sunday", label: "Chủ nhật" },
-  { value: "Monday", label: "Thứ hai" },
-  { value: "Tuesday", label: "Thứ ba" },
-  { value: "Wednesday", label: "Thứ tư" },
-  { value: "Thursday", label: "Thứ năm" },
-  { value: "Friday", label: "Thứ sáu" },
-  { value: "Saturday", label: "Thứ bảy" },
-];
+// Import types and constants
+import type { RecurrenceSectionProps } from "@/types/recurrence";
+import {
+  RECURRENCE_TYPES,
+  WEEKDAY_OPTIONS,
+  MONTH_NAMES,
+  DEFAULT_TIME_SLOT,
+  MAX_DAYS_IN_MONTH,
+  getDaysArrayForMonth,
+} from "@/constants/recurrence";
 
 export function RecurrenceSection({
   setValue,
@@ -75,6 +46,41 @@ export function RecurrenceSection({
 }: RecurrenceSectionProps) {
   const recurrenceType = watch("recurrenceType");
 
+  // Helper functions for new UI
+  const addTimeSlot = () => {
+    const newSlot = newTime || DEFAULT_TIME_SLOT;
+    if (!times.includes(newSlot)) {
+      setTimes([...times, newSlot]);
+      setNewTime("");
+    }
+  };
+
+  const removeTimeSlot = (timeToRemove: string) => {
+    if (times.length > 1) {
+      setTimes(times.filter((time) => time !== timeToRemove));
+    }
+  };
+
+  const updateTimeSlot = (oldTime: string, newTimeValue: string) => {
+    setTimes(times.map((time) => (time === oldTime ? newTimeValue : time)));
+  };
+
+  const toggleWeekday = (weekdayId: string) => {
+    if (selectedDaysOfWeek.includes(weekdayId)) {
+      setSelectedDaysOfWeek(selectedDaysOfWeek.filter((d) => d !== weekdayId));
+    } else {
+      setSelectedDaysOfWeek([...selectedDaysOfWeek, weekdayId]);
+    }
+  };
+
+  const toggleDay = (day: number) => {
+    if (daysOfMonth.includes(day)) {
+      setDaysOfMonth(daysOfMonth.filter((d) => d !== day));
+    } else {
+      setDaysOfMonth([...daysOfMonth, day].sort((a, b) => a - b));
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -83,17 +89,20 @@ export function RecurrenceSection({
         </h2>
 
         <div className="space-y-6">
+          {/* Loại lặp lại */}
           <div className="space-y-2">
-            <Label>Loại lặp lại *</Label>
+            <Label>
+              Loại lặp lại <span className="text-red-500">*</span>
+            </Label>
             <Select
               onValueChange={(value) => setValue("recurrenceType", value)}
               defaultValue="Daily"
             >
-              <SelectTrigger className="bg-white border-[#e5e5e5]">
+              <SelectTrigger className="bg-white border-[#e5e5e5] focus:ring-2 focus:ring-[#1a80a2] focus:border-transparent">
                 <SelectValue placeholder="Chọn loại lặp lại" />
               </SelectTrigger>
               <SelectContent>
-                {recurrenceTypes.map((type) => (
+                {RECURRENCE_TYPES.map((type) => (
                   <SelectItem key={type.value} value={type.value}>
                     {type.label}
                   </SelectItem>
@@ -102,121 +111,175 @@ export function RecurrenceSection({
             </Select>
             {errors.recurrenceType && (
               <p className="text-sm text-red-500">
-                {errors.recurrenceType.message}
+                {(errors.recurrenceType as any)?.message ||
+                  "Vui lòng chọn loại lặp lại"}
               </p>
             )}
           </div>
 
-          {/* Times Configuration */}
-          <Card className="p-4 bg-gray-50">
-            <Label className="text-sm font-medium">Thời gian trong ngày</Label>
-            <div className="mt-2 space-y-3">
-              <div className="flex flex-wrap gap-2">
-                {times.map((time) => (
-                  <Badge
-                    key={time}
-                    variant="outline"
-                    className="flex items-center gap-1"
-                  >
-                    {time}
-                    <button
-                      type="button"
-                      onClick={() => removeTime(time)}
-                      className="ml-1 hover:text-red-500"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  type="time"
-                  value={newTime}
-                  onChange={(e) => setNewTime(e.target.value)}
-                  className="w-32"
-                />
-                <Button
-                  type="button"
-                  onClick={addTime}
-                  size="sm"
-                  variant="outline"
+          {/* Thời gian trong ngày */}
+          <div>
+            <Label className="block text-sm font-medium text-gray-700 mb-3">
+              Thời gian trong ngày
+            </Label>
+            <div className="space-y-3">
+              {times.map((time, index) => (
+                <div
+                  key={`${time}-${index}`}
+                  className="flex items-center gap-3"
                 >
-                  <Plus className="w-4 h-4" />
-                </Button>
+                  <div className="flex-1 max-w-xs">
+                    <TimePicker
+                      value={time}
+                      onChange={(newTime) => updateTimeSlot(time, newTime)}
+                      placeholder="Chọn thời gian"
+                      format="24"
+                      className="w-full"
+                    />
+                  </div>
+                  {times.length > 1 && (
+                    <Button
+                      type="button"
+                      onClick={() => removeTimeSlot(time)}
+                      variant="ghost"
+                      size="sm"
+                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </Button>
+                  )}
+                  {index === 0 && (
+                    <Button
+                      type="button"
+                      onClick={addTimeSlot}
+                      variant="ghost"
+                      size="sm"
+                      className="p-2 text-gray-400 hover:text-[#1a80a2] hover:bg-[#1a80a2]/10 rounded-lg transition-colors"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Weekly selector */}
+          {recurrenceType === "Weekly" && (
+            <div>
+              <Label className="block text-sm font-medium text-gray-700 mb-3">
+                Chọn các ngày trong tuần
+              </Label>
+              <div className="grid grid-cols-7 gap-2">
+                {WEEKDAY_OPTIONS.map((weekday) => {
+                  const isSelected = selectedDaysOfWeek.includes(weekday.id);
+                  return (
+                    <button
+                      key={weekday.id}
+                      type="button"
+                      onClick={() => toggleWeekday(weekday.id)}
+                      className={`px-3 py-4 rounded-lg font-medium transition-all text-center ${
+                        isSelected
+                          ? "bg-[#1a80a2] text-white hover:bg-[#1a80a2]/90"
+                          : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
+                      }`}
+                    >
+                      <div className="text-xs mb-1 opacity-80">
+                        {weekday.shortLabel}
+                      </div>
+                      <div className="text-sm">{weekday.label}</div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          </Card>
-
-          {/* Days of Week (for Weekly) */}
-          {recurrenceType === "Weekly" && (
-            <Card className="p-4 bg-gray-50">
-              <Label className="text-sm font-medium">Ngày trong tuần</Label>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {daysOfWeek.map((day) => (
-                  <Button
-                    key={day.value}
-                    type="button"
-                    variant={
-                      selectedDaysOfWeek.includes(day.value)
-                        ? "default"
-                        : "outline"
-                    }
-                    size="sm"
-                    onClick={() => toggleDayOfWeek(day.value)}
-                    className="text-xs"
-                  >
-                    {day.label}
-                  </Button>
-                ))}
-              </div>
-            </Card>
           )}
 
-          {/* Days of Month (for Monthly) */}
+          {/* Monthly selector */}
           {recurrenceType === "Monthly" && (
-            <Card className="p-4 bg-gray-50">
-              <Label className="text-sm font-medium">Ngày trong tháng</Label>
-              <div className="mt-2 space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  {daysOfMonth.map((day) => (
-                    <Badge
-                      key={day}
-                      variant="outline"
-                      className="flex items-center gap-1"
-                    >
-                      Ngày {day}
+            <div>
+              <Label className="block text-sm font-medium text-gray-700 mb-3">
+                Chọn các ngày trong tháng
+              </Label>
+              <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: MAX_DAYS_IN_MONTH }, (_, i) => i + 1).map(
+                  (day) => {
+                    const isSelected = daysOfMonth.includes(day);
+                    return (
                       <button
+                        key={day}
                         type="button"
-                        onClick={() => removeDayOfMonth(day)}
-                        className="ml-1 hover:text-red-500"
+                        onClick={() => toggleDay(day)}
+                        className={`aspect-square rounded-lg font-medium transition-all ${
+                          isSelected
+                            ? "bg-[#1a80a2] text-white hover:bg-[#1a80a2]/90"
+                            : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
+                        }`}
                       >
-                        <X className="w-3 h-3" />
+                        {day}
                       </button>
-                    </Badge>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    min="1"
-                    max="31"
-                    value={newDayOfMonth}
-                    onChange={(e) => setNewDayOfMonth(e.target.value)}
-                    placeholder="Ngày (1-31)"
-                    className="w-32"
-                  />
-                  <Button
-                    type="button"
-                    onClick={addDayOfMonth}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
+                    );
+                  },
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Yearly selector */}
+          {recurrenceType === "Yearly" && (
+            <div className="space-y-4">
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-2">
+                  Chọn tháng
+                </Label>
+                <Select
+                  onValueChange={(value) => {
+                    setValue("selectedMonth", parseInt(value));
+                    // Clear selected days when month changes since different months have different day counts
+                    setDaysOfMonth([]);
+                  }}
+                  defaultValue="1"
+                >
+                  <SelectTrigger className="bg-white border-[#e5e5e5] focus:ring-2 focus:ring-[#1a80a2] focus:border-transparent">
+                    <SelectValue placeholder="Chọn tháng" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MONTH_NAMES.map((month, index) => (
+                      <SelectItem key={index} value={(index + 1).toString()}>
+                        {month}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="block text-sm font-medium text-gray-700 mb-3">
+                  Chọn ngày
+                </Label>
+                <div className="grid grid-cols-7 gap-2">
+                  {getDaysArrayForMonth(watch("selectedMonth") || 1).map(
+                    (day) => {
+                      const isSelected = daysOfMonth.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => toggleDay(day)}
+                          className={`aspect-square rounded-lg font-medium transition-all ${
+                            isSelected
+                              ? "bg-[#1a80a2] text-white hover:bg-[#1a80a2]/90"
+                              : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
+                          }`}
+                        >
+                          {day}
+                        </button>
+                      );
+                    },
+                  )}
                 </div>
               </div>
-            </Card>
+            </div>
           )}
         </div>
       </div>

@@ -7,6 +7,7 @@ import type { SkillLevel } from "./common";
 
 // SOP (Standard Operating Procedure) types
 export interface SOP {
+  steps: any;
   id: string;
   name: string;
   description?: string;

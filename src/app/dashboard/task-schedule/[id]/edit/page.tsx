@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { TaskScheduleEditContainer } from "@/components/task-schedule";
+import { TaskScheduleEditContainer } from "@/components/task-schedule/TaskScheduleEditContainer";
 
 export default function EditTaskSchedulePage() {
   const params = useParams();

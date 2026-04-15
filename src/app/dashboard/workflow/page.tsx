@@ -6,25 +6,36 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PaginationWithInfo } from "@/components/ui/pagination";
 import { Search, Loader2 } from "lucide-react";
 import { useSOPs } from "@/hooks/useWorkflowBuilder";
+import { usePaginatedData } from "@/hooks/usePagination";
 
 export default function WorkflowListPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [pageNumber, setPageNumber] = useState(1);
-  const pageSize = 12;
+
+  // Initialize pagination
+  const pagination = usePaginatedData({
+    initialPageSize: 12,
+  });
 
   const {
     data: sopsData,
     isLoading,
     error,
   } = useSOPs({
-    pageNumber,
-    pageSize,
+    pageNumber: pagination.currentPage,
+    pageSize: pagination.pageSize,
     search: searchQuery || undefined,
   });
 
-  const sops = sopsData?.content || [];
+  // Update pagination data when response changes
+  const paginatedSOPs = usePaginatedData({
+    data: sopsData,
+    initialPageSize: 12,
+  });
+
+  const sops = paginatedSOPs.items;
 
   return (
     <DashboardLayout>
@@ -53,7 +64,7 @@ export default function WorkflowListPage() {
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
-              setPageNumber(1); // Reset to first page when searching
+              pagination.goToFirstPage(); // Reset to first page when searching
             }}
           />
         </div>
@@ -82,7 +93,7 @@ export default function WorkflowListPage() {
       )}
 
       {/* Empty State */}
-      {!isLoading && !error && sops.length === 0 && (
+      {!isLoading && !error && paginatedSOPs.isEmpty && (
         <div className="text-center py-12">
           <p className="text-[#70808f] mb-4">
             {searchQuery ? "Không tìm thấy SOP nào" : "Chưa có SOP nào"}
@@ -91,7 +102,7 @@ export default function WorkflowListPage() {
       )}
 
       {/* SOP List */}
-      {!isLoading && !error && sops.length > 0 && (
+      {!isLoading && !error && !paginatedSOPs.isEmpty && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sops.map((sop) => (
@@ -138,29 +149,15 @@ export default function WorkflowListPage() {
           </div>
 
           {/* Pagination */}
-          {sopsData && sopsData.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-8">
-              <Button
-                variant="outline"
-                disabled={!sopsData.hasPreviousPage}
-                onClick={() => setPageNumber(pageNumber - 1)}
-                className="border-[#e5e5e5]"
-              >
-                Trước
-              </Button>
-
-              <span className="text-sm text-[#70808f] px-4">
-                Trang {sopsData.pageNumber} / {sopsData.totalPages}
-              </span>
-
-              <Button
-                variant="outline"
-                disabled={!sopsData.hasNextPage}
-                onClick={() => setPageNumber(pageNumber + 1)}
-                className="border-[#e5e5e5]"
-              >
-                Sau
-              </Button>
+          {paginatedSOPs.totalPages > 1 && (
+            <div className="mt-8">
+              <PaginationWithInfo
+                currentPage={paginatedSOPs.currentPage}
+                totalPages={paginatedSOPs.totalPages}
+                pageSize={paginatedSOPs.pageSize}
+                totalElements={paginatedSOPs.totalElements}
+                onPageChange={paginatedSOPs.setPage}
+              />
             </div>
           )}
         </>

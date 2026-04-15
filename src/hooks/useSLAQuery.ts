@@ -1,13 +1,43 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
+  getSLAs,
   getSLAById,
   updateSLA,
   deleteSLA,
   getSLAShiftsBySLA,
   getSLATasksBySLA,
+  getSLATasks,
 } from "@/lib/sla-api";
 import type { SLA } from "@/types/sla";
+
+// Hook to get all SLAs
+export function useSLAs() {
+  return useQuery({
+    queryKey: ["slas"],
+    queryFn: getSLAs,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+// Main useSLAQuery function - matches file name
+export function useSLAQuery() {
+  const tasksQuery = useQuery({
+    queryKey: ["sla-tasks"],
+    queryFn: getSLATasks,
+  });
+
+  const slasQuery = useSLAs();
+
+  return {
+    data: {
+      slaTasks: tasksQuery.data || [],
+      slas: slasQuery.data || [],
+    },
+    isLoading: tasksQuery.isLoading || slasQuery.isLoading,
+    error: tasksQuery.error || slasQuery.error,
+  };
+}
 
 // Get single SLA
 export function useSLA(id: string, options?: { enabled?: boolean }) {

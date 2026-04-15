@@ -43,6 +43,6 @@ export const {
 export async function getPPEs(
   params: PaginationParams = {},
 ): Promise<PaginatedResponse<PPE>> {
-  const { pageNumber = 1, pageSize = 50, search } = params;
+  const { pageNumber = 1, pageSize = 10, search } = params;
   return ppeApi.getPaginated(pageNumber, pageSize, { search });
 }

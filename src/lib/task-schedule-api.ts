@@ -77,3 +77,33 @@ export async function activateTaskSchedule(id: string): Promise<void> {
 export async function deactivateTaskSchedule(id: string): Promise<void> {
   return api.patch(`/TaskSchedules/${id}/deactivate`);
 }
+// Create task schedule with work area supervisor assignment
+// Tương tự như SLA: tạo SLA trước -> tạo SLA-shift và SLA-task với slaId
+// Ở đây: tạo task schedule trước -> tạo work area supervisor assignment với workAreaId
+export async function createTaskScheduleWithAssignment(
+  taskData: CreateTaskScheduleData & { supervisorId: string },
+): Promise<TaskSchedule> {
+  // Import the work area supervisor API function
+  const { assignWorkersToSupervisor } =
+    await import("./work-area-supervisor-api");
+
+  try {
+    // 1. Tạo task schedule trước (giống như tạo SLA trước)
+    const { supervisorId, ...taskScheduleData } = taskData;
+    const taskSchedule = await createTaskSchedule(taskScheduleData);
+
+    // 2. Sau đó tạo work area supervisor assignment
+    // (giống như tạo SLA-shift và SLA-task sau khi có slaId)
+    // Sử dụng workAreaId từ taskData và assigneeId làm workerIds
+    await assignWorkersToSupervisor({
+      workAreaId: taskData.workAreaId,
+      supervisorId: supervisorId,
+      workerIds: [taskData.assigneeId], // assigneeId chính là worker được assign
+    });
+
+    return taskSchedule;
+  } catch (error) {
+    console.error("Failed to create task schedule with assignment:", error);
+    throw error;
+  }
+}

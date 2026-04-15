@@ -1,4 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useBaseQuery,
+  useBaseSearchQuery,
+  useBaseMutation,
+} from "./useBaseQuery";
 import {
   getCertifications,
   getAllCertifications,
@@ -9,62 +13,60 @@ import {
   getCertificationsByCategory,
 } from "@/lib/certification-api";
 import type { PaginationParams } from "@/types/common";
-import type { CreateCertificationData, UpdateCertificationData } from "@/types/skill";
+import type {
+  CreateCertificationData,
+  UpdateCertificationData,
+} from "@/types/skill";
 
 export function useCertifications(params?: PaginationParams) {
-  return useQuery({
-    queryKey: ["certifications", params],
-    queryFn: () => getCertifications(params),
-  });
+  return useBaseQuery(["certifications", params], () =>
+    getCertifications(params),
+  );
 }
 
 export function useAllCertifications() {
-  return useQuery({
-    queryKey: ["certifications", "all"],
-    queryFn: () => getAllCertifications(),
-  });
+  return useBaseQuery(["certifications", "all"], () => getAllCertifications());
 }
 
-export function useSearchCertifications(keyword?: string | null, pageNumber = 1, pageSize = 10) {
-  return useQuery({
-    queryKey: ["certifications", "search", keyword, pageNumber, pageSize],
-    queryFn: () => searchCertifications(keyword ?? "", pageNumber, pageSize),
-    keepPreviousData: true,
-  });
+export function useSearchCertifications(
+  keyword?: string | null,
+  pageNumber = 1,
+  pageSize = 10,
+) {
+  return useBaseSearchQuery(
+    ["certifications", "search", keyword, pageNumber, pageSize],
+    () => searchCertifications(keyword ?? "", pageNumber, pageSize),
+  );
 }
 
 export function useCreateCertification() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: CreateCertificationData) => createCertification(data),
-    onSuccess: () => qc.invalidateQueries(["certifications"]),
-  });
+  return useBaseMutation(
+    (data: CreateCertificationData) => createCertification(data),
+    [["certifications"]],
+  );
 }
 
 export function useUpdateCertification() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateCertificationData }) =>
+  return useBaseMutation(
+    ({ id, data }: { id: string; data: UpdateCertificationData }) =>
       updateCertification(id, data),
-    onSuccess: () => qc.invalidateQueries(["certifications"]),
-  });
+    [["certifications"]],
+  );
 }
 
 export function useDeleteCertification() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => deleteCertification(id),
-    onSuccess: (deletedCount: number) => {
-      if ((deletedCount ?? 0) > 0) qc.invalidateQueries(["certifications"]);
-    },
-  });
+  return useBaseMutation(
+    (id: string) => deleteCertification(id),
+    [["certifications"]],
+  );
 }
+
 export function useCertificationsByCategory(category?: string) {
-  return useQuery({
-    queryKey: ["certifications", "category", category],
-    queryFn: () => getCertificationsByCategory(category ?? ""),
-    enabled: !!category, // chỉ gọi khi có category
-  });
+  return useBaseQuery(
+    ["certifications", "category", category],
+    () => getCertificationsByCategory(category ?? ""),
+    { enabled: !!category }, // chỉ gọi khi có category
+  );
 }
 
 export default useCertifications;

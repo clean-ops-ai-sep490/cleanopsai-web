@@ -34,7 +34,7 @@ export const {
 export async function getZonesPaginated(
   params: ZonesPaginatedRequest = {},
 ): Promise<ZonesPaginatedResponse> {
-  const { pageNumber = 1, pageSize = 50, search, locationId, ...rest } = params;
+  const { pageNumber = 1, pageSize = 10, search, locationId, ...rest } = params;
 
   try {
     let response;
