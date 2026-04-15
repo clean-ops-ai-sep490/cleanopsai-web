@@ -82,9 +82,6 @@ export default function LocationForm({
 
   return (
     <div className="space-y-5">
-      <h2 className="text-xl font-bold">
-        {initialData ? "Cập nhật vị trí" : "Thêm vị trí"}
-      </h2>
 
       {success && (
         <div className="text-green-600 flex items-center gap-2">
