@@ -1,3 +1,4 @@
+import { api } from "./api";
 import { createSearchableApi } from "./api-crud-factory";
 import type {
   WorkAreaDetail,
@@ -24,7 +25,7 @@ export const {
 } = workAreaDetailApi;
 
 // Get work area details by workAreaId - following existing pattern like client-api.ts
-export async function getWorkAreaDetailsByWorkArea(
+export async function  getWorkAreaDetailsByWorkArea(
   workAreaId: string,
   params: { pageNumber?: number; pageSize?: number } = {},
 ): Promise<{ items: WorkAreaDetail[]; totalCount: number }> {
@@ -45,6 +46,29 @@ export async function getWorkAreaDetailsByWorkArea(
     };
   } catch (error) {
     console.error("Failed to load work area details by work area:", error);
+    return { items: [], totalCount: 0 };
+  }
+}
+
+export async function getWorkAreaDetailsByWorkAreaId(
+  workAreaId: string,
+  params: { pageNumber?: number; pageSize?: number } = {}
+): Promise<{ items: WorkAreaDetail[]; totalCount: number }> {
+  const { pageNumber = 1, pageSize = 10 } = params;
+
+  console.log("=== API CALL ===", `/WorkAreaDetails/work-area/${workAreaId}`);
+
+  try {
+    const response = await api.get<any>(
+      `/WorkAreaDetails/work-area/${workAreaId}?pageNumber=${pageNumber}&pageSize=${pageSize}`
+    );
+
+    return {
+      items: response.content ?? [],
+      totalCount: response.totalElements ?? 0,
+    };
+  } catch (error) {
+    console.error("Failed:", error);
     return { items: [], totalCount: 0 };
   }
 }

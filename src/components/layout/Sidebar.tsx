@@ -68,23 +68,23 @@ const navigation = [
       },
     ],
   },
-  {
-    title: "KHÁC",
-    items: [
-      {
-        name: "Hợp đồng",
-        href: "/dashboard/contracts",
-        icon: FileText,
-        roles: [ "1"], // Admin, Manager
-      },
-      {
-        name: "Khách hàng",
-        href: "/dashboard/clients",
-        icon: Building2,
-        roles: [ "1"], // Admin, Manager
-      },
-    ],
-  },
+  // {
+  //   title: "KHÁC",
+  //   items: [
+  //     {
+  //       name: "Hợp đồng",
+  //       href: "/dashboard/contracts",
+  //       icon: FileText,
+  //       roles: [ "1"], // Admin, Manager
+  //     },
+  //     {
+  //       name: "Khách hàng",
+  //       href: "/dashboard/clients",
+  //       icon: Building2,
+  //       roles: [ "1"], // Admin, Manager
+  //     },
+  //   ],
+  // },
 ];
 
 export function Sidebar() {

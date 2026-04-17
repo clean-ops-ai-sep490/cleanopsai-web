@@ -22,55 +22,56 @@ import {
   useDeleteLocation,
 } from "@/hooks/useLocations";
 
+import { usePagination } from "@/hooks/usePagination";
+
 import { StandardDialog } from "@/components/ui/standard-dialog";
 import LocationForm from "./LocationForm";
 import { toast } from "sonner";
 
 export default function LocationsPage() {
-  const [keyword, setKeyword] = useState("");
-  const [pageNumber, setPageNumber] = useState(1);
-
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
 
-  
-
-  const { data, isLoading } = useLocations({
-    pageNumber,
-    pageSize: 10,
+  // ✅ pagination hook
+  const pagination = usePagination({
+    initialPage: 1,
+    initialPageSize: 10,
   });
-  const totalPages = Math.ceil(
-  (data?.totalCount ?? 0) / (data?.pageSize ?? 10)
-);
 
-const hasNextPage = (data?.pageNumber ?? 1) < totalPages;
-const hasPreviousPage = (data?.pageNumber ?? 1) > 1;
+  // ✅ API call dùng pagination hook
+  const { data, isLoading } = useLocations({
+    ...pagination.paginationParams,
+  });
 
   const createMutation = useCreateLocation();
   const updateMutation = useUpdateLocation();
   const deleteMutation = useDeleteLocation();
 
+  const totalPages = Math.ceil(
+    (data?.totalCount ?? 0) / (pagination.pageSize || 10)
+  );
+
   const handleSubmit = async (form: any) => {
-  try {
-    if (editing) {
-      await updateMutation.mutateAsync({
-        id: editing.id,
-        data: form,
-      });
+    try {
+      if (editing) {
+        await updateMutation.mutateAsync({
+          id: editing.id,
+          data: form,
+        });
 
-      toast.success("Cập nhật vị trí thành công");
-    } else {
-      await createMutation.mutateAsync(form);
+        toast.success("Cập nhật vị trí thành công");
+      } else {
+        await createMutation.mutateAsync(form);
 
-      toast.success("Thêm vị trí thành công");
+        toast.success("Thêm vị trí thành công");
+      }
+
+      setOpen(false);
+      setEditing(null);
+    } catch (err) {
+      toast.error("Có lỗi xảy ra, vui lòng thử lại");
     }
-
-    setOpen(false);
-    setEditing(null);
-  } catch (err) {
-    toast.error("Có lỗi xảy ra, vui lòng thử lại");
-  }
-};
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Xóa location này?")) return;
@@ -83,7 +84,8 @@ const hasPreviousPage = (data?.pageNumber ?? 1) > 1;
 
         {/* HEADER */}
         <div className="flex gap-3 mb-6 justify-between items-center">
-        <h1 className="text-2xl font-bold mb-6">Quản lý vị trí</h1>
+          <h1 className="text-2xl font-bold mb-6">Quản lý vị trí</h1>
+
           <Button
             onClick={() => {
               setEditing(null);
@@ -124,6 +126,7 @@ const hasPreviousPage = (data?.pageNumber ?? 1) > 1;
                     <TableCell>{l.address}</TableCell>
                     <TableCell>{l.province}</TableCell>
                     <TableCell>{l.clientName}</TableCell>
+
                     <TableCell className="text-right flex justify-end gap-2">
                       <Button
                         variant="ghost"
@@ -148,22 +151,22 @@ const hasPreviousPage = (data?.pageNumber ?? 1) > 1;
               </TableBody>
             </Table>
 
-            {/* PAGINATION */}
+            {/* PAGINATION - FIXED */}
             <div className="flex justify-between mt-4">
               <Button
-                disabled={!hasPreviousPage}
-                onClick={() => setPageNumber((p) => p - 1)}
+                disabled={pagination.currentPage === 1}
+                onClick={pagination.prevPage}
               >
                 Trước
               </Button>
 
               <div className="text-sm text-gray-500">
-                Trang {data?.pageNumber} / {totalPages}
+                Trang {pagination.currentPage} / {totalPages || 1}
               </div>
 
               <Button
-                disabled={!hasNextPage}
-                onClick={() => setPageNumber((p) => p + 1)}
+                disabled={pagination.currentPage >= totalPages}
+                onClick={pagination.nextPage}
               >
                 Sau
               </Button>

@@ -16,6 +16,8 @@ import {
 import { Plus, Edit2, Trash2, Unlock } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
+import { usePagination } from "@/hooks/usePagination";
+
 import { StandardDialog } from "@/components/ui/standard-dialog";
 import UserForm from "./UserForm";
 import { toast } from "sonner";
@@ -34,49 +36,66 @@ export default function UsersPage() {
   // filters
   const [keyword, setKeyword] = useState("");
   const [role, setRole] = useState("");
-  const [pageNumber, setPageNumber] = useState(1);
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
+
+  // ================= PAGINATION =================
+  const {
+    currentPage,
+    pageSize,
+    setPage,
+    reset,
+    paginationParams,
+  } = usePagination({
+    initialPage: 1,
+    initialPageSize: 10,
+  });
+
+  // reset page when filters change
+  useEffect(() => {
+    reset();
+  }, [keyword, role]);
 
   // ================= LOAD DATA =================
   const load = async () => {
     const res = await getUsers({
       keyword,
-      role, // 👈 IMPORTANT FILTER
-      pageNumber,
-      pageSize: 10,
+      role,
+      pageNumber: paginationParams.pageNumber,
+      pageSize: paginationParams.pageSize,
     });
+
     setData(res);
   };
 
   useEffect(() => {
     load();
-  }, [keyword, role, pageNumber]);
+  }, [keyword, role, currentPage]);
 
   // ================= HANDLERS =================
   const handleSubmit = async (form: any) => {
-  try {
-    if (editing) {
-      await updateUser(editing.id, {
-        fullName: form.fullName,
-        role: form.role,
-      });
+    try {
+      if (editing) {
+        await updateUser(editing.id, {
+          fullName: form.fullName,
+          role: form.role,
+        });
 
-      toast.success("Cập nhật user thành công");
-    } else {
-      await register(form);
+        toast.success("Cập nhật user thành công");
+      } else {
+        await register(form);
 
-      toast.success("Tạo user thành công");
+        toast.success("Tạo user thành công");
+      }
+
+      setOpen(false);
+      setEditing(null);
+      load();
+    } catch {
+      toast.error("Có lỗi xảy ra, vui lòng thử lại");
     }
-
-    setOpen(false);
-    setEditing(null);
-    load();
-  } catch (error) {
-    toast.error("Có lỗi xảy ra, vui lòng thử lại");
-  }
-};
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Xóa user này?")) return;
@@ -93,7 +112,11 @@ export default function UsersPage() {
   return (
     <div className="min-h-screen p-6">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Quản lý người dùng</h1>
+
+        <h1 className="text-2xl font-bold mb-6">
+          Quản lý người dùng
+        </h1>
+
         {/* HEADER */}
         <div className="flex gap-3 mb-6 items-center">
           <Input
@@ -102,7 +125,6 @@ export default function UsersPage() {
             onChange={(e) => setKeyword(e.target.value)}
           />
 
-          {/* ROLE FILTER */}
           <select
             className="border rounded px-3 py-2"
             value={role}
@@ -166,10 +188,10 @@ export default function UsersPage() {
                       </Button>
 
                       {u.status === "Locked" && (
-  <Button onClick={() => handleUnlock(u.id)}>
-    <Unlock className="w-4 h-4" />
-  </Button>
-)}
+                        <Button onClick={() => handleUnlock(u.id)}>
+                          <Unlock className="w-4 h-4" />
+                        </Button>
+                      )}
 
                       <Button
                         variant="ghost"
@@ -187,19 +209,19 @@ export default function UsersPage() {
             {/* PAGINATION */}
             <div className="flex justify-between mt-4">
               <Button
-                disabled={!data?.hasPreviousPage}
-                onClick={() => setPageNumber((p) => p - 1)}
+                disabled={currentPage <= 1}
+                onClick={() => setPage(currentPage - 1)}
               >
                 Trước
               </Button>
 
               <div className="text-sm text-gray-500">
-                Trang {data?.pageNumber} / {data?.totalPages}
+                Trang {currentPage} / {data?.totalPages ?? 1}
               </div>
 
               <Button
-                disabled={!data?.hasNextPage}
-                onClick={() => setPageNumber((p) => p + 1)}
+                disabled={currentPage >= (data?.totalPages ?? 1)}
+                onClick={() => setPage(currentPage + 1)}
               >
                 Sau
               </Button>

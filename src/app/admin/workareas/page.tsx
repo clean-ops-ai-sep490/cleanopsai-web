@@ -8,65 +8,58 @@ import {
   TableHeader, TableRow,
 } from "@/components/ui/table";
 
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Eye } from "lucide-react";
 
 import {
-  useZones,
-  useCreateZone,
-  useUpdateZone,
-  useDeleteZone,
-} from "@/hooks/useZones";
+  useWorkAreas,
+  useCreateWorkArea,
+  useUpdateWorkArea,
+  useDeleteWorkArea,
+} from "@/hooks/useWorkAreas";
 
-import { useAllLocations } from "@/hooks/useLocations";
+import { useWorkAreaDetailsByWorkAreaId } from "@/hooks/useWorkAreaDetails";
 import { usePagination } from "@/hooks/usePagination";
 
 import { StandardDialog } from "@/components/ui/standard-dialog";
-import ZoneForm from "./ZoneForm";
+import WorkAreaForm from "./WorkareaForm";
 import { toast } from "sonner";
 
-export default function ZonesPage() {
+export default function WorkAreasPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
-  const [locationId, setLocationId] = useState<string>("");
 
-  const { data: locations } = useAllLocations();
+  const [selectedWorkAreaId, setSelectedWorkAreaId] = useState<string | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   // ================= PAGINATION =================
   const {
     currentPage,
     setPage,
-    reset,
     paginationParams,
   } = usePagination({
     initialPage: 1,
     initialPageSize: 10,
   });
 
-  // reset page when filter changes
-  useEffect(() => {
-    reset();
-  }, [locationId]);
-
   // ================= DATA =================
-  const { data } = useZones({
+  const { data } = useWorkAreas({
     pageNumber: paginationParams.pageNumber,
     pageSize: paginationParams.pageSize,
-    locationId: locationId || undefined,
   });
 
-  const createMutation = useCreateZone();
-  const updateMutation = useUpdateZone();
-  const deleteMutation = useDeleteZone();
+  const createMutation = useCreateWorkArea();
+  const updateMutation = useUpdateWorkArea();
+  const deleteMutation = useDeleteWorkArea();
+
+  const { data: details, isLoading } =
+    useWorkAreaDetailsByWorkAreaId(selectedWorkAreaId ?? undefined, {
+      pageNumber: 1,
+      pageSize: 10,
+    });
 
   const totalPages = Math.ceil(
-    (data?.totalCount ?? 0) / (paginationParams.pageSize ?? 10)
+    (data?.totalCount ?? 0) / (paginationParams?.pageSize ?? 10)
   );
-
-  const hasNextPage =
-    (data?.pageNumber ?? 1) < totalPages;
-
-  const hasPreviousPage =
-    (data?.pageNumber ?? 1) > 1;
 
   // ================= HANDLERS =================
   const handleSubmit = async (form: any) => {
@@ -76,12 +69,10 @@ export default function ZonesPage() {
           id: editing.id,
           data: form,
         });
-
-        toast.success("Cập nhật zone thành công");
+        toast.success("Cập nhật thành công");
       } else {
         await createMutation.mutateAsync(form);
-
-        toast.success("Thêm zone thành công");
+        toast.success("Thêm mới thành công");
       }
 
       setOpen(false);
@@ -92,14 +83,19 @@ export default function ZonesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Xóa zone này?")) return;
+    if (!confirm("Xóa khu vực làm việc?")) return;
 
     try {
       await deleteMutation.mutateAsync(id);
-      toast.success("Xóa zone thành công");
+      toast.success("Xóa thành công");
     } catch {
       toast.error("Xóa thất bại");
     }
+  };
+
+  const handleViewDetail = (id: string) => {
+    setSelectedWorkAreaId(id);
+    setDetailOpen(true);
   };
 
   // ================= UI =================
@@ -109,26 +105,9 @@ export default function ZonesPage() {
 
         {/* HEADER */}
         <div className="flex justify-between items-center mb-6">
-
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold">
-              Quản lý khu vực
-            </h1>
-
-            <select
-              value={locationId}
-              onChange={(e) => setLocationId(e.target.value)}
-              className="border rounded-md px-3 py-2 text-sm"
-            >
-              <option value="">Tất cả vị trí</option>
-
-              {locations?.map((l: any) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <h1 className="text-2xl font-bold">
+            Khu Vực Làm Việc
+          </h1>
 
           <Button
             onClick={() => {
@@ -137,7 +116,7 @@ export default function ZonesPage() {
             }}
           >
             <Plus className="w-4 h-4 mr-2" />
-            Thêm khu vực
+            Thêm khu vực làm việc
           </Button>
         </div>
 
@@ -145,7 +124,7 @@ export default function ZonesPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Khu vực ({data?.totalCount ?? 0})
+              Danh sách ({data?.totalCount ?? 0})
             </CardTitle>
           </CardHeader>
 
@@ -154,8 +133,7 @@ export default function ZonesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Tên</TableHead>
-                  <TableHead>Mô tả</TableHead>
-                  <TableHead>Vị trí</TableHead>
+                  <TableHead>Zone</TableHead>
                   <TableHead className="text-right">
                     Hành động
                   </TableHead>
@@ -163,17 +141,24 @@ export default function ZonesPage() {
               </TableHeader>
 
               <TableBody>
-                {data?.items?.map((z: any) => (
-                  <TableRow key={z.id}>
-                    <TableCell>{z.name}</TableCell>
-                    <TableCell>{z.description}</TableCell>
-                    <TableCell>{z.locationName}</TableCell>
+                {data?.items?.map((w: any) => (
+                  <TableRow key={w.id}>
+                    <TableCell>{w.name}</TableCell>
+                    <TableCell>{w.zoneName}</TableCell>
 
                     <TableCell className="text-right flex justify-end gap-2">
+
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleViewDetail(w.id)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+
                       <Button
                         variant="ghost"
                         onClick={() => {
-                          setEditing(z);
+                          setEditing(w);
                           setOpen(true);
                         }}
                       >
@@ -183,12 +168,12 @@ export default function ZonesPage() {
                       <Button
                         variant="ghost"
                         className="text-red-500"
-                        onClick={() => handleDelete(z.id)}
+                        onClick={() => handleDelete(w.id)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
-                    </TableCell>
 
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -197,18 +182,18 @@ export default function ZonesPage() {
             {/* PAGINATION */}
             <div className="flex justify-between mt-4">
               <Button
-                disabled={!hasPreviousPage}
+                disabled={currentPage <= 1}
                 onClick={() => setPage(currentPage - 1)}
               >
                 Trước
               </Button>
 
               <div className="text-sm text-gray-500">
-                Trang {data?.pageNumber} / {totalPages}
+                Trang {currentPage} / {totalPages}
               </div>
 
               <Button
-                disabled={!hasNextPage}
+                disabled={currentPage >= totalPages}
                 onClick={() => setPage(currentPage + 1)}
               >
                 Sau
@@ -218,18 +203,42 @@ export default function ZonesPage() {
         </Card>
       </div>
 
-      {/* DIALOG */}
+      {/* FORM DIALOG */}
       <StandardDialog
         open={open}
         onOpenChange={setOpen}
-        title={editing ? "Cập nhật khu vực" : "Thêm khu vực"}
+        title={editing ? "Cập nhật khu vực làm việc" : "Thêm khu vực làm việc"}
       >
-        <ZoneForm
+        <WorkAreaForm
           initialData={editing}
           onSubmit={handleSubmit}
           onCancel={() => setOpen(false)}
         />
       </StandardDialog>
+
+      {/* DETAIL DIALOG */}
+      <StandardDialog
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        title="Chi tiết khu vực làm việc"
+      >
+        {isLoading ? (
+          <p>Đang tải...</p>
+        ) : details?.items?.length ? (
+          <div className="space-y-3">
+            {details.items.map((d: any) => (
+              <div key={d.id} className="border-b pb-2">
+                <p><b>Tên:</b> {d.name}</p>
+                <p><b>Diện tích:</b> {d.area}</p>
+                <p><b>Tổng diện tích:</b> {d.totalArea}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p>Không có dữ liệu</p>
+        )}
+      </StandardDialog>
+
     </div>
   );
 }
