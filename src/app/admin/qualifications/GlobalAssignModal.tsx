@@ -12,6 +12,7 @@ import { useSkills } from "@/hooks/useSkills";
 import { useCreateWorkerSkill } from "@/hooks/useWorkerSkills";
 import { useCreateWorkerCertification } from "@/hooks/useWorkerCertifications";
 import useCertifications from "@/hooks/useCertifications";
+import { toast } from "sonner";
 
 type Props = {
   open: boolean;
@@ -63,33 +64,51 @@ export default function GlobalAssignModal({ open, onClose }: Props) {
 
   // Handle Submit
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedWorkerId) return alert("Vui lòng chọn nhân viên");
+  e.preventDefault();
+  if (!selectedWorkerId) return toast.error("Vui lòng chọn nhân viên");
 
-    try {
-      setIsSubmitting(true);
+  try {
+    setIsSubmitting(true);
 
-      if (assignType === "skill") {
-        if (skillIds.length === 0) return alert("Vui lòng chọn kỹ năng");
-        await Promise.all(skillIds.map(id => assignSkill({ workerId: selectedWorkerId, skillId: id, skillLevel })));
-      } else {
-        if (certIds.length === 0 || !issuedDate) return alert("Vui lòng chọn chứng chỉ và ngày cấp");
-        await Promise.all(certIds.map(id => assignCert({
-          workerId: selectedWorkerId,
-          certificationId: id,
-          issuedDate: new Date(issuedDate).toISOString(),
-          expiredAt: expiredAt ? new Date(expiredAt).toISOString() : null,
-        })));
-      }
+    if (assignType === "skill") {
+      if (skillIds.length === 0)
+        return toast.error("Vui lòng chọn kỹ năng");
 
-      alert("Cấp thành công!");
-      onClose();
-    } catch (error) {
-      alert("Có lỗi xảy ra, có thể dữ liệu đã tồn tại từ trước.");
-    } finally {
-      setIsSubmitting(false);
+      await Promise.all(
+        skillIds.map((id) =>
+          assignSkill({
+            workerId: selectedWorkerId,
+            skillId: id,
+            skillLevel,
+          })
+        )
+      );
+    } else {
+      if (certIds.length === 0 || !issuedDate)
+        return toast.error("Vui lòng chọn chứng chỉ và ngày cấp");
+
+      await Promise.all(
+        certIds.map((id) =>
+          assignCert({
+            workerId: selectedWorkerId,
+            certificationId: id,
+            issuedDate: new Date(issuedDate).toISOString(),
+            expiredAt: expiredAt
+              ? new Date(expiredAt).toISOString()
+              : null,
+          })
+        )
+      );
     }
-  };
+
+    toast.success("Cấp thành công 🎉");
+    onClose();
+  } catch (error) {
+    toast.error("Có lỗi xảy ra, có thể dữ liệu đã tồn tại từ trước.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <StandardDialog open={open} onOpenChange={onClose} title="Cấp Năng Lực Cho Nhân Viên">

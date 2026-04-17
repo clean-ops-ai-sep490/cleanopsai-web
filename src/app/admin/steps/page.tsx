@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -13,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { Plus, Edit2, Trash2, Search } from "lucide-react";
+import { Plus, Edit2, Trash2 } from "lucide-react";
 
 import {
   useSearchSteps,
@@ -22,34 +21,65 @@ import {
   useDeleteStep,
 } from "@/hooks/useSteps";
 
+import { usePagination } from "@/hooks/usePagination";
+
 import { StandardDialog } from "@/components/ui/standard-dialog";
 import StepForm from "./StepForm";
+import { toast } from "sonner";
 
 export default function StepsPage() {
   const [keyword, setKeyword] = useState("");
-  const [pageNumber, setPageNumber] = useState(1);
-
-  const { data, isLoading } = useSearchSteps(keyword, pageNumber, 10);
-
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+
+  // ✅ pagination hook
+  const {
+    currentPage,
+    pageSize,
+    setPage,
+    paginationParams,
+    reset,
+  } = usePagination({
+    initialPage: 1,
+    initialPageSize: 10,
+  });
+
+  // reset page khi search
+  useEffect(() => {
+    reset();
+  }, [keyword]);
+
+  // API
+  const { data, isLoading } = useSearchSteps(
+    keyword,
+    paginationParams.pageNumber,
+    paginationParams.pageSize
+  );
 
   const createMutation = useCreateStep();
   const updateMutation = useUpdateStep();
   const deleteMutation = useDeleteStep();
 
+  // submit
   const handleSubmit = async (form: any) => {
-    if (editing) {
-      await updateMutation.mutateAsync({
-        id: editing.id,
-        data: form,
-      });
-    } else {
-      await createMutation.mutateAsync(form);
-    }
+    try {
+      if (editing) {
+        await updateMutation.mutateAsync({
+          id: editing.id,
+          data: form,
+        });
 
-    setOpen(false);
-    setEditing(null);
+        toast.success("Cập nhật thành công");
+      } else {
+        await createMutation.mutateAsync(form);
+        toast.success("Thêm mới thành công");
+      }
+
+      setOpen(false);
+      setEditing(null);
+    } catch {
+      toast.error("Có lỗi xảy ra, vui lòng thử lại");
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -57,13 +87,16 @@ export default function StepsPage() {
     await deleteMutation.mutateAsync(id);
   };
 
+  const totalPages = data?.totalPages ?? 1;
+
   return (
     <div className="min-h-screen p-6 bg-gray-50">
       <div className="max-w-6xl mx-auto">
 
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold ">Quản lý các bước</h1>
+          <h1 className="text-2xl font-bold">Quản lý các bước</h1>
+
           <Button
             onClick={() => {
               setEditing(null);
@@ -87,48 +120,71 @@ export default function StepsPage() {
             {isLoading ? (
               <p>Đang tải dữ liệu...</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Action Key</TableHead>
-                    <TableHead>Tên</TableHead>
-                    <TableHead>Mô tả</TableHead>
-                    <TableHead className="text-right">
-                      Hành động
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {data?.content?.map((item: any) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{item.actionKey}</TableCell>
-                      <TableCell>{item.name}</TableCell>
-                      <TableCell>{item.description}</TableCell>
-
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          onClick={() => {
-                            setEditing(item);
-                            setOpen(true);
-                          }}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          className="text-red-500"
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Action Key</TableHead>
+                      <TableHead>Tên</TableHead>
+                      <TableHead>Mô tả</TableHead>
+                      <TableHead className="text-right">
+                        Hành động
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+
+                  <TableBody>
+                    {data?.content?.map((item: any) => (
+                      <TableRow key={item.id}>
+                        <TableCell>{item.actionKey}</TableCell>
+                        <TableCell>{item.name}</TableCell>
+                        <TableCell>{item.description}</TableCell>
+
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            onClick={() => {
+                              setEditing(item);
+                              setOpen(true);
+                            }}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            className="text-red-500"
+                            onClick={() => handleDelete(item.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                {/* Pagination UI */}
+                <div className="flex justify-between items-center mt-4">
+                  <Button
+                    disabled={currentPage <= 1}
+                    onClick={() => setPage(currentPage - 1)}
+                  >
+                    Trước
+                  </Button>
+
+                  <span>
+                    Trang {currentPage} / {totalPages}
+                  </span>
+
+                  <Button
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setPage(currentPage + 1)}
+                  >
+                    Sau
+                  </Button>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
