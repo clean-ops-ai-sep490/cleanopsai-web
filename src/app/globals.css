@@ -141,3 +141,92 @@ body {
   background-color: #e6f3f7 !important;
   color: #1a80a2 !important;
 }
+
+/* Toast styling for better UX */
+[data-sonner-toast] {
+  border-radius: 8px !important;
+  border: 1px solid !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  font-family: "Inter", sans-serif !important;
+  font-size: 14px !important;
+  padding: 12px 16px !important;
+}
+
+/* Success toast - Green theme */
+[data-sonner-toast][data-type="success"] {
+  background-color: #f0fdf4 !important;
+  border-color: #22c55e !important;
+  color: #15803d !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-icon] {
+  color: #22c55e !important;
+}
+
+/* Error toast - Red theme */
+[data-sonner-toast][data-type="error"] {
+  background-color: #fef2f2 !important;
+  border-color: #ef4444 !important;
+  color: #dc2626 !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-icon] {
+  color: #ef4444 !important;
+}
+
+/* Warning toast - Yellow theme */
+[data-sonner-toast][data-type="warning"] {
+  background-color: #fffbeb !important;
+  border-color: #f59e0b !important;
+  color: #d97706 !important;
+}
+
+[data-sonner-toast][data-type="warning"] [data-icon] {
+  color: #f59e0b !important;
+}
+
+/* Info toast - Blue theme */
+[data-sonner-toast][data-type="info"] {
+  background-color: #eff6ff !important;
+  border-color: #3b82f6 !important;
+  color: #1d4ed8 !important;
+}
+
+[data-sonner-toast][data-type="info"] [data-icon] {
+  color: #3b82f6 !important;
+}
+
+/* Loading toast - Gray theme */
+[data-sonner-toast][data-type="loading"] {
+  background-color: #f9fafb !important;
+  border-color: #6b7280 !important;
+  color: #374151 !important;
+}
+
+[data-sonner-toast][data-type="loading"] [data-icon] {
+  color: #6b7280 !important;
+}
+
+/* Default toast */
+[data-sonner-toast][data-type="default"] {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+  color: #374151 !important;
+}
+
+/* Toast close button styling */
+[data-sonner-toast] [data-close-button] {
+  color: inherit !important;
+  opacity: 0.7 !important;
+  transition: opacity 0.2s !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  opacity: 1 !important;
+}
+
+/* Toast progress bar */
+[data-sonner-toast] [data-progress] {
+  background-color: currentColor !important;
+  opacity: 0.3 !important;
+}
