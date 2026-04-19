@@ -9,7 +9,7 @@ import {
   validateWorkArea,
   type WorkAreaFormData,
 } from "@/lib/validators/work-area-validator";
-import { toast } from "sonner";
+import { toastUtils } from "@/lib/utils/toast-utils";
 
 interface WorkAreaFormContentProps {
   newWorkArea: WorkAreaFormData;
@@ -33,7 +33,7 @@ export function WorkAreaFormContent({
 
     const errors = validateWorkArea(newWorkArea);
     if (errors.length > 0) {
-      toast.error(errors[0].message);
+      toastUtils.error(errors[0].message);
       return;
     }
 

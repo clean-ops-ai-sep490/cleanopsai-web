@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, AlertOctagon, ClipboardPlus, Plus } from "lucide-react";
-import { toast } from "sonner";
+import { toastUtils } from "@/lib/utils/toast-utils";
 import { IncidentStats } from "./IncidentStats";
 import { EmergencyBanner } from "./EmergencyBanner";
 import { IssueReportsTable } from "./IssueReportsTable";
@@ -60,20 +60,20 @@ export function IncidentsContainer() {
   const activeEmergency = mockEmergencies.find((e) => e.status === "active");
 
   const handleApproveRequest = (id: string) =>
-    toast.success(`Yêu cầu ${id} đã được phê duyệt`);
+    toastUtils.success(`Yêu cầu ${id} đã được phê duyệt`);
 
   const handleRejectRequest = (id: string) =>
-    toast.error(`Yêu cầu ${id} đã bị từ chối`);
+    toastUtils.error(`Yêu cầu ${id} đã bị từ chối`);
 
   const handleResolveEmergency = (id: string) =>
-    toast.success(`Cảnh báo ${id} đã được xử lý`);
+    toastUtils.success(`Cảnh báo ${id} đã được xử lý`);
 
   const handleCreateAdHocTask = (form: AdHocTaskForm) => {
     if (!form.title.trim()) {
-      toast.error("Vui lòng nhập tên task");
+      toastUtils.error("Vui lòng nhập tên task");
       return;
     }
-    toast.success(
+    toastUtils.success(
       `Ad-hoc Task "${form.title}" đã được tạo và giao cho ${
         form.assignee || "AI Auto-assign"
       }`,
@@ -85,10 +85,10 @@ export function IncidentsContainer() {
     try {
       setProcessingIssueId(id);
       await resolveIssueReport(id, "Approved");
-      toast.success("Issue đã được approve thành công");
+      toastUtils.success("Issue đã được approve thành công");
       refetchIssueReports();
     } catch (error) {
-      toast.error("Không thể approve issue");
+      toastUtils.error("Không thể approve issue");
       console.error("Error approving issue:", error);
     } finally {
       setProcessingIssueId(null);
@@ -99,10 +99,10 @@ export function IncidentsContainer() {
     try {
       setProcessingIssueId(id);
       await resolveIssueReport(id, "Rejected");
-      toast.success("Issue đã được reject thành công");
+      toastUtils.success("Issue đã được reject thành công");
       refetchIssueReports();
     } catch (error) {
-      toast.error("Không thể reject issue");
+      toastUtils.error("Không thể reject issue");
       console.error("Error rejecting issue:", error);
     } finally {
       setProcessingIssueId(null);

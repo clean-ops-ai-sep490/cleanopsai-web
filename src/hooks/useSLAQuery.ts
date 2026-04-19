@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toastUtils } from "@/lib/utils/toast-utils";
 import {
   getSLAs,
   getSLAById,
@@ -82,13 +82,13 @@ export function useUpdateSLA(onSuccess?: (sla: SLA) => void) {
     mutationFn: ({ id, data }: { id: string; data: any }) =>
       updateSLA(id, data),
     onSuccess: (data, variables) => {
-      toast.success("Cập nhật SLA thành công!");
+      toastUtils.success("Cập nhật SLA thành công!");
       queryClient.invalidateQueries({ queryKey: ["slas"] });
       queryClient.invalidateQueries({ queryKey: ["slas", variables.id] });
       onSuccess?.(data);
     },
     onError: (error) => {
-      toast.error("Không thể cập nhật SLA");
+      toastUtils.error("Không thể cập nhật SLA");
       console.error("SLA update error:", error);
     },
   });
@@ -101,13 +101,13 @@ export function useDeleteSLA(onSuccess?: () => void) {
   return useMutation({
     mutationFn: deleteSLA,
     onSuccess: (_, deletedId) => {
-      toast.success("Đã xóa SLA thành công");
+      toastUtils.success("Đã xóa SLA thành công");
       queryClient.removeQueries({ queryKey: ["slas", deletedId] });
       queryClient.invalidateQueries({ queryKey: ["slas"] });
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error("Không thể xóa SLA");
+      toastUtils.error("Không thể xóa SLA");
       console.error("SLA deletion error:", error);
     },
   });
