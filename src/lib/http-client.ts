@@ -128,10 +128,11 @@ class HttpClient {
         await this.handleRefresh();
       } catch {
         this.onAuthFailure?.();
+        // Don't consume the response body here, let parseResponse handle it
         throw new HttpClientError(
           401,
           response.statusText,
-          await response.text(),
+          "Token refresh failed",
         );
       }
 

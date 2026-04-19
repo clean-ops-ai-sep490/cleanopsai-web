@@ -3,7 +3,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { apiToasts } from "@/lib/utils/toast-utils";
 import {
   getTaskSchedulesPaginated,
   getTaskScheduleById,
@@ -56,10 +56,10 @@ export function useCreateTaskSchedule() {
     mutationFn: (data: CreateTaskScheduleData) => createTaskSchedule(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: taskScheduleKeys.lists() });
-      toast.success("Tạo lịch trình thành công");
+      apiToasts.createSuccess("lịch trình");
     },
     onError: (error: any) => {
-      toast.error(error?.message || "Có lỗi xảy ra khi tạo lịch trình");
+      apiToasts.createError("lịch trình");
     },
   });
 }
@@ -80,10 +80,10 @@ export function useCreateTaskScheduleWithAssignment() {
       queryClient.invalidateQueries({ queryKey: taskScheduleKeys.lists() });
       // Also invalidate work area supervisor queries if they exist
       queryClient.invalidateQueries({ queryKey: ["workAreaSupervisors"] });
-      toast.success("Tạo lịch trình và phân công giám sát thành công");
+      apiToasts.createSuccess("lịch trình và phân công giám sát");
     },
     onError: (error: any) => {
-      toast.error(error?.message || "Có lỗi xảy ra khi tạo lịch trình");
+      apiToasts.createError("lịch trình");
     },
   });
 }
@@ -98,10 +98,10 @@ export function useUpdateTaskSchedule() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: taskScheduleKeys.lists() });
       queryClient.invalidateQueries({ queryKey: taskScheduleKeys.detail(id) });
-      toast.success("Cập nhật lịch trình thành công");
+      apiToasts.updateSuccess("lịch trình");
     },
     onError: (error: any) => {
-      toast.error(error?.message || "Có lỗi xảy ra khi cập nhật lịch trình");
+      apiToasts.updateError("lịch trình");
     },
   });
 }
@@ -114,10 +114,10 @@ export function useDeleteTaskSchedule() {
     mutationFn: (id: string) => deleteTaskSchedule(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: taskScheduleKeys.lists() });
-      toast.success("Xóa lịch trình thành công");
+      apiToasts.deleteSuccess("lịch trình");
     },
     onError: (error: any) => {
-      toast.error(error?.message || "Có lỗi xảy ra khi xóa lịch trình");
+      apiToasts.deleteError("lịch trình");
     },
   });
 }
@@ -131,10 +131,10 @@ export function useActivateTaskSchedule() {
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: taskScheduleKeys.lists() });
       queryClient.invalidateQueries({ queryKey: taskScheduleKeys.detail(id) });
-      toast.success("Kích hoạt lịch trình thành công");
+      apiToasts.updateSuccess("kích hoạt lịch trình");
     },
     onError: (error: any) => {
-      toast.error(error?.message || "Có lỗi xảy ra khi kích hoạt lịch trình");
+      apiToasts.updateError("kích hoạt lịch trình");
     },
   });
 }
@@ -148,12 +148,10 @@ export function useDeactivateTaskSchedule() {
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: taskScheduleKeys.lists() });
       queryClient.invalidateQueries({ queryKey: taskScheduleKeys.detail(id) });
-      toast.success("Hủy kích hoạt lịch trình thành công");
+      apiToasts.updateSuccess("hủy kích hoạt lịch trình");
     },
     onError: (error: any) => {
-      toast.error(
-        error?.message || "Có lỗi xảy ra khi hủy kích hoạt lịch trình",
-      );
+      apiToasts.updateError("hủy kích hoạt lịch trình");
     },
   });
 }
