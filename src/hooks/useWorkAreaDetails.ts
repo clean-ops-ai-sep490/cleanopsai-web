@@ -12,6 +12,7 @@ import {
   deleteWorkAreaDetail,
   getWorkAreaDetailById,
   getWorkAreaDetailsByWorkArea,
+  getWorkAreaDetailsByWorkAreaId,
 } from "@/lib/work-area-detail-api";
 import type { PaginationParams } from "@/types/common";
 import type {
@@ -87,6 +88,19 @@ export function useDeleteWorkAreaDetail() {
   return useBaseMutation(
     (id: string) => deleteWorkAreaDetail(id),
     [["workAreaDetails"]],
+  );
+}
+
+export function useWorkAreaDetailsByWorkAreaId(
+  workAreaId?: string,
+  params?: { pageNumber?: number; pageSize?: number }
+) {
+  return useBaseQuery(
+    ["workAreaDetails", "byWorkArea", workAreaId, params],
+    () => getWorkAreaDetailsByWorkAreaId(workAreaId!, params),
+    {
+      enabled: !!workAreaId,
+    }
   );
 }
 

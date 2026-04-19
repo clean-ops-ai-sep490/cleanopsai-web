@@ -51,8 +51,8 @@ export interface LocationFormData {
   street: string;
   commune: string;
   province: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   clientId: string;
 }
 

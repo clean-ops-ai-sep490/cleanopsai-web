@@ -30,7 +30,7 @@ export default function LoginPage() {
         if (isSupporter) {
           router.push("/support/equipments");
         } else if (isAdmin) {
-          router.push("/admin/steps");
+          router.push("/admin/users");
         } else {
           router.push("/dashboard");
         }
