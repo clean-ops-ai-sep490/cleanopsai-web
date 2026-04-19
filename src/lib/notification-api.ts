@@ -1,0 +1,61 @@
+import { api } from "./api";
+import type {
+  NotificationRecipientDto,
+  NotificationListResponse,
+  NotificationParams,
+} from "@/types/notification";
+
+// API functions
+export const notificationApi = {
+  // Get notifications list with pagination and filter
+  getNotifications: async (
+    params: NotificationParams,
+  ): Promise<NotificationListResponse> => {
+    const searchParams = new URLSearchParams();
+
+    if (params.isRead !== undefined) {
+      searchParams.append("isRead", params.isRead.toString());
+    }
+    if (params.pageNumber) {
+      searchParams.append("pageNumber", params.pageNumber.toString());
+    }
+    if (params.pageSize) {
+      searchParams.append("pageSize", params.pageSize.toString());
+    }
+
+    const response = await api.get<NotificationListResponse>(
+      `/NotificationRecipients?${searchParams.toString()}`,
+    );
+    return response;
+  },
+
+  // Get notification detail by ID
+  getNotificationDetail: async (
+    id: string,
+  ): Promise<NotificationRecipientDto> => {
+    const response = await api.get<NotificationRecipientDto>(
+      `/NotificationRecipients/${id}`,
+    );
+    return response;
+  },
+
+  // Mark notification as read
+  markAsRead: async (id: string): Promise<void> => {
+    await api.patch(`/NotificationRecipients/${id}/read`);
+  },
+
+  // Mark all notifications as read
+  markAllAsRead: async (): Promise<void> => {
+    await api.patch("/NotificationRecipients/read-all");
+  },
+
+  // Get unread notifications count
+  getUnreadCount: async (): Promise<number> => {
+    const response = await notificationApi.getNotifications({
+      isRead: false,
+      pageNumber: 1,
+      pageSize: 1,
+    });
+    return response.unreadCount;
+  },
+};
