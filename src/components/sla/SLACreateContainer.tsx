@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { toast } from "sonner";
+import { toastUtils } from "@/lib/utils/toast-utils";
 import type {
   SLABasicInfo,
   SLAStaffRequirement,
@@ -97,11 +97,11 @@ export function SLACreateContainer() {
         taskRequirements,
       );
 
-      toast.success("Tạo SLA thành công!");
+      toastUtils.success("Tạo SLA thành công!");
       router.push("/dashboard/sla-trigger");
     } catch (error) {
       console.error("Failed to create SLA:", error);
-      toast.error(
+      toastUtils.error(
         error instanceof Error
           ? error.message
           : "Không thể tạo SLA. Vui lòng thử lại.",

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { LogoutConfirmation } from "@/components/ui/logout-confirmation";
+import { NotificationDropdown } from "./NotificationDropdown";
 import { useLogout } from "@/hooks/useLogout";
 
 export function DashboardHeader() {
@@ -42,12 +43,7 @@ export function DashboardHeader() {
         {/* Right side - Notifications and User Menu */}
         <div className="flex items-center gap-4">
           {/* Notification Bell */}
-          <Button variant="ghost" size="sm" className="relative">
-            <Bell className="h-5 w-5 text-gray-600" />
-            <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-              3
-            </span>
-          </Button>
+          <NotificationDropdown />
 
           {/* User Menu */}
           <DropdownMenu>

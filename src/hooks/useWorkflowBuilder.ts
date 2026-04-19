@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { apiToasts } from "@/lib/utils/toast-utils";
 
 // Task Assignment APIs
 import {
@@ -134,7 +134,7 @@ export function useStartTask(onSuccess?: () => void) {
     mutationFn: ({ id, data }: { id: string; data: StartTaskData }) =>
       startTask(id, data),
     onSuccess: (_, variables) => {
-      toast.success("Task started successfully");
+      apiToasts.updateSuccess("bắt đầu công việc");
       queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
       queryClient.invalidateQueries({
         queryKey: ["task-assignments", variables.id],
@@ -142,7 +142,7 @@ export function useStartTask(onSuccess?: () => void) {
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error("Failed to start task");
+      apiToasts.updateError("bắt đầu công việc");
       console.error("Task start error:", error);
     },
   });
@@ -155,7 +155,7 @@ export function useCompleteTask(onSuccess?: () => void) {
     mutationFn: ({ id, data }: { id: string; data: CompleteTaskData }) =>
       completeTask(id, data),
     onSuccess: (_, variables) => {
-      toast.success("Task completed successfully");
+      apiToasts.updateSuccess("hoàn thành công việc");
       queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
       queryClient.invalidateQueries({
         queryKey: ["task-assignments", variables.id],
@@ -163,7 +163,7 @@ export function useCompleteTask(onSuccess?: () => void) {
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error("Failed to complete task");
+      apiToasts.updateError("hoàn thành công việc");
       console.error("Task completion error:", error);
     },
   });
@@ -175,12 +175,12 @@ export function useCreateAdhocTask(onSuccess?: () => void) {
   return useMutation({
     mutationFn: createAdhocTask,
     onSuccess: () => {
-      toast.success("Adhoc task created successfully");
+      apiToasts.createSuccess("công việc đột xuất");
       queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error("Failed to create adhoc task");
+      apiToasts.createError("công việc đột xuất");
       console.error("Adhoc task creation error:", error);
     },
   });
@@ -194,12 +194,12 @@ export function useCompleteTaskStep(onSuccess?: () => void) {
     mutationFn: ({ id, data }: { id: string; data: SubmitStepExecutionData }) =>
       completeTaskStep(id, data),
     onSuccess: () => {
-      toast.success("Step completed successfully");
+      apiToasts.updateSuccess("hoàn thành bước");
       queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error("Failed to complete step");
+      apiToasts.updateError("hoàn thành bước");
       console.error("Step completion error:", error);
     },
   });
@@ -219,12 +219,12 @@ export function useCompleteCheckBoxStep(onSuccess?: () => void) {
       note?: string;
     }) => completeCheckBoxStep(stepExecutionId, checked, note),
     onSuccess: () => {
-      toast.success("Checkbox step completed");
+      apiToasts.updateSuccess("hoàn thành checkbox");
       queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error("Failed to complete checkbox step");
+      apiToasts.updateError("hoàn thành checkbox");
       console.error("Checkbox step error:", error);
     },
   });
@@ -244,12 +244,12 @@ export function useCompletePhotoStep(onSuccess?: () => void) {
       note?: string;
     }) => completePhotoStep(stepExecutionId, photoUrls, note),
     onSuccess: () => {
-      toast.success("Photo step completed");
+      apiToasts.updateSuccess("hoàn thành chụp ảnh");
       queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error("Failed to complete photo step");
+      apiToasts.updateError("hoàn thành chụp ảnh");
       console.error("Photo step error:", error);
     },
   });
@@ -269,12 +269,12 @@ export function useCompleteSignatureStep(onSuccess?: () => void) {
       signedBy: string;
     }) => completeSignatureStep(stepExecutionId, signatureUrl, signedBy),
     onSuccess: () => {
-      toast.success("Signature step completed");
+      apiToasts.updateSuccess("hoàn thành chữ ký");
       queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error("Failed to complete signature step");
+      apiToasts.updateError("hoàn thành chữ ký");
       console.error("Signature step error:", error);
     },
   });
@@ -292,12 +292,12 @@ export function useCompleteTextInputStep(onSuccess?: () => void) {
       text: string;
     }) => completeTextInputStep(stepExecutionId, text),
     onSuccess: () => {
-      toast.success("Text input step completed");
+      apiToasts.updateSuccess("hoàn thành nhập text");
       queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error("Failed to complete text input step");
+      apiToasts.updateError("hoàn thành nhập text");
       console.error("Text input step error:", error);
     },
   });
@@ -345,12 +345,12 @@ export function useCreateSOP(onSuccess?: (sop: SOP) => void) {
   return useMutation({
     mutationFn: createSOP,
     onSuccess: (data) => {
-      toast.success("SOP created successfully");
+      apiToasts.createSuccess("SOP");
       queryClient.invalidateQueries({ queryKey: ["sops"] });
       onSuccess?.(data);
     },
     onError: (error) => {
-      toast.error("Failed to create SOP");
+      apiToasts.createError("SOP");
       console.error("SOP creation error:", error);
     },
   });
@@ -363,13 +363,13 @@ export function useUpdateSOP(onSuccess?: (sop: SOP) => void) {
     mutationFn: ({ id, data }: { id: string; data: UpdateSOPData }) =>
       updateSOP(id, data),
     onSuccess: (data, variables) => {
-      toast.success("SOP updated successfully");
+      apiToasts.updateSuccess("SOP");
       queryClient.invalidateQueries({ queryKey: ["sops"] });
       queryClient.invalidateQueries({ queryKey: ["sops", variables.id] });
       onSuccess?.(data);
     },
     onError: (error) => {
-      toast.error("Failed to update SOP");
+      apiToasts.updateError("SOP");
       console.error("SOP update error:", error);
     },
   });
@@ -381,7 +381,7 @@ export function useDeleteSOP(onSuccess?: () => void) {
   return useMutation({
     mutationFn: deleteSOP,
     onSuccess: (_, deletedId) => {
-      toast.success("SOP deleted successfully");
+      apiToasts.deleteSuccess("SOP");
       // Remove the specific SOP from cache immediately
       queryClient.removeQueries({ queryKey: ["sops", deletedId] });
       // Cancel any outgoing queries for this SOP
@@ -391,7 +391,7 @@ export function useDeleteSOP(onSuccess?: () => void) {
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error("Failed to delete SOP");
+      apiToasts.deleteError("SOP");
       console.error("SOP deletion error:", error);
     },
   });
@@ -419,12 +419,12 @@ export function useCreateStep(onSuccess?: (step: Step) => void) {
   return useMutation({
     mutationFn: createStep,
     onSuccess: (data) => {
-      toast.success("Step created successfully");
+      apiToasts.createSuccess("bước");
       queryClient.invalidateQueries({ queryKey: ["steps"] });
       onSuccess?.(data);
     },
     onError: (error) => {
-      toast.error("Failed to create step");
+      apiToasts.createError("bước");
       console.error("Step creation error:", error);
     },
   });
@@ -437,13 +437,13 @@ export function useUpdateStep(onSuccess?: (step: Step) => void) {
     mutationFn: ({ id, data }: { id: string; data: UpdateStepData }) =>
       updateStep(id, data),
     onSuccess: (data, variables) => {
-      toast.success("Step updated successfully");
+      apiToasts.updateSuccess("bước");
       queryClient.invalidateQueries({ queryKey: ["steps"] });
       queryClient.invalidateQueries({ queryKey: ["steps", variables.id] });
       onSuccess?.(data);
     },
     onError: (error) => {
-      toast.error("Failed to update step");
+      apiToasts.updateError("bước");
       console.error("Step update error:", error);
     },
   });
@@ -455,12 +455,12 @@ export function useDeleteStep(onSuccess?: () => void) {
   return useMutation({
     mutationFn: deleteStep,
     onSuccess: () => {
-      toast.success("Step deleted successfully");
+      apiToasts.deleteSuccess("bước");
       queryClient.invalidateQueries({ queryKey: ["steps"] });
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error("Failed to delete step");
+      apiToasts.deleteError("bước");
       console.error("Step deletion error:", error);
     },
   });

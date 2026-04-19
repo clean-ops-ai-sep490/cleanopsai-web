@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { toastUtils } from "@/lib/utils/toast-utils";
 import { FormService } from "@/lib/services/form.service";
 
 interface UseFormSubmissionOptions<T, R> {
@@ -32,14 +32,14 @@ export function useFormSubmission<T, R>({
   const mutation = useMutation({
     mutationFn,
     onSuccess: (data) => {
-      toast.success(successMessage);
+      toastUtils.success(successMessage);
       if (queryKey) {
         queryClient.invalidateQueries({ queryKey });
       }
       onSuccess?.(data);
     },
     onError: (error) => {
-      toast.error(errorMessage);
+      toastUtils.error(errorMessage);
       console.error("Form submission error:", error);
       onError?.(error);
     },
