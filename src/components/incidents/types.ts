@@ -9,6 +9,7 @@ export interface IssueReport {
   resolvedAt?: string | null;
   created?: string;
   lastModified?: string;
+  displayLocation?: string | null;
   // Computed fields for display (for backward compatibility with mock data)
   title?: string;
   worker?: string;

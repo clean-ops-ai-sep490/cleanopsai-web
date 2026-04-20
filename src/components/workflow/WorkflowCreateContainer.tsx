@@ -123,14 +123,35 @@ export function WorkflowCreateContainer({ sopId }: { sopId?: string }) {
       }
     }
 
+    // Generate config detail with smart defaults
+    let configDetail = generateConfigDetail(step.actionKey);
+
+    // For photo-capture, auto-assign phase based on existing steps
+    if (step.actionKey.toLowerCase() === "photo-capture") {
+      const existingPhotoSteps = workflowSteps.filter(
+        (s) => s.actionKey.toLowerCase() === "photo-capture",
+      );
+
+      if (existingPhotoSteps.length > 0) {
+        // If there's already a photo-capture step, check its phase
+        const existingPhase =
+          existingPhotoSteps[0].configDetail?.phase || "before";
+        // Assign the opposite phase
+        configDetail = {
+          ...configDetail,
+          phase: existingPhase === "before" ? "after" : "before",
+        };
+      }
+    }
+
     const newStep: WorkflowStep = {
-      id: step.id, // Use the actual step ID from API
+      id: `${step.id}-${Date.now()}-${Math.random()}`, // Generate unique ID for UI
       stepId: step.id, // Store the original step ID for API calls
       name: step.name,
       description: step.description,
       actionKey: step.actionKey,
       configSchema: step.configSchema,
-      configDetail: generateConfigDetail(step.actionKey), // Auto-generate initial config
+      configDetail: configDetail,
       order: workflowSteps.length + 1, // Start from 1 instead of 0
     };
     setWorkflowSteps([...workflowSteps, newStep]);
@@ -173,11 +194,32 @@ export function WorkflowCreateContainer({ sopId }: { sopId?: string }) {
     const [movedStep] = newSteps.splice(fromIndex, 1);
     newSteps.splice(toIndex, 0, movedStep);
 
-    // Update order numbers
-    const reorderedSteps = newSteps.map((step, index) => ({
-      ...step,
-      order: index + 1,
-    }));
+    // Update order numbers and auto-update photo-capture phases based on position
+    const reorderedSteps = newSteps.map((step, index) => {
+      const updatedStep = {
+        ...step,
+        order: index + 1,
+      };
+
+      // Auto-update phase for photo-capture steps based on their order
+      if (step.actionKey.toLowerCase() === "photo-capture") {
+        const photoSteps = newSteps.filter(
+          (s) => s.actionKey.toLowerCase() === "photo-capture",
+        );
+
+        if (photoSteps.length === 2) {
+          // Find the position of this step among photo-capture steps
+          const photoIndex = photoSteps.findIndex((s) => s.id === step.id);
+          // First photo-capture step = "before", second = "after"
+          updatedStep.configDetail = {
+            ...step.configDetail,
+            phase: photoIndex === 0 ? "before" : "after",
+          };
+        }
+      }
+
+      return updatedStep;
+    });
 
     setWorkflowSteps(reorderedSteps);
   };

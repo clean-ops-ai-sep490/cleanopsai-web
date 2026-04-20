@@ -25,18 +25,20 @@ export default function LoginPage() {
         const me = await getMe();
         const roleStr = String(me.role ?? "").trim();
         const lower = roleStr.toLowerCase();
-        const isSupporter = roleStr === "4" || roleStr === "Supporter" || lower === "supporter";
-        const isAdmin = roleStr === "0" || roleStr === "Admin" || lower === "admin";
+        const isSupporter =
+          roleStr === "4" || roleStr === "Supporter" || lower === "supporter";
+        const isAdmin =
+          roleStr === "0" || roleStr === "Admin" || lower === "admin";
         if (isSupporter) {
           router.push("/support/equipments");
         } else if (isAdmin) {
           router.push("/admin/users");
         } else {
-          router.push("/dashboard");
+          router.push("/dashboard/sla-trigger");
         }
       } catch (err) {
         // fallback
-        router.push("/dashboard");
+        router.push("/dashboard/sla-trigger");
       }
     } catch {
       setError("Invalid email or password");
@@ -58,7 +60,10 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Email
             </label>
             <input
@@ -73,7 +78,10 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Password
             </label>
             <input

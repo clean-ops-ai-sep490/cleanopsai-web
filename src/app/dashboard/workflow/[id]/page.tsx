@@ -88,7 +88,7 @@ export default function WorkflowDetailPage() {
               variant="outline"
               size="sm"
               onClick={() => router.push(`/dashboard/workflow/${sopId}/edit`)}
-              className="border-[#e5e5e5]"
+              className="bg-[#1a80a2] hover:bg-[#308cab] text-white"
             >
               <Edit className="w-4 h-4 mr-2" />
               Chỉnh sửa
@@ -143,14 +143,14 @@ export default function WorkflowDetailPage() {
                 <p className="text-sm text-black">{sop.serviceType || "N/A"}</p>
               </div>
 
-              <div>
+              {/* <div>
                 <label className="text-sm font-medium text-[#70808f] block mb-1">
                   Environment Type ID
                 </label>
                 <p className="text-sm text-black font-mono text-xs">
                   {sop.environmentTypeId}
                 </p>
-              </div>
+              </div> */}
 
               <div>
                 <label className="text-sm font-medium text-[#70808f] block mb-1">
@@ -196,14 +196,6 @@ export default function WorkflowDetailPage() {
               <h2 className="text-lg font-semibold text-black">
                 Các bước thực hiện ({sop.sopSteps?.length || 0})
               </h2>
-              <Button
-                size="sm"
-                onClick={() => router.push(`/dashboard/workflow/${sopId}/edit`)}
-                className="bg-[#1a80a2] hover:bg-[#308cab] text-white"
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Chỉnh sửa workflow
-              </Button>
             </div>
 
             {!sop.sopSteps || sop.sopSteps.length === 0 ? (
@@ -234,29 +226,23 @@ export default function WorkflowDetailPage() {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-start justify-between mb-2">
-                            <h3 className="text-sm font-semibold text-black">
-                              Bước {sopStep.stepOrder}
-                            </h3>
-                            <Badge variant="outline" className="text-xs">
-                              Step ID: {sopStep.stepId}
-                            </Badge>
-                          </div>
-                          {sopStep.configDetail && (
-                            <div className="text-xs text-[#70808f] bg-[#f5f5f5] rounded p-2 font-mono">
-                              <div className="font-semibold mb-1">
-                                Cấu hình:
-                              </div>
-                              <pre className="whitespace-pre-wrap">
-                                {typeof sopStep.configDetail === "string"
-                                  ? sopStep.configDetail
-                                  : JSON.stringify(
-                                      sopStep.configDetail,
-                                      null,
-                                      2,
-                                    )}
-                              </pre>
+                            <div>
+                              <h3 className="text-base font-semibold text-black">
+                                {sopStep.step?.name ||
+                                  `Bước ${sopStep.stepOrder}`}
+                              </h3>
+                              {sopStep.step?.description && (
+                                <p className="text-sm text-[#70808f] mt-1">
+                                  {sopStep.step.description}
+                                </p>
+                              )}
                             </div>
-                          )}
+                            {sopStep.step?.actionKey && (
+                              <Badge variant="outline" className="text-xs ml-2">
+                                {sopStep.step.actionKey}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

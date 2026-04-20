@@ -101,7 +101,7 @@ export default function SLADetailPage() {
               </Button>
             </Link>
             <div className="flex items-center space-x-3">
-              <Building className="h-6 w-6 text-blue-600" />
+              {/* <Building className="h-6 w-6 text-blue-600" />
               <div>
                 <h1 className="text-2xl font-semibold text-black">
                   {sla.name}
@@ -112,11 +112,11 @@ export default function SLADetailPage() {
                     ? new Date(sla.createdAt).toLocaleDateString("vi-VN")
                     : "N/A"}
                 </p>
-              </div>
+              </div> */}
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          {/* <div className="flex items-center space-x-2">
             <Link href={`/dashboard/sla-trigger/${sla.id}/edit`}>
               <Button variant="outline">
                 <Edit className="h-4 w-4 mr-2" />
@@ -131,7 +131,7 @@ export default function SLADetailPage() {
               <Trash2 className="h-4 w-4 mr-2" />
               Xóa
             </Button>
-          </div>
+          </div> */}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -168,7 +168,7 @@ export default function SLADetailPage() {
                       Hợp đồng
                     </label>
                     <p className="text-lg font-semibold text-black">
-                      {sla.contractId}
+                      {sla.contractName}
                     </p>
                   </div>
                   <div>
@@ -176,7 +176,7 @@ export default function SLADetailPage() {
                       Khu vực làm việc
                     </label>
                     <p className="text-lg font-semibold text-black">
-                      {sla.workAreaId}
+                      {sla.workAreaName}
                     </p>
                   </div>
                 </div>
@@ -319,7 +319,7 @@ export default function SLADetailPage() {
             </Card>
 
             {/* Quick Info */}
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Thông tin chi tiết</CardTitle>
               </CardHeader>
@@ -353,7 +353,7 @@ export default function SLADetailPage() {
                   </p>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
         </div>
       </div>

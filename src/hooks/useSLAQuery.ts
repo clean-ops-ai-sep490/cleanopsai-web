@@ -43,7 +43,11 @@ export function useSLAQuery() {
 export function useSLA(id: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["slas", id],
-    queryFn: () => getSLAById(id),
+    queryFn: async () => {
+      const result = await getSLAById(id);
+      // Handle case where API returns array instead of single object
+      return Array.isArray(result) ? result[0] : result;
+    },
     enabled: options?.enabled !== undefined ? options.enabled : !!id,
   });
 }
