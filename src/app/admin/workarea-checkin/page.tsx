@@ -159,7 +159,7 @@ export default function WorkareaCheckinPointsPage() {
                     <TableRow>
                       <TableHead>Tên</TableHead>
                       <TableHead>Code</TableHead>
-                      <TableHead>WorkArea</TableHead>
+                      {/* <TableHead>WorkArea</TableHead> */}
                       <TableHead className="text-right">
                         Hành động
                       </TableHead>
@@ -171,9 +171,9 @@ export default function WorkareaCheckinPointsPage() {
                       <TableRow key={item.id}>
                         <TableCell>{item.name}</TableCell>
                         <TableCell>{item.code}</TableCell>
-                        <TableCell>
+                        {/* <TableCell>
                           {workareaMap[item.workareaId]?.name ?? "—"}
-                        </TableCell>
+                        </TableCell> */}
 
                         <TableCell className="text-right space-x-2">
                           <Button
@@ -250,7 +250,7 @@ export default function WorkareaCheckinPointsPage() {
       <StandardDialog
         open={qrModal}
         onOpenChange={setQrModal}
-        title={`QR Check-in — ${workareaMap[qrWorkareaId]?.name ?? qrWorkareaId}`}
+        title={`QR Check-in`}
       >
         <div className="flex flex-col items-center gap-4 py-4">
           {qrUrl ? (
