@@ -151,20 +151,74 @@ export class SLAService {
   }
 
   /**
+   * Transform recurrence config to API format
+   */
+  private static transformRecurrenceConfig(
+    recurrenceType: string,
+    config: any,
+  ): any {
+    console.log("Transform input:", { recurrenceType, config });
+
+    if (recurrenceType === "Yearly") {
+      // Check if we have the UI format with selectedMonth and daysOfMonth
+      if (
+        config.selectedMonth &&
+        config.daysOfMonth &&
+        Array.isArray(config.daysOfMonth) &&
+        config.daysOfMonth.length > 0
+      ) {
+        // Transform from UI format to API format
+        // UI: { interval, selectedMonth, daysOfMonth: [1, 9, 10] }
+        // API: { interval, monthDays: [{ month: 2, day: 1 }, { month: 2, day: 9 }, ...] }
+        const transformed = {
+          interval: config.interval || 1,
+          monthDays: config.daysOfMonth.map((day: number) => ({
+            month: config.selectedMonth,
+            day: day,
+          })),
+        };
+        console.log("Transformed to:", transformed);
+        return transformed;
+      }
+
+      // If already in API format, return as is
+      if (config.monthDays && Array.isArray(config.monthDays)) {
+        console.log("Already in API format");
+        return config;
+      }
+
+      console.warn("Yearly config missing required fields:", config);
+    }
+
+    // For other types, return config as is
+    console.log("Returning config as is");
+    return config;
+  }
+
+  /**
    * Create SLA tasks for task requirements
    */
   private static async createSLATasks(
     slaId: string,
     taskRequirements: SLATaskRequirement[],
   ) {
-    const taskPromises = taskRequirements.map((task) =>
-      createSLATask({
+    const taskPromises = taskRequirements.map((task) => {
+      const transformedConfig = SLAService.transformRecurrenceConfig(
+        task.recurrenceType,
+        task.recurrenceConfig,
+      );
+
+      const taskData = {
         slaId,
         name: task.name,
         recurrenceType: task.recurrenceType,
-        recurrenceConfig: task.recurrenceConfig,
-      }),
-    );
+        recurrenceConfig: transformedConfig,
+      };
+
+      console.log("Creating SLA Task with data:", taskData);
+
+      return createSLATask(taskData);
+    });
 
     return await Promise.all(taskPromises);
   }

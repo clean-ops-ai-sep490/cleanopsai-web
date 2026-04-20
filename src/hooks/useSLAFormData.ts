@@ -17,11 +17,13 @@ export function useSLAFormData(
 ) {
   const [locationName, setLocationName] = useState<string>("");
   const onChangeRef = useRef(onChange);
+  const dataRef = useRef(data);
 
-  // Keep onChange reference stable
+  // Keep refs updated
   React.useEffect(() => {
     onChangeRef.current = onChange;
-  }, [onChange]);
+    dataRef.current = data;
+  }, [onChange, data]);
 
   // Base data hooks
   const contractsQuery = useContracts();
@@ -65,13 +67,14 @@ export function useSLAFormData(
   // Auto-update location when contract changes
   const handleContractChange = useCallback(
     (contractId: string) => {
+      const currentData = dataRef.current;
       const contract = contractsQuery.data?.items?.find(
         (c) => c.id === contractId,
       );
       if (contract?.clientId) {
         // Location will be auto-loaded by useLocationsByClient hook
         onChangeRef.current({
-          ...data,
+          ...currentData,
           contractId,
           locationId: "", // Will be set when location loads
           zoneId: "",
@@ -79,7 +82,7 @@ export function useSLAFormData(
         });
       } else {
         onChangeRef.current({
-          ...data,
+          ...currentData,
           contractId,
           locationId: "",
           zoneId: "",
@@ -88,40 +91,45 @@ export function useSLAFormData(
       }
       setLocationName("");
     },
-    [contractsQuery.data?.items, data],
+    [contractsQuery.data?.items],
   );
 
   // Auto-update location name when location data loads
+  const selectedLocationId = selectedLocation?.id;
+  const selectedLocationName = selectedLocation?.name;
+
   React.useEffect(() => {
-    if (selectedLocation && selectedLocation.id !== data.locationId) {
-      setLocationName(selectedLocation.name);
+    const currentData = dataRef.current;
+    if (selectedLocationId && selectedLocationId !== currentData.locationId) {
+      setLocationName(selectedLocationName || "");
       onChangeRef.current({
-        ...data,
-        locationId: selectedLocation.id,
+        ...currentData,
+        locationId: selectedLocationId,
         zoneId: "", // Clear dependent fields
         workAreaId: "",
       });
     }
-  }, [selectedLocation?.id, selectedLocation?.name, data.locationId, data]);
+  }, [selectedLocationId, selectedLocationName]);
 
   const handleInputChange = useCallback(
     (field: keyof SLABasicInfo, value: string) => {
+      const currentData = dataRef.current;
       if (field === "contractId") {
         handleContractChange(value);
       } else if (field === "locationId") {
         onChangeRef.current({
-          ...data,
+          ...currentData,
           [field]: value,
           zoneId: "",
           workAreaId: "",
         });
       } else if (field === "zoneId") {
-        onChangeRef.current({ ...data, [field]: value, workAreaId: "" });
+        onChangeRef.current({ ...currentData, [field]: value, workAreaId: "" });
       } else {
-        onChangeRef.current({ ...data, [field]: value });
+        onChangeRef.current({ ...currentData, [field]: value });
       }
     },
-    [data, handleContractChange],
+    [handleContractChange],
   );
 
   return {

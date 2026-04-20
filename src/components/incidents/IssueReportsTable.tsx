@@ -8,13 +8,14 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 import { IssueReport } from "./types";
 
 interface IssueReportsTableProps {
   issues: IssueReport[];
   onApprove?: (id: string) => void;
   onReject?: (id: string) => void;
+  onUpdateTaskStatus?: (taskAssignmentId: string) => void;
   isLoading?: boolean;
 }
 
@@ -35,15 +36,29 @@ export function IssueReportsTable({
   issues,
   onApprove,
   onReject,
+  onUpdateTaskStatus,
   isLoading = false,
 }: IssueReportsTableProps) {
+  // Helper function to extract last 3 parts from displayLocation
+  const getShortLocation = (
+    displayLocation: string | null | undefined,
+  ): string => {
+    if (!displayLocation) return "N/A";
+
+    const parts = displayLocation.split(",").map((p) => p.trim());
+    if (parts.length <= 3) return displayLocation;
+
+    // Get last 3 parts
+    return parts.slice(-3).join(", ");
+  };
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-20">Mã</TableHead>
           <TableHead>Sự cố</TableHead>
           <TableHead>Báo cáo bởi</TableHead>
+          <TableHead>Vị trí</TableHead>
           <TableHead className="text-center">Trạng thái</TableHead>
           <TableHead className="text-center">Thời gian</TableHead>
           <TableHead className="text-center w-32">Hành động</TableHead>
@@ -57,9 +72,6 @@ export function IssueReportsTable({
           };
           return (
             <TableRow key={issue.id}>
-              <TableCell className="font-mono text-xs text-gray-500">
-                {issue.id?.slice(-6) || issue.id || "N/A"}
-              </TableCell>
               <TableCell>
                 <p className="text-sm font-medium text-black">
                   Issue Report #{issue.id?.slice(-6) || issue.id || "N/A"}
@@ -70,6 +82,9 @@ export function IssueReportsTable({
               </TableCell>
               <TableCell className="text-sm">
                 {issue.reportedByWorkerName || issue.worker || "Unknown"}
+              </TableCell>
+              <TableCell className="text-sm text-gray-700">
+                {getShortLocation(issue.displayLocation)}
               </TableCell>
               <TableCell className="text-center">
                 <Badge className={st.className}>{st.label}</Badge>
@@ -101,11 +116,24 @@ export function IssueReportsTable({
                       <XCircle className="w-3 h-3 mr-1" />
                     </Button>
                   </div>
+                ) : (issue.status === "Approved" ||
+                    issue.status === "Rejected") &&
+                  issue.taskAssignmentId ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    onClick={() =>
+                      onUpdateTaskStatus?.(issue.taskAssignmentId!)
+                    }
+                    disabled={isLoading}
+                  >
+                    <RefreshCw className="w-3 h-3 mr-1" />
+                    Update Task
+                  </Button>
                 ) : (
                   <span className="text-xs font-medium text-gray-500">
-                    {issue.status === "Approved" || issue.status === "Rejected"
-                      ? "Đã xử lý"
-                      : "Không khả dụng"}
+                    Không khả dụng
                   </span>
                 )}
               </TableCell>

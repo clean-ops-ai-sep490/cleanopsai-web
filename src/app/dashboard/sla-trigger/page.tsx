@@ -247,17 +247,15 @@ export default function SLATriggerPage() {
                 </Table>
 
                 {/* Pagination */}
-                {paginatedSLAs.totalPages > 1 && (
-                  <div className="mt-6">
-                    <PaginationWithInfo
-                      currentPage={paginatedSLAs.currentPage}
-                      totalPages={paginatedSLAs.totalPages}
-                      pageSize={paginatedSLAs.pageSize}
-                      totalElements={paginatedSLAs.totalElements}
-                      onPageChange={paginatedSLAs.setPage}
-                    />
-                  </div>
-                )}
+                <div className="mt-6">
+                  <PaginationWithInfo
+                    currentPage={paginatedSLAs.currentPage}
+                    totalPages={paginatedSLAs.totalPages || 1}
+                    pageSize={paginatedSLAs.pageSize}
+                    totalElements={paginatedSLAs.totalElements}
+                    onPageChange={paginatedSLAs.setPage}
+                  />
+                </div>
               </>
             )}
           </CardContent>

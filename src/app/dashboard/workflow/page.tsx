@@ -9,14 +9,14 @@ import { Input } from "@/components/ui/input";
 import { PaginationWithInfo } from "@/components/ui/pagination";
 import { Search, Loader2 } from "lucide-react";
 import { useSOPs } from "@/hooks/useWorkflowBuilder";
-import { usePaginatedData } from "@/hooks/usePagination";
+import { usePagination } from "@/hooks/usePagination";
 
 export default function WorkflowListPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Initialize pagination
-  const pagination = usePaginatedData({
-    initialPageSize: 12,
+  const pagination = usePagination({
+    initialPageSize: 10,
   });
 
   const {
@@ -29,13 +29,10 @@ export default function WorkflowListPage() {
     search: searchQuery || undefined,
   });
 
-  // Update pagination data when response changes
-  const paginatedSOPs = usePaginatedData({
-    data: sopsData,
-    initialPageSize: 12,
-  });
-
-  const sops = paginatedSOPs.items;
+  const sops = sopsData?.content || [];
+  const totalPages = sopsData?.totalPages || 0;
+  const totalElements = sopsData?.totalElements || 0;
+  const isEmpty = sops.length === 0;
 
   return (
     <DashboardLayout>
@@ -93,7 +90,7 @@ export default function WorkflowListPage() {
       )}
 
       {/* Empty State */}
-      {!isLoading && !error && paginatedSOPs.isEmpty && (
+      {!isLoading && !error && isEmpty && (
         <div className="text-center py-12">
           <p className="text-[#70808f] mb-4">
             {searchQuery ? "Không tìm thấy SOP nào" : "Chưa có SOP nào"}
@@ -102,7 +99,7 @@ export default function WorkflowListPage() {
       )}
 
       {/* SOP List */}
-      {!isLoading && !error && !paginatedSOPs.isEmpty && (
+      {!isLoading && !error && !isEmpty && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sops.map((sop) => (
@@ -149,17 +146,15 @@ export default function WorkflowListPage() {
           </div>
 
           {/* Pagination */}
-          {paginatedSOPs.totalPages > 1 && (
-            <div className="mt-8">
-              <PaginationWithInfo
-                currentPage={paginatedSOPs.currentPage}
-                totalPages={paginatedSOPs.totalPages}
-                pageSize={paginatedSOPs.pageSize}
-                totalElements={paginatedSOPs.totalElements}
-                onPageChange={paginatedSOPs.setPage}
-              />
-            </div>
-          )}
+          <div className="mt-8">
+            <PaginationWithInfo
+              currentPage={pagination.currentPage}
+              totalPages={totalPages || 1}
+              pageSize={pagination.pageSize}
+              totalElements={totalElements}
+              onPageChange={pagination.setPage}
+            />
+          </div>
         </>
       )}
     </DashboardLayout>

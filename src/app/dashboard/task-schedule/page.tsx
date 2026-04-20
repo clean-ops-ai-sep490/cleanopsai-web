@@ -8,21 +8,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { PaginationWithInfo } from "@/components/ui/pagination";
-import { Search, Loader2, Clock, MapPin, User, Calendar } from "lucide-react";
+import {
+  Search,
+  Loader2,
+  Clock,
+  MapPin,
+  User,
+  Calendar,
+  UserPlus,
+} from "lucide-react";
 import {
   useTaskSchedules,
   useActivateTaskSchedule,
   useDeactivateTaskSchedule,
 } from "@/hooks/useTaskSchedules";
-import { usePaginatedData } from "@/hooks/usePagination";
+import { usePagination } from "@/hooks/usePagination";
 import { Switch } from "@/components/ui/switch";
+import { AssignTaskScheduleDialog } from "@/components/task-schedule/dialogs/AssignTaskScheduleDialog";
 
 export default function TaskScheduleListPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   // Initialize pagination
-  const pagination = usePaginatedData({
-    initialPageSize: 12,
+  const pagination = usePagination({
+    initialPageSize: 10,
   });
 
   const {
@@ -35,16 +49,13 @@ export default function TaskScheduleListPage() {
     search: searchQuery || undefined,
   });
 
-  // Update pagination data when response changes
-  const paginatedTaskSchedules = usePaginatedData({
-    data: taskSchedulesData,
-    initialPageSize: 12,
-  });
-
   const activateMutation = useActivateTaskSchedule();
   const deactivateMutation = useDeactivateTaskSchedule();
 
-  const taskSchedules = paginatedTaskSchedules.items;
+  const taskSchedules = taskSchedulesData?.content || [];
+  const totalPages = taskSchedulesData?.totalPages || 0;
+  const totalElements = taskSchedulesData?.totalElements || 0;
+  const isEmpty = taskSchedules.length === 0;
 
   const handleToggleStatus = (schedule: any) => {
     if (schedule.isActive) {
@@ -52,6 +63,14 @@ export default function TaskScheduleListPage() {
     } else {
       activateMutation.mutate(schedule.id);
     }
+  };
+
+  const handleOpenAssignDialog = (schedule: any) => {
+    setSelectedSchedule({
+      id: schedule.id,
+      name: schedule.name,
+    });
+    setAssignDialogOpen(true);
   };
 
   return (
@@ -112,7 +131,7 @@ export default function TaskScheduleListPage() {
       )}
 
       {/* Empty State */}
-      {!isLoading && !error && paginatedTaskSchedules.isEmpty && (
+      {!isLoading && !error && isEmpty && (
         <div className="text-center py-12">
           <p className="text-[#70808f] mb-4">
             {searchQuery
@@ -123,7 +142,7 @@ export default function TaskScheduleListPage() {
       )}
 
       {/* Task Schedule List */}
-      {!isLoading && !error && !paginatedTaskSchedules.isEmpty && (
+      {!isLoading && !error && !isEmpty && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {taskSchedules.map((schedule) => (
@@ -216,23 +235,44 @@ export default function TaskScheduleListPage() {
                     </span>
                   </div>
                 </div>
+
+                {/* Action Button */}
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenAssignDialog(schedule)}
+                    className="w-full border-[#1a80a2] text-[#1a80a2] hover:bg-[#1a80a2] hover:text-white"
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Assign Task
+                  </Button>
+                </div>
               </Card>
             ))}
           </div>
 
           {/* Pagination */}
-          {paginatedTaskSchedules.totalPages > 1 && (
-            <div className="mt-8">
-              <PaginationWithInfo
-                currentPage={paginatedTaskSchedules.currentPage}
-                totalPages={paginatedTaskSchedules.totalPages}
-                pageSize={paginatedTaskSchedules.pageSize}
-                totalElements={paginatedTaskSchedules.totalElements}
-                onPageChange={paginatedTaskSchedules.setPage}
-              />
-            </div>
-          )}
+          <div className="mt-8">
+            <PaginationWithInfo
+              currentPage={pagination.currentPage}
+              totalPages={totalPages || 1}
+              pageSize={pagination.pageSize}
+              totalElements={totalElements}
+              onPageChange={pagination.setPage}
+            />
+          </div>
         </>
+      )}
+
+      {/* Assign Task Schedule Dialog */}
+      {selectedSchedule && (
+        <AssignTaskScheduleDialog
+          open={assignDialogOpen}
+          onOpenChange={setAssignDialogOpen}
+          taskScheduleId={selectedSchedule.id}
+          taskScheduleName={selectedSchedule.name}
+        />
       )}
     </DashboardLayout>
   );

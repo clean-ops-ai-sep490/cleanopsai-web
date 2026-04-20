@@ -20,12 +20,12 @@ const navigation = [
   {
     title: "TỔNG QUAN",
     items: [
-      {
-        name: "Dashboard",
-        href: "/dashboard",
-        icon: LayoutDashboard,
-        roles: ["1"], // Admin, Manager
-      },
+      // {
+      //   name: "Dashboard",
+      //   href: "/dashboard",
+      //   icon: LayoutDashboard,
+      //   roles: ["1"], // Admin, Manager
+      // },
       {
         name: "Sự cố & Yêu cầu",
         href: "/dashboard/incidents",
@@ -57,17 +57,17 @@ const navigation = [
       },
     ],
   },
-  {
-    title: "NHÂN SỰ",
-    items: [
-      {
-        name: "Tìm nhân sự",
-        href: "/dashboard/staff-search",
-        icon: Users,
-        roles: [ "1"], // Admin, Manager
-      },
-    ],
-  },
+  // {
+  //   title: "NHÂN SỰ",
+  //   items: [
+  //     {
+  //       name: "Tìm nhân sự",
+  //       href: "/dashboard/staff-search",
+  //       icon: Users,
+  //       roles: [ "1"], // Admin, Manager
+  //     },
+  //   ],
+  // },
   // {
   //   title: "KHÁC",
   //   items: [
