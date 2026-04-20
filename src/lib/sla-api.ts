@@ -43,7 +43,7 @@ export const {
 
 // Custom function for getting SLA shifts by SLA ID
 export async function getSLAShiftsBySLA(slaId: string): Promise<SLAShift[]> {
-  const response = await api.get<any>(`/SlaShifts?slaId=${slaId}`);
+  const response = await api.get<any>(`/SlaShifts/sla/${slaId}`);
   return parseArrayResponse<SLAShift>(response);
 }
 
@@ -65,6 +65,6 @@ export const {
 
 // Custom function for getting SLA tasks by SLA ID
 export async function getSLATasksBySLA(slaId: string): Promise<SLATask[]> {
-  const response = await api.get<any>(`/SlaTasks?slaId=${slaId}`);
+  const response = await api.get<any>(`/SlaTasks/sla/${slaId}`);
   return parseArrayResponse<SLATask>(response);
 }

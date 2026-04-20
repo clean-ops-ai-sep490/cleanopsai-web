@@ -377,13 +377,13 @@ export function TaskRequirementStep({
             <p className="text-gray-600 mb-6 max-w-md mx-auto">
               Bắt đầu bằng cách thêm công việc đầu tiên cho SLA của bạn
             </p>
-            <Button
+            {/* <Button
               onClick={addTask}
               className="bg-[#1a80a2] hover:bg-[#1a80a2]/90 px-6 py-3"
             >
               <Plus className="h-5 w-5 mr-2" />
               Thêm công việc đầu tiên
-            </Button>
+            </Button> */}
           </div>
         ) : (
           <div className="space-y-6">

@@ -20,6 +20,8 @@ import {
   getIssueReportsPaginated,
   resolveIssueReport,
 } from "@/lib/issue-report-api";
+import { updateTaskAssignmentStatus } from "@/lib/task-assignment-api";
+import { TaskAssignmentStatus } from "@/types/task";
 
 export function IncidentsContainer() {
   const [activeTab, setActiveTab] = useState("issues");
@@ -109,6 +111,23 @@ export function IncidentsContainer() {
     }
   };
 
+  const handleUpdateTaskStatus = async (taskAssignmentId: string) => {
+    try {
+      setProcessingIssueId(taskAssignmentId);
+      await updateTaskAssignmentStatus(
+        taskAssignmentId,
+        TaskAssignmentStatus.InProgress,
+      );
+      toastUtils.success("Trạng thái task đã được cập nhật thành InProgress");
+      refetchIssueReports();
+    } catch (error) {
+      toastUtils.error("Không thể cập nhật trạng thái task");
+      console.error("Error updating task status:", error);
+    } finally {
+      setProcessingIssueId(null);
+    }
+  };
+
   // Show loading state
   if (issueReportsLoading) {
     return (
@@ -168,30 +187,30 @@ export function IncidentsContainer() {
             Issue Report, Emergency Alert, Ad-hoc Request và Equipment Request
           </p>
         </div>
-        <Button
+        {/* <Button
           className="bg-[#1a80a2] hover:bg-[#1a80a2]/90"
           onClick={() => setAdHocDialogOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
           Tạo Ad-hoc Task
-        </Button>
+        </Button> */}
       </div>
 
       {/* Stats */}
-      <IncidentStats
+      {/* <IncidentStats
         openIssues={openIssues}
         activeEmergencies={activeEmergencies}
         pendingRequests={pendingRequests}
         resolvedThisMonth={24}
-      />
+      /> */}
 
       {/* Emergency Banner */}
-      {activeEmergency && (
+      {/* {activeEmergency && (
         <EmergencyBanner
           emergency={activeEmergency}
           onResolve={handleResolveEmergency}
         />
-      )}
+      )} */}
 
       {/* Main Content Tabs */}
       <Card>
@@ -207,7 +226,7 @@ export function IncidentsContainer() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger
+              {/* <TabsTrigger
                 value="emergencies"
                 className="flex items-center gap-2"
               >
@@ -222,7 +241,7 @@ export function IncidentsContainer() {
                     {pendingRequests}
                   </Badge>
                 )}
-              </TabsTrigger>
+              </TabsTrigger> */}
             </TabsList>
           </Tabs>
         </CardHeader>
@@ -233,6 +252,7 @@ export function IncidentsContainer() {
                 issues={issueReports}
                 onApprove={handleApproveIssue}
                 onReject={handleRejectIssue}
+                onUpdateTaskStatus={handleUpdateTaskStatus}
                 isLoading={processingIssueId !== null}
               />
             </TabsContent>

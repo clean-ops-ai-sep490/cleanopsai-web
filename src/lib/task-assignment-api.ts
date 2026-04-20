@@ -69,6 +69,17 @@ export async function completeTask(
   return api.post(`/TaskAssignments/${id}/complete`, data);
 }
 
+export async function updateTaskAssignmentStatus(
+  id: string,
+  status: TaskAssignmentStatus,
+): Promise<void> {
+  return api.patch(`/TaskAssignments/${id}/status`, JSON.stringify(status), {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+}
+
 export async function createAdhocTask(
   data: CreateAdhocTaskData,
 ): Promise<TaskAssignment> {

@@ -31,7 +31,7 @@ export default function EditSLAPage() {
   useEffect(() => {
     if (sla) {
       setFormData({
-        name: sla.name,
+        name: sla.name || "",
         description: sla.description || "",
       });
     }

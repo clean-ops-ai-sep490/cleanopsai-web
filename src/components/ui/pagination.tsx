@@ -57,7 +57,6 @@ export function Pagination({
       className={cn("mx-auto flex w-full justify-center", className)}
     >
       <div className="flex flex-row items-center gap-1">
-
         {/* Previous page button */}
         {showPrevNext && (
           <Button

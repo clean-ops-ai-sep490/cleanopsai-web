@@ -56,13 +56,13 @@ export function ActionRegistry({
 
   return (
     <aside className="w-[228px] flex-shrink-0">
-      <Card className="bg-[#f9fafb] rounded-[5px] p-4 sticky top-[122px]">
-        <h2 className="text-[15px] font-medium text-black mb-4">
+      <Card className="bg-[#f9fafb] rounded-[5px] p-4 sticky top-[122px] flex flex-col max-h-[calc(100vh-140px)]">
+        <h2 className="text-[15px] font-medium text-black mb-4 flex-shrink-0">
           Action Registry
         </h2>
 
         {/* Search Input */}
-        <div className="relative mb-4">
+        <div className="relative mb-4 flex-shrink-0">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
             placeholder="Tìm kiếm action..."
@@ -72,7 +72,8 @@ export function ActionRegistry({
           />
         </div>
 
-        <div className="space-y-3">
+        {/* Scrollable Actions List */}
+        <div className="space-y-3 overflow-y-auto flex-1 pr-2 -mr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
           {isLoading ? (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="w-4 h-4 animate-spin text-[#1a80a2]" />

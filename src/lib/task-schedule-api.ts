@@ -77,6 +77,29 @@ export async function activateTaskSchedule(id: string): Promise<void> {
 export async function deactivateTaskSchedule(id: string): Promise<void> {
   return api.patch(`/TaskSchedules/${id}/deactivate`);
 }
+
+// Generate task assignments from task schedules
+export interface GenerateTaskAssignmentsRequest {
+  taskScheduleIds: string[];
+  fromDate: string; // Format: "YYYY-MM-DD"
+  toDate: string; // Format: "YYYY-MM-DD"
+}
+
+export interface GenerateTaskAssignmentsResponse {
+  generatedCount: number;
+  taskAssignmentIds: string[];
+  message?: string;
+}
+
+export async function generateTaskAssignments(
+  data: GenerateTaskAssignmentsRequest,
+): Promise<GenerateTaskAssignmentsResponse> {
+  return api.post<GenerateTaskAssignmentsResponse>(
+    "/TaskSchedules/taskassignments/generate",
+    data,
+  );
+}
+
 // Create task schedule with work area supervisor assignment
 // Tương tự như SLA: tạo SLA trước -> tạo SLA-shift và SLA-task với slaId
 // Ở đây: tạo task schedule trước -> tạo work area supervisor assignment với workAreaId
