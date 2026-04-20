@@ -101,27 +101,60 @@ export async function generateTaskAssignments(
 }
 
 // Create task schedule with work area supervisor assignment
-// Tương tự như SLA: tạo SLA trước -> tạo SLA-shift và SLA-task với slaId
-// Ở đây: tạo task schedule trước -> tạo work area supervisor assignment với workAreaId
+// Flow:
+// 1. Tạo WorkAreaDetail mới (nếu có workAreaDetailName)
+// 2. Tạo task schedule với workAreaDetailId
+// 3. Tạo work area supervisor assignment
 export async function createTaskScheduleWithAssignment(
-  taskData: CreateTaskScheduleData & { supervisorId: string },
+  taskData: CreateTaskScheduleData & {
+    supervisorId: string;
+    workAreaDetailName?: string;
+    workAreaDetailArea?: number;
+  },
 ): Promise<TaskSchedule> {
   // Import the work area supervisor API function
   const { assignWorkersToSupervisor } =
     await import("./work-area-supervisor-api");
+  const { createWorkAreaDetail } = await import("./work-area-detail-api");
 
   try {
-    // 1. Tạo task schedule trước (giống như tạo SLA trước)
-    const { supervisorId, ...taskScheduleData } = taskData;
-    const taskSchedule = await createTaskSchedule(taskScheduleData);
+    let workAreaDetailId = taskData.workAreaDetailId;
 
-    // 2. Sau đó tạo work area supervisor assignment
-    // (giống như tạo SLA-shift và SLA-task sau khi có slaId)
-    // Sử dụng workAreaId từ taskData và assigneeId làm workerIds
+    // 1. Nếu có workAreaDetailName, tạo WorkAreaDetail mới trước
+    if (
+      taskData.workAreaDetailName &&
+      taskData.workAreaDetailArea !== undefined
+    ) {
+      const newWorkAreaDetail = await createWorkAreaDetail({
+        workAreaId: taskData.workAreaId,
+        name: taskData.workAreaDetailName,
+        area: taskData.workAreaDetailArea,
+      });
+      workAreaDetailId = newWorkAreaDetail.id;
+    }
+
+    // Validate workAreaDetailId
+    if (!workAreaDetailId) {
+      throw new Error("workAreaDetailId is required");
+    }
+
+    // 2. Tạo task schedule với workAreaDetailId
+    const {
+      supervisorId,
+      workAreaDetailName,
+      workAreaDetailArea,
+      ...taskScheduleData
+    } = taskData;
+    const taskSchedule = await createTaskSchedule({
+      ...taskScheduleData,
+      workAreaDetailId,
+    });
+
+    // 3. Tạo work area supervisor assignment
     await assignWorkersToSupervisor({
       workAreaId: taskData.workAreaId,
       supervisorId: supervisorId,
-      workerIds: [taskData.assigneeId], // assigneeId chính là worker được assign
+      workerIds: [taskData.assigneeId],
     });
 
     return taskSchedule;
