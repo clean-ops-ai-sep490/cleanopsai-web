@@ -159,7 +159,7 @@ export default function WorkareaCheckinPointsPage() {
                     <TableRow>
                       <TableHead>Tên</TableHead>
                       <TableHead>Code</TableHead>
-                      <TableHead>WorkArea</TableHead>
+                      {/* <TableHead>WorkArea</TableHead> */}
                       <TableHead className="text-right">
                         Hành động
                       </TableHead>
@@ -171,9 +171,9 @@ export default function WorkareaCheckinPointsPage() {
                       <TableRow key={item.id}>
                         <TableCell>{item.name}</TableCell>
                         <TableCell>{item.code}</TableCell>
-                        <TableCell>
+                        {/* <TableCell>
                           {workareaMap[item.workareaId]?.name ?? "—"}
-                        </TableCell>
+                        </TableCell> */}
 
                         <TableCell className="text-right space-x-2">
                           <Button

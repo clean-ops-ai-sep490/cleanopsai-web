@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Building2, Award, Star } from "lucide-react";
+import { Building2, Award, Star, ClipboardList } from "lucide-react";
 
 export function SupportSidebar() {
   const pathname = usePathname();
@@ -12,6 +12,7 @@ export function SupportSidebar() {
     { name: "Thiết bị", href: "/support/equipments", icon: Building2 },
     { name: "Chứng chỉ", href: "/support/certifications", icon: Award },
     { name: "Kỹ năng", href: "/support/skills", icon: Star },
+    {name: "Yêu cầu thiết bị", href: "/support/equipment-requests", icon: ClipboardList },
   ];
 
   return (

@@ -109,9 +109,9 @@ export default function WorkflowListPage() {
                     <h3 className="text-base font-semibold text-black line-clamp-2">
                       {sop.name}
                     </h3>
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap ml-2">
+                    {/* <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap ml-2">
                       {sop.isActive ? "Hoạt động" : "Không hoạt động"}
-                    </span>
+                    </span> */}
                   </div>
 
                   {sop.description && (
