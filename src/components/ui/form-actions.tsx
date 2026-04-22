@@ -16,9 +16,9 @@ interface FormActionsProps {
 export function FormActions({
   onReset,
   onCancel,
-  submitLabel = "Execute",
-  resetLabel = "Reset",
-  cancelLabel = "Cancel",
+  submitLabel = "Thực hiện",
+  resetLabel = "Đặt lại",
+  cancelLabel = "Hủy",
   isLoading = false,
   showReset = true,
   showCancel = true,
@@ -30,7 +30,7 @@ export function FormActions({
         disabled={isLoading}
         className="flex-1 bg-[#1a80a2] hover:bg-[#1a80a2]/90"
       >
-        {isLoading ? "Processing..." : submitLabel}
+        {isLoading ? "Đang xử lý..." : submitLabel}
       </Button>
       {showReset && onReset && (
         <Button

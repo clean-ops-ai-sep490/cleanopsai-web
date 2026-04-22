@@ -4,8 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  Table, TableBody, TableCell, TableHead,
-  TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 
 import { Plus, Edit2, Trash2, QrCode, Download } from "lucide-react";
@@ -30,38 +34,22 @@ export default function WorkareaCheckinPointsPage() {
 
   const qrUrlRef = useRef<string | null>(null);
 
-  const {
-    items,
-    loading,
-    fetchAll,
-    create,
-    update,
-    remove,
-    getQrUrl,
-  } = useWorkareaCheckin();
+  const { items, loading, fetchAll, create, update, remove, getQrUrl } =
+    useWorkareaCheckin();
 
   const { items: workareas, fetchAllWorkAreas } = useWorkArea();
 
   // ================= PAGINATION =================
-  const {
-    currentPage,
-    pageSize,
-    setPage,
-    paginationParams,
-  } = usePagination({
+  const { currentPage, pageSize, setPage, paginationParams } = usePagination({
     initialPage: 1,
     initialPageSize: 10,
   });
 
   // load data
   useEffect(() => {
-    fetchAll({
-      pageNumber: paginationParams.pageNumber,
-      pageSize: paginationParams.pageSize,
-    });
-
+    fetchAll();
     fetchAllWorkAreas();
-  }, [currentPage]);
+  }, [currentPage, fetchAll, fetchAllWorkAreas]);
 
   // cleanup QR blob
   useEffect(() => {
@@ -121,7 +109,9 @@ export default function WorkareaCheckinPointsPage() {
   const workareaMap = useMemo(() => {
     const map: Record<string, any> = {};
     workareas.forEach((w) => {
-      map[w.id] = w;
+      if (w?.id) {
+        map[w.id] = w;
+      }
     });
     return map;
   }, [workareas]);
@@ -130,13 +120,15 @@ export default function WorkareaCheckinPointsPage() {
   return (
     <div className="min-h-screen p-6 bg-gray-50">
       <div className="max-w-6xl mx-auto">
-
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">
-            Quản lý điểm checkin
-          </h1>
+          <h1 className="text-2xl font-bold">Quản lý điểm checkin</h1>
 
-          <Button onClick={() => { setEditing(null); setOpen(true); }}>
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setOpen(true);
+            }}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Thêm Check-in Point
           </Button>
@@ -144,9 +136,7 @@ export default function WorkareaCheckinPointsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>
-              Check-in Points ({items.length})
-            </CardTitle>
+            <CardTitle>Check-in Points ({items.length})</CardTitle>
           </CardHeader>
 
           <CardContent>
@@ -160,9 +150,7 @@ export default function WorkareaCheckinPointsPage() {
                       <TableHead>Tên</TableHead>
                       <TableHead>Code</TableHead>
                       {/* <TableHead>WorkArea</TableHead> */}
-                      <TableHead className="text-right">
-                        Hành động
-                      </TableHead>
+                      <TableHead className="text-right">Hành động</TableHead>
                     </TableRow>
                   </TableHeader>
 
@@ -268,9 +256,7 @@ export default function WorkareaCheckinPointsPage() {
             </>
           ) : (
             <div className="w-64 h-64 flex items-center justify-center border rounded-lg bg-gray-50">
-              <p className="text-gray-400 text-sm">
-                Đang tải QR...
-              </p>
+              <p className="text-gray-400 text-sm">Đang tải QR...</p>
             </div>
           )}
         </div>

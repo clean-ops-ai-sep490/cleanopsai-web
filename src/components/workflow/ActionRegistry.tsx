@@ -58,7 +58,7 @@ export function ActionRegistry({
     <aside className="w-[228px] flex-shrink-0">
       <Card className="bg-[#f9fafb] rounded-[5px] p-4 sticky top-[122px] flex flex-col max-h-[calc(100vh-140px)]">
         <h2 className="text-[15px] font-medium text-black mb-4 flex-shrink-0">
-          Action Registry
+          Danh sách hành động
         </h2>
 
         {/* Search Input */}

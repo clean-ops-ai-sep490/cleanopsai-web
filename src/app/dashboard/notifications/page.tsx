@@ -28,7 +28,8 @@ export default function NotificationsPage() {
   // Load notifications on mount and filter change
   useEffect(() => {
     loadNotifications();
-  }, [filter, page, loadNotifications]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, page]);
 
   const filteredNotifications =
     filter === "unread"

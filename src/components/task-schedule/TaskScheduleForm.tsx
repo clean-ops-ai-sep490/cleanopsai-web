@@ -207,7 +207,7 @@ export function TaskScheduleForm({
 
         {/* Status Card */}
         <Card className="bg-white rounded-[8px] p-6 border">
-          <StatusSection register={register} setValue={setValue} />
+          <StatusSection setValue={setValue} watch={watch} />
         </Card>
 
         {/* Submit Buttons */}

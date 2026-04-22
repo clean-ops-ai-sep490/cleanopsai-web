@@ -31,6 +31,9 @@ function TimePicker({
   );
   const [period, setPeriod] = React.useState<"AM" | "PM">("AM");
 
+  const hourScrollRef = React.useRef<HTMLDivElement>(null);
+  const minuteScrollRef = React.useRef<HTMLDivElement>(null);
+
   // Parse the value prop to set initial state
   React.useEffect(() => {
     if (value) {
@@ -42,9 +45,12 @@ function TimePicker({
         if (hour === 0) {
           setSelectedHour(12);
           setPeriod("AM");
-        } else if (hour <= 12) {
+        } else if (hour < 12) {
           setSelectedHour(hour);
           setPeriod("AM");
+        } else if (hour === 12) {
+          setSelectedHour(12);
+          setPeriod("PM");
         } else {
           setSelectedHour(hour - 12);
           setPeriod("PM");
@@ -55,6 +61,30 @@ function TimePicker({
       setSelectedMinute(minute);
     }
   }, [value, format]);
+
+  // Scroll to selected values when popover opens
+  React.useEffect(() => {
+    if (open && selectedHour !== null && selectedMinute !== null) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        // Scroll hour into view
+        const hourElement = hourScrollRef.current?.querySelector(
+          `[data-hour="${selectedHour}"]`,
+        );
+        if (hourElement) {
+          hourElement.scrollIntoView({ block: "center", behavior: "smooth" });
+        }
+
+        // Scroll minute into view
+        const minuteElement = minuteScrollRef.current?.querySelector(
+          `[data-minute="${selectedMinute}"]`,
+        );
+        if (minuteElement) {
+          minuteElement.scrollIntoView({ block: "center", behavior: "smooth" });
+        }
+      }, 100);
+    }
+  }, [open, selectedHour, selectedMinute]);
 
   // Generate hours array based on format
   const hours = React.useMemo(() => {
@@ -137,11 +167,12 @@ function TimePicker({
             <div className="p-3 text-sm font-medium text-gray-700 border-b border-gray-200 text-center bg-gray-50/50 hover:bg-gray-100/50 transition-colors duration-200">
               Giờ
             </div>
-            <ScrollArea className="h-48 w-16">
+            <ScrollArea className="h-48 w-16" ref={hourScrollRef}>
               <div className="p-1">
                 {hours.map((hour) => (
                   <button
                     key={hour}
+                    data-hour={hour}
                     onClick={() => {
                       setSelectedHour(hour);
                       if (selectedMinute !== null) {
@@ -168,11 +199,12 @@ function TimePicker({
             <div className="p-3 text-sm font-medium text-gray-700 border-b border-gray-200 text-center bg-gray-50/50 hover:bg-gray-100/50 transition-colors duration-200">
               Phút
             </div>
-            <ScrollArea className="h-48 w-16">
+            <ScrollArea className="h-48 w-16" ref={minuteScrollRef}>
               <div className="p-1">
                 {minutes.map((minute) => (
                   <button
                     key={minute}
+                    data-minute={minute}
                     onClick={() => {
                       setSelectedMinute(minute);
                       if (selectedHour !== null) {

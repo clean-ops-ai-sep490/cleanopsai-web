@@ -47,7 +47,7 @@ export function RequestsList({
                   </div>
                   <p className="text-xs text-gray-500">
                     {req.requester} ·{" "}
-                    {isEquipment ? "Yêu cầu thiết bị" : "Ad-hoc Task"} ·{" "}
+                    {isEquipment ? "Yêu cầu thiết bị" : "Công việc đột xuất"} ·{" "}
                     {req.createdAt}
                   </p>
                 </div>
