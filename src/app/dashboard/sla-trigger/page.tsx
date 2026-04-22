@@ -172,7 +172,7 @@ export default function SLATriggerPage() {
                       <TableHead>Tên SLA</TableHead>
                       <TableHead>Loại dịch vụ</TableHead>
                       <TableHead>Mô tả</TableHead>
-                      <TableHead>Ngày tạo</TableHead>
+                      {/* <TableHead>Ngày tạo</TableHead> */}
                       <TableHead className="text-right">Thao tác</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -202,13 +202,13 @@ export default function SLATriggerPage() {
                             {sla.description || "Không có mô tả"}
                           </span>
                         </TableCell>
-                        <TableCell className="text-sm text-gray-600">
+                        {/* <TableCell className="text-sm text-gray-600">
                           {sla.createdAt
                             ? new Date(sla.createdAt).toLocaleDateString(
                                 "vi-VN",
                               )
                             : "N/A"}
-                        </TableCell>
+                        </TableCell> */}
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end space-x-1">
                             <Link href={`/dashboard/sla-trigger/${sla.id}`}>

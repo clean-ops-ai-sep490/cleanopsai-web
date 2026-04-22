@@ -70,7 +70,11 @@ export function useCreateTaskScheduleWithAssignment() {
 
   return useMutation({
     mutationFn: async (
-      data: CreateTaskScheduleData & { supervisorId: string },
+      data: CreateTaskScheduleData & {
+        supervisorId: string;
+        workAreaDetailName?: string;
+        workAreaDetailArea?: number;
+      },
     ) => {
       const { createTaskScheduleWithAssignment } =
         await import("@/lib/task-schedule-api");

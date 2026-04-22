@@ -10,7 +10,7 @@ export interface WorkAreaDetail {
 export interface CreateWorkAreaDetailData {
   name: string;
   area: number;
-  totalArea: 0;
+  totalArea?: number; // Optional, default to 0
   workAreaId: string;
 }
 

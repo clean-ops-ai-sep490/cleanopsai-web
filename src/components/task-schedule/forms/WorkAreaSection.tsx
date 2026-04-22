@@ -282,7 +282,7 @@ export function WorkAreaSection({
             )}
           </div>
 
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <Label>Chi tiết khu vực *</Label>
             <Select
               onValueChange={(value) => setValue("workAreaDetailId", value)}
@@ -313,7 +313,7 @@ export function WorkAreaSection({
                   "Trường này là bắt buộc"}
               </p>
             )}
-          </div>
+          </div> */}
         </div>
 
         {/* Hidden field for auto-generated displayLocation */}
