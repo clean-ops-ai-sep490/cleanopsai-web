@@ -59,7 +59,7 @@ export function DashboardHeader() {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem>
                 <User className="mr-2 h-4 w-4" />
-                Profile
+                Hồ sơ
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -67,7 +67,7 @@ export function DashboardHeader() {
                 className="text-red-600"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Logout
+                Đăng xuất
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
