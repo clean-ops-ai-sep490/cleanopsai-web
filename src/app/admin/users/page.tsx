@@ -234,7 +234,7 @@ export default function UsersPage() {
       <StandardDialog
         open={open}
         onOpenChange={setOpen}
-        title={editing ? "Cập nhật user" : "Thêm user"}
+        title={editing ? "Cập nhật người dùng" : "Thêm người dùng"}
       >
         <UserForm
           initialData={editing}

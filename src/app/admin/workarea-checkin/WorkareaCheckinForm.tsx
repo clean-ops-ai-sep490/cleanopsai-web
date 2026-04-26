@@ -79,9 +79,6 @@ export default function WorkareaCheckinForm({
 
   return (
     <div className="space-y-5">
-      <h2 className="text-xl font-bold">
-        {initialData ? "Cập nhật Check-in Point" : "Tạo Check-in Point"}
-      </h2>
 
       {success && (
         <div className="text-green-600 flex items-center gap-2">

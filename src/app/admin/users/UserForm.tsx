@@ -84,9 +84,6 @@ export default function UserForm({ initialData, onSubmit, onCancel }: Props) {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-xl font-bold">
-        {initialData ? "Cập nhật người dùng" : "Thêm người dùng"}
-      </h2>
 
       {success && (
         <div className="text-green-600 flex items-center gap-2">
