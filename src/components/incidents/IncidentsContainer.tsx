@@ -6,31 +6,30 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, AlertOctagon, ClipboardPlus, Plus } from "lucide-react";
+import { AlertTriangle, ClipboardPlus } from "lucide-react";
 import { toastUtils } from "@/lib/utils/toast-utils";
-import { IncidentStats } from "./IncidentStats";
-import { EmergencyBanner } from "./EmergencyBanner";
 import { IssueReportsTable } from "./IssueReportsTable";
-import { EmergencyAlertsList } from "./EmergencyAlertsList";
 import { RequestsList } from "./RequestsList";
-import { CreateAdHocTaskDialog } from "./dialogs/CreateAdHocTaskDialog";
-import { mockEmergencies, mockRequests } from "./mockData";
-import { AdHocTaskForm } from "./types";
 import {
   getIssueReportsPaginated,
   resolveIssueReport,
 } from "@/lib/issue-report-api";
+import {
+  getEmergencyLeaveRequestsPaginated,
+  reviewEmergencyLeaveRequest,
+} from "@/lib/emergency-leave-request-api";
 import { updateTaskAssignmentStatus } from "@/lib/task-assignment-api";
 import { TaskAssignmentStatus } from "@/types/task";
 
 export function IncidentsContainer() {
   const [activeTab, setActiveTab] = useState("issues");
-  const [adHocDialogOpen, setAdHocDialogOpen] = useState(false);
   const [processingIssueId, setProcessingIssueId] = useState<string | null>(
     null,
   );
+  const [processingRequestId, setProcessingRequestId] = useState<string | null>(
+    null,
+  );
 
-  // Fetch issue reports from API
   const {
     data: issueReportsResponse,
     isLoading: issueReportsLoading,
@@ -41,9 +40,20 @@ export function IncidentsContainer() {
     queryFn: () => getIssueReportsPaginated({ pageNumber: 1, pageSize: 50 }),
   });
 
-  const issueReports = issueReportsResponse?.content || [];
+  const {
+    data: emergencyLeaveRequestsResponse,
+    isLoading: emergencyLeaveRequestsLoading,
+    error: emergencyLeaveRequestsError,
+    refetch: refetchEmergencyLeaveRequests,
+  } = useQuery({
+    queryKey: ["emergency-leave-requests"],
+    queryFn: () =>
+      getEmergencyLeaveRequestsPaginated({ pageNumber: 1, pageSize: 10 }),
+  });
 
-  // Calculate stats from real data
+  const issueReports = issueReportsResponse?.content || [];
+  const emergencyLeaveRequests = emergencyLeaveRequestsResponse?.content || [];
+
   const openIssues = issueReports.filter(
     (i) =>
       i.status === "Open" ||
@@ -51,36 +61,36 @@ export function IncidentsContainer() {
       i.status === "Pending",
   ).length;
 
-  const activeEmergencies = mockEmergencies.filter(
-    (e) => e.status === "active",
+  const pendingRequests = emergencyLeaveRequests.filter(
+    (request) => request.status === "Pending",
   ).length;
 
-  const pendingRequests = mockRequests.filter(
-    (r) => r.status === "pending",
-  ).length;
-
-  const activeEmergency = mockEmergencies.find((e) => e.status === "active");
-
-  const handleApproveRequest = (id: string) =>
-    toastUtils.success(`Yêu cầu ${id} đã được phê duyệt`);
-
-  const handleRejectRequest = (id: string) =>
-    toastUtils.error(`Yêu cầu ${id} đã bị từ chối`);
-
-  const handleResolveEmergency = (id: string) =>
-    toastUtils.success(`Cảnh báo ${id} đã được xử lý`);
-
-  const handleCreateAdHocTask = (form: AdHocTaskForm) => {
-    if (!form.title.trim()) {
-      toastUtils.error("Vui lòng nhập tên task");
-      return;
+  const handleApproveRequest = async (id: string) => {
+    try {
+      setProcessingRequestId(id);
+      await reviewEmergencyLeaveRequest(id, { status: "Approved" });
+      toastUtils.success("Đã duyệt emergency leave request");
+      refetchEmergencyLeaveRequests();
+    } catch (error) {
+      toastUtils.error("Không thể duyệt emergency leave request");
+      console.error("Error approving emergency leave request:", error);
+    } finally {
+      setProcessingRequestId(null);
     }
-    toastUtils.success(
-      `Ad-hoc Task "${form.title}" đã được tạo và giao cho ${
-        form.assignee || "AI Auto-assign"
-      }`,
-    );
-    setAdHocDialogOpen(false);
+  };
+
+  const handleRejectRequest = async (id: string) => {
+    try {
+      setProcessingRequestId(id);
+      await reviewEmergencyLeaveRequest(id, { status: "Rejected" });
+      toastUtils.success("Đã từ chối emergency leave request");
+      refetchEmergencyLeaveRequests();
+    } catch (error) {
+      toastUtils.error("Không thể từ chối emergency leave request");
+      console.error("Error rejecting emergency leave request:", error);
+    } finally {
+      setProcessingRequestId(null);
+    }
   };
 
   const handleApproveIssue = async (id: string) => {
@@ -128,8 +138,7 @@ export function IncidentsContainer() {
     }
   };
 
-  // Show loading state
-  if (issueReportsLoading) {
+  if (issueReportsLoading || emergencyLeaveRequestsLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -137,8 +146,8 @@ export function IncidentsContainer() {
             <h1 className="text-2xl font-semibold text-black">
               Giám Sát Sự Cố & Yêu Cầu
             </h1>
-            <p className="text-gray-600 mt-1">
-              Issue Report, Emergency Alert, Ad-hoc Request và Equipment Request
+            <p className="mt-1 text-gray-600">
+              Issue report và emergency leave request
             </p>
           </div>
         </div>
@@ -149,8 +158,7 @@ export function IncidentsContainer() {
     );
   }
 
-  // Show error state
-  if (issueReportsError) {
+  if (issueReportsError || emergencyLeaveRequestsError) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -158,17 +166,22 @@ export function IncidentsContainer() {
             <h1 className="text-2xl font-semibold text-black">
               Giám Sát Sự Cố & Yêu Cầu
             </h1>
-            <p className="text-gray-600 mt-1">
-              Issue Report, Emergency Alert, Ad-hoc Request và Equipment Request
+            <p className="mt-1 text-gray-600">
+              Issue report và emergency leave request
             </p>
           </div>
         </div>
         <Card>
           <CardContent className="p-8 text-center">
-            <p className="text-red-600 mb-4">
-              Không thể tải dữ liệu issue reports
-            </p>
-            <Button onClick={() => refetchIssueReports()}>Thử lại</Button>
+            <p className="mb-4 text-red-600">Không thể tải dữ liệu incidents</p>
+            <Button
+              onClick={() => {
+                refetchIssueReports();
+                refetchEmergencyLeaveRequests();
+              }}
+            >
+              Thử lại
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -177,48 +190,23 @@ export function IncidentsContainer() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-black">
             Giám Sát Sự Cố & Yêu Cầu
           </h1>
-          <p className="text-gray-600 mt-1">
-            Issue Report, Emergency Alert, Ad-hoc Request và Equipment Request
+          <p className="mt-1 text-gray-600">
+            Issue report và emergency leave request
           </p>
         </div>
-        {/* <Button
-          className="bg-[#1a80a2] hover:bg-[#1a80a2]/90"
-          onClick={() => setAdHocDialogOpen(true)}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Tạo Ad-hoc Task
-        </Button> */}
       </div>
 
-      {/* Stats */}
-      {/* <IncidentStats
-        openIssues={openIssues}
-        activeEmergencies={activeEmergencies}
-        pendingRequests={pendingRequests}
-        resolvedThisMonth={24}
-      /> */}
-
-      {/* Emergency Banner */}
-      {/* {activeEmergency && (
-        <EmergencyBanner
-          emergency={activeEmergency}
-          onResolve={handleResolveEmergency}
-        />
-      )} */}
-
-      {/* Main Content Tabs */}
       <Card>
         <CardHeader>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
               <TabsTrigger value="issues" className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" />
+                <AlertTriangle className="h-4 w-4" />
                 Issue Reports ({issueReports.length})
                 {openIssues > 0 && (
                   <Badge variant="destructive" className="ml-1">
@@ -226,22 +214,15 @@ export function IncidentsContainer() {
                   </Badge>
                 )}
               </TabsTrigger>
-              {/* <TabsTrigger
-                value="emergencies"
-                className="flex items-center gap-2"
-              >
-                <AlertOctagon className="w-4 h-4" />
-                Emergency
-              </TabsTrigger>
               <TabsTrigger value="requests" className="flex items-center gap-2">
-                <ClipboardPlus className="w-4 h-4" />
-                Yêu cầu
+                <ClipboardPlus className="h-4 w-4" />
+                Emergency Leave
                 {pendingRequests > 0 && (
                   <Badge variant="destructive" className="ml-1">
                     {pendingRequests}
                   </Badge>
                 )}
-              </TabsTrigger> */}
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </CardHeader>
@@ -256,29 +237,17 @@ export function IncidentsContainer() {
                 isLoading={processingIssueId !== null}
               />
             </TabsContent>
-            <TabsContent value="emergencies">
-              <EmergencyAlertsList
-                emergencies={mockEmergencies}
-                onResolve={handleResolveEmergency}
-              />
-            </TabsContent>
             <TabsContent value="requests">
               <RequestsList
-                requests={mockRequests}
+                requests={emergencyLeaveRequests}
                 onApprove={handleApproveRequest}
                 onReject={handleRejectRequest}
+                processingId={processingRequestId}
               />
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
-
-      {/* Create Ad-hoc Task Dialog */}
-      <CreateAdHocTaskDialog
-        open={adHocDialogOpen}
-        onOpenChange={setAdHocDialogOpen}
-        onSubmit={handleCreateAdHocTask}
-      />
     </div>
   );
 }

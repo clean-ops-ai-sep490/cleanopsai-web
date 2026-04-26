@@ -78,9 +78,9 @@ export function AssignTaskScheduleDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Assign Task Schedule</DialogTitle>
+          <DialogTitle>Phân công lịch trình công việc</DialogTitle>
           <DialogDescription>
-            Tạo task assignment thủ công cho lịch trình:{" "}
+            Tạo phân công công việc thủ công cho lịch trình:{" "}
             <span className="font-semibold text-black">{taskScheduleName}</span>
           </DialogDescription>
         </DialogHeader>

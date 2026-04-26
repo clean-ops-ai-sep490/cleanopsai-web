@@ -235,7 +235,7 @@ export function WorkflowForm({ formData, onChange }: WorkflowFormProps) {
             className="bg-[#f5f5f5] border-[#e5e5e5] h-[30px]"
             value={formData.serviceType}
             onChange={(e) => handleChange("serviceType", e.target.value)}
-            placeholder="Ví dụ: Cleaning"
+            placeholder="Ví dụ: Vệ sinh"
           />
         </div>
         <div>

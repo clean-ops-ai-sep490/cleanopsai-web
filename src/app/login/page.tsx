@@ -41,7 +41,7 @@ export default function LoginPage() {
         router.push("/dashboard/sla-trigger");
       }
     } catch {
-      setError("Invalid email or password");
+      setError("Email hoặc mật khẩu không đúng");
     } finally {
       setIsSubmitting(false);
     }

@@ -1,130 +1,48 @@
-import { createSearchableApi } from "./api-crud-factory";
-import type { PaginatedResponse } from "@/types/common";
+import { api } from "./api";
 import type {
   TaskAssignment,
-  CreateAdhocTaskData,
-  StartTaskData,
-  CompleteTaskData,
-  StartTaskResponse,
-  TaskAssignmentStatus,
-} from "@/types/task";
-import type { PaginationParams } from "@/types/common";
-import { api } from "./api";
+  TaskAssignmentResponse,
+  TaskAssignmentFilters,
+} from "@/types/task-assignment";
 
-// Task Assignment API using CRUD factory for basic operations with consistent endpoint casing
-const taskAssignmentApi = createSearchableApi<
-  TaskAssignment,
-  CreateAdhocTaskData,
-  Partial<CreateAdhocTaskData>
->("/TaskAssignments");
-
-// Export basic CRUD functions
-export const { getById: getTaskAssignmentById, search: searchTaskAssignments } =
-  taskAssignmentApi;
-
-// Custom function for getting Task Assignments with advanced filtering
 export async function getTaskAssignments(
-  params: {
-    assignedToWorkerId?: string;
-    workAreaId?: string;
-    status?: TaskAssignmentStatus;
-    fromDate?: string; // date format
-    toDate?: string; // date format
-    pageNumber?: number;
-    pageSize?: number;
-  } = {},
-): Promise<PaginatedResponse<TaskAssignment>> {
-  const {
-    assignedToWorkerId,
-    workAreaId,
-    status,
-    fromDate,
-    toDate,
-    pageNumber = 1,
-    pageSize = 10,
-  } = params;
+  filters?: TaskAssignmentFilters,
+): Promise<TaskAssignmentResponse> {
+  const params = new URLSearchParams();
 
-  // Use CRUD factory with additional filters
-  return taskAssignmentApi.getPaginated(pageNumber, pageSize, {
-    assignedToWorkerId,
-    workAreaId,
-    status,
-    fromDate,
-    toDate,
-  });
+  if (filters?.assigneeId) params.append("assigneeId", filters.assigneeId);
+  if (filters?.fromDate) params.append("fromDate", filters.fromDate);
+  if (filters?.toDate) params.append("toDate", filters.toDate);
+  if (filters?.status) params.append("status", filters.status);
+  if (filters?.isAdhocTask !== undefined)
+    params.append("isAdhocTask", String(filters.isAdhocTask));
+  if (filters?.pageNumber)
+    params.append("pageNumber", String(filters.pageNumber));
+  if (filters?.pageSize) params.append("pageSize", String(filters.pageSize));
+
+  const queryString = params.toString();
+  const url = `/TaskAssignments${queryString ? `?${queryString}` : ""}`;
+
+  return api.get<TaskAssignmentResponse>(url);
 }
 
-// Task Assignment Actions (specific to this API)
-export async function startTask(
+export async function getTaskAssignmentById(
   id: string,
-  data: StartTaskData,
-): Promise<StartTaskResponse> {
-  return api.post<StartTaskResponse>(`/TaskAssignments/${id}/start`, data);
-}
-
-export async function completeTask(
-  id: string,
-  data: CompleteTaskData,
-): Promise<void> {
-  return api.post(`/TaskAssignments/${id}/complete`, data);
+): Promise<TaskAssignment> {
+  return api.get<TaskAssignment>(`/TaskAssignments/${id}`);
 }
 
 export async function updateTaskAssignmentStatus(
   id: string,
-  status: TaskAssignmentStatus,
+  status: string,
 ): Promise<void> {
-  return api.patch(`/TaskAssignments/${id}/status`, JSON.stringify(status), {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  return api.patch(`/TaskAssignments/${id}/status`, { status });
 }
 
-export async function createAdhocTask(
-  data: CreateAdhocTaskData,
-): Promise<TaskAssignment> {
-  return api.post<TaskAssignment>("/TaskAssignments/adhoc", data);
+export async function cancelTaskAssignment(id: string): Promise<void> {
+  return api.patch(`/TaskAssignments/${id}/cancel`);
 }
 
-// Convenience functions for common filtering scenarios
-export async function getTaskAssignmentsByWorker(
-  workerId: string,
-  params: PaginationParams = {},
-): Promise<PaginatedResponse<TaskAssignment>> {
-  return getTaskAssignments({
-    assignedToWorkerId: workerId,
-    ...params,
-  });
-}
-
-export async function getTaskAssignmentsByWorkArea(
-  workAreaId: string,
-  params: PaginationParams = {},
-): Promise<PaginatedResponse<TaskAssignment>> {
-  return getTaskAssignments({
-    workAreaId,
-    ...params,
-  });
-}
-
-export async function getTaskAssignmentsByStatus(
-  status: TaskAssignmentStatus,
-  params: PaginationParams = {},
-): Promise<PaginatedResponse<TaskAssignment>> {
-  return getTaskAssignments({
-    status,
-    ...params,
-  });
-}
-
-export async function getTaskAssignmentsByDateRange(
-  fromDate: string,
-  toDate: string,
-  params: PaginationParams = {},
-): Promise<PaginatedResponse<TaskAssignment>> {
-  return getTaskAssignments({
-    fromDate,
-    toDate,
-    ...params,
-  });
+export async function deleteTaskAssignment(id: string): Promise<void> {
+  return api.delete(`/TaskAssignments/${id}`);
 }

@@ -50,8 +50,8 @@ export function EditSLATriggerDialog({
     onSuccess: () => {
       onClose();
     },
-    successMessage: "SLA Trigger updated successfully",
-    errorMessage: "Failed to update SLA Trigger",
+    successMessage: "Cập nhật SLA Trigger thành công",
+    errorMessage: "Không thể cập nhật SLA Trigger",
     validationRules: {
       name: [validators.required("Tên trigger")],
       type: [validators.required("Loại trigger")],
@@ -77,7 +77,7 @@ export function EditSLATriggerDialog({
     <StandardDialog
       open={isOpen}
       onOpenChange={onClose}
-      title="Edit SLA Trigger"
+      title="Chỉnh sửa SLA Trigger"
       maxWidth="sm"
     >
       <SLATriggerFormContent

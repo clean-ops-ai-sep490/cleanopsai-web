@@ -5,13 +5,9 @@ import { apiToasts } from "@/lib/utils/toast-utils";
 import {
   getTaskAssignments,
   getTaskAssignmentById,
-  startTask,
-  completeTask,
-  createAdhocTask,
-  getTaskAssignmentsByWorker,
-  getTaskAssignmentsByWorkArea,
-  getTaskAssignmentsByStatus,
-  getTaskAssignmentsByDateRange,
+  updateTaskAssignmentStatus,
+  cancelTaskAssignment,
+  deleteTaskAssignment,
 } from "@/lib/task-assignment-api";
 
 // Task Step Execution APIs
@@ -89,7 +85,7 @@ export function useTaskAssignmentsByWorker(
 ) {
   return useQuery({
     queryKey: ["task-assignments", "worker", workerId, params],
-    queryFn: () => getTaskAssignmentsByWorker(workerId, params),
+    queryFn: () => getTaskAssignments({ assigneeId: workerId, ...params }),
     enabled: !!workerId,
   });
 }
@@ -100,7 +96,7 @@ export function useTaskAssignmentsByWorkArea(
 ) {
   return useQuery({
     queryKey: ["task-assignments", "work-area", workAreaId, params],
-    queryFn: () => getTaskAssignmentsByWorkArea(workAreaId, params),
+    queryFn: () => getTaskAssignments({ workAreaId, ...params }),
     enabled: !!workAreaId,
   });
 }
@@ -111,7 +107,7 @@ export function useTaskAssignmentsByStatus(
 ) {
   return useQuery({
     queryKey: ["task-assignments", "status", status, params],
-    queryFn: () => getTaskAssignmentsByStatus(status, params),
+    queryFn: () => getTaskAssignments({ status, ...params }),
   });
 }
 
@@ -122,7 +118,7 @@ export function useTaskAssignmentsByDateRange(
 ) {
   return useQuery({
     queryKey: ["task-assignments", "date-range", fromDate, toDate, params],
-    queryFn: () => getTaskAssignmentsByDateRange(fromDate, toDate, params),
+    queryFn: () => getTaskAssignments({ fromDate, toDate, ...params }),
     enabled: !!fromDate && !!toDate,
   });
 }
@@ -132,7 +128,7 @@ export function useStartTask(onSuccess?: () => void) {
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: StartTaskData }) =>
-      startTask(id, data),
+      updateTaskAssignmentStatus(id, "InProgress"),
     onSuccess: (_, variables) => {
       apiToasts.updateSuccess("bắt đầu công việc");
       queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
@@ -153,7 +149,7 @@ export function useCompleteTask(onSuccess?: () => void) {
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: CompleteTaskData }) =>
-      completeTask(id, data),
+      updateTaskAssignmentStatus(id, "Completed"),
     onSuccess: (_, variables) => {
       apiToasts.updateSuccess("hoàn thành công việc");
       queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
@@ -173,7 +169,10 @@ export function useCreateAdhocTask(onSuccess?: () => void) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createAdhocTask,
+    mutationFn: (data: CreateAdhocTaskData) => {
+      // TODO: Implement createAdhocTask API endpoint
+      throw new Error("createAdhocTask API not yet implemented");
+    },
     onSuccess: () => {
       apiToasts.createSuccess("công việc đột xuất");
       queryClient.invalidateQueries({ queryKey: ["task-assignments"] });

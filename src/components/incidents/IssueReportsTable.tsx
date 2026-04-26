@@ -77,11 +77,11 @@ export function IssueReportsTable({
                   Issue Report #{issue.id?.slice(-6) || issue.id || "N/A"}
                 </p>
                 <p className="text-xs text-gray-500 truncate max-w-[250px]">
-                  {issue.description || "No description"}
+                  {issue.description || "Không có mô tả"}
                 </p>
               </TableCell>
               <TableCell className="text-sm">
-                {issue.reportedByWorkerName || issue.worker || "Unknown"}
+                {issue.reportedByWorkerName || issue.worker || "Không rõ"}
               </TableCell>
               <TableCell className="text-sm text-gray-700">
                 {getShortLocation(issue.displayLocation)}
@@ -129,7 +129,7 @@ export function IssueReportsTable({
                     disabled={isLoading}
                   >
                     <RefreshCw className="w-3 h-3 mr-1" />
-                    Update Task
+                    Cập nhật Task
                   </Button>
                 ) : (
                   <span className="text-xs font-medium text-gray-500">

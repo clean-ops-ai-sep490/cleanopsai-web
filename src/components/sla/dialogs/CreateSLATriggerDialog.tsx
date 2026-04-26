@@ -48,8 +48,8 @@ export function CreateSLATriggerDialog({
     onSuccess: () => {
       onClose();
     },
-    successMessage: "SLA Trigger created successfully",
-    errorMessage: "Failed to create SLA Trigger",
+    successMessage: "Tạo SLA Trigger thành công",
+    errorMessage: "Không thể tạo SLA Trigger",
     validationRules: {
       name: [validators.required("Tên trigger")],
       type: [validators.required("Loại trigger")],
@@ -64,7 +64,7 @@ export function CreateSLATriggerDialog({
     <StandardDialog
       open={isOpen}
       onOpenChange={onClose}
-      title="Create New SLA Trigger"
+      title="Tạo SLA Trigger mới"
       maxWidth="sm"
     >
       <SLATriggerFormContent

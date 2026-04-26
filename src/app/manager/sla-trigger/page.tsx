@@ -38,6 +38,7 @@ import { getSLAsPaginated } from "@/lib/sla-api";
 import { useDeleteSLA } from "@/hooks/useSLAQuery";
 import { usePaginatedData } from "@/hooks/usePagination";
 import type { SLA } from "@/types/sla";
+import { translateServiceType } from "@/lib/utils/translate";
 
 export default function SLATriggerPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -150,7 +151,9 @@ export default function SLATriggerPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả loại dịch vụ</SelectItem>
-              <SelectItem value="Cleaning">Cleaning</SelectItem>
+              <SelectItem value="Cleaning">Vệ sinh</SelectItem>
+              <SelectItem value="Maintenance">Bảo trì</SelectItem>
+              <SelectItem value="Repair">Sửa chữa</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -184,9 +187,6 @@ export default function SLATriggerPage() {
                             <p className="font-semibold text-black">
                               {sla.name}
                             </p>
-                            <p className="text-sm text-gray-500">
-                              ID: {sla.id}
-                            </p>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -194,7 +194,7 @@ export default function SLATriggerPage() {
                             variant="outline"
                             className="bg-blue-50 text-blue-700 border-blue-200"
                           >
-                            {sla.serviceType}
+                            {translateServiceType(sla.serviceType)}
                           </Badge>
                         </TableCell>
                         <TableCell>

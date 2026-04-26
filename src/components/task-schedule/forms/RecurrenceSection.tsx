@@ -137,28 +137,6 @@ export function RecurrenceSection({
                       className="w-full"
                     />
                   </div>
-                  {times.length > 1 && (
-                    <Button
-                      type="button"
-                      onClick={() => removeTimeSlot(time)}
-                      variant="ghost"
-                      size="sm"
-                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </Button>
-                  )}
-                  {index === 0 && (
-                    <Button
-                      type="button"
-                      onClick={addTimeSlot}
-                      variant="ghost"
-                      size="sm"
-                      className="p-2 text-gray-400 hover:text-[#1a80a2] hover:bg-[#1a80a2]/10 rounded-lg transition-colors"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </Button>
-                  )}
                 </div>
               ))}
             </div>

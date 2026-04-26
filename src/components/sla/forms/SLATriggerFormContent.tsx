@@ -46,10 +46,10 @@ export function SLATriggerFormContent({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="name">Trigger Name *</Label>
+        <Label htmlFor="name">Tên Trigger *</Label>
         <Input
           id="name"
-          placeholder="Enter trigger name"
+          placeholder="Nhập tên trigger"
           value={formData.name}
           onChange={onInputChange("name")}
           required
@@ -58,22 +58,24 @@ export function SLATriggerFormContent({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="type">Trigger Type *</Label>
+        <Label htmlFor="type">Loại Trigger *</Label>
         <Select value={formData.type} onValueChange={onSelectChange("type")}>
           <SelectTrigger>
-            <SelectValue placeholder="Select trigger type" />
+            <SelectValue placeholder="Chọn loại trigger" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Response Time">Response Time</SelectItem>
-            <SelectItem value="Resolution Time">Resolution Time</SelectItem>
-            <SelectItem value="Quality Score">Quality Score</SelectItem>
+            <SelectItem value="Response Time">Thời gian phản hồi</SelectItem>
+            <SelectItem value="Resolution Time">
+              Thời gian giải quyết
+            </SelectItem>
+            <SelectItem value="Quality Score">Điểm chất lượng</SelectItem>
             <SelectItem value="Customer Satisfaction">
-              Customer Satisfaction
+              Sự hài lòng khách hàng
             </SelectItem>
             <SelectItem value="First Contact Resolution">
-              First Contact Resolution
+              Giải quyết lần đầu
             </SelectItem>
-            <SelectItem value="Escalation Rate">Escalation Rate</SelectItem>
+            <SelectItem value="Escalation Rate">Tỷ lệ leo thang</SelectItem>
           </SelectContent>
         </Select>
         {errors.type && <p className="text-sm text-red-600">{errors.type}</p>}
@@ -81,23 +83,23 @@ export function SLATriggerFormContent({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="condition">Condition *</Label>
+          <Label htmlFor="condition">Điều kiện *</Label>
           <Select
             value={formData.condition}
             onValueChange={onSelectChange("condition")}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select condition" />
+              <SelectValue placeholder="Chọn điều kiện" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Greater than">Greater than</SelectItem>
-              <SelectItem value="Less than">Less than</SelectItem>
-              <SelectItem value="Equal to">Equal to</SelectItem>
+              <SelectItem value="Greater than">Lớn hơn</SelectItem>
+              <SelectItem value="Less than">Nhỏ hơn</SelectItem>
+              <SelectItem value="Equal to">Bằng</SelectItem>
               <SelectItem value="Greater than or equal">
-                Greater than or equal
+                Lớn hơn hoặc bằng
               </SelectItem>
               <SelectItem value="Less than or equal">
-                Less than or equal
+                Nhỏ hơn hoặc bằng
               </SelectItem>
             </SelectContent>
           </Select>
@@ -106,7 +108,7 @@ export function SLATriggerFormContent({
           )}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="threshold">Threshold *</Label>
+          <Label htmlFor="threshold">Ngưỡng *</Label>
           <Input
             id="threshold"
             type="number"
@@ -122,18 +124,18 @@ export function SLATriggerFormContent({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="unit">Unit *</Label>
+        <Label htmlFor="unit">Đơn vị *</Label>
         <Select value={formData.unit} onValueChange={onSelectChange("unit")}>
           <SelectTrigger>
-            <SelectValue placeholder="Select unit" />
+            <SelectValue placeholder="Chọn đơn vị" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="seconds">Seconds</SelectItem>
-            <SelectItem value="minutes">Minutes</SelectItem>
-            <SelectItem value="hours">Hours</SelectItem>
-            <SelectItem value="days">Days</SelectItem>
-            <SelectItem value="percentage">Percentage</SelectItem>
-            <SelectItem value="count">Count</SelectItem>
+            <SelectItem value="seconds">Giây</SelectItem>
+            <SelectItem value="minutes">Phút</SelectItem>
+            <SelectItem value="hours">Giờ</SelectItem>
+            <SelectItem value="days">Ngày</SelectItem>
+            <SelectItem value="percentage">Phần trăm</SelectItem>
+            <SelectItem value="count">Số lượng</SelectItem>
           </SelectContent>
         </Select>
         {errors.unit && <p className="text-sm text-red-600">{errors.unit}</p>}
@@ -142,7 +144,7 @@ export function SLATriggerFormContent({
       <FormActions
         onReset={onReset}
         onCancel={onCancel}
-        submitLabel={mode === "create" ? "Create Trigger" : "Save Changes"}
+        submitLabel={mode === "create" ? "Tạo Trigger" : "Lưu thay đổi"}
         isLoading={isLoading}
         showReset={true}
         showCancel={true}

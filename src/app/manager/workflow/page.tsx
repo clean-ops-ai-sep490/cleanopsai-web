@@ -40,9 +40,11 @@ export default function WorkflowListPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-[22px] font-medium text-black mb-2">
-            SOP Workflow Builder
+            Xây dựng quy trình SOP
           </h1>
-          <p className="text-sm text-[#70808f]">Quản lý các quy trình SOP</p>
+          <p className="text-sm text-[#70808f]">
+            Tạo và quản lý các quy trình chuẩn vận hành
+          </p>
         </div>
         <Link href="/dashboard/workflow/create">
           <Button className="bg-[#1a80a2] hover:bg-[#308cab] text-white h-[40px] rounded-[5px] px-6">

@@ -33,6 +33,9 @@ export default function TaskScheduleListPage() {
     id: string;
     name: string;
   } | null>(null);
+  const [processingScheduleId, setProcessingScheduleId] = useState<
+    string | null
+  >(null);
 
   // Initialize pagination
   const pagination = usePagination({
@@ -57,11 +60,16 @@ export default function TaskScheduleListPage() {
   const totalElements = taskSchedulesData?.totalElements || 0;
   const isEmpty = taskSchedules.length === 0;
 
-  const handleToggleStatus = (schedule: any) => {
-    if (schedule.isActive) {
-      deactivateMutation.mutate(schedule.id);
-    } else {
-      activateMutation.mutate(schedule.id);
+  const handleToggleStatus = async (schedule: any) => {
+    setProcessingScheduleId(schedule.id);
+    try {
+      if (schedule.isActive) {
+        await deactivateMutation.mutateAsync(schedule.id);
+      } else {
+        await activateMutation.mutateAsync(schedule.id);
+      }
+    } finally {
+      setProcessingScheduleId(null);
     }
   };
 
@@ -79,15 +87,28 @@ export default function TaskScheduleListPage() {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-[22px] font-medium text-black mb-2">
-            Task Schedule Management
+            Quản lý lịch trình công việc
           </h1>
-          <p className="text-sm text-[#70808f]">Quản lý lịch trình công việc</p>
+          <p className="text-sm text-[#70808f]">
+            Tạo và quản lý các lịch trình công việc định kỳ
+          </p>
         </div>
-        <Link href="/dashboard/task-schedule/create">
-          <Button className="bg-[#1a80a2] hover:bg-[#308cab] text-white h-[40px] rounded-[5px] px-6 flex items-center gap-2">
-            Tạo task mới
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/task-schedule/calendar">
+            <Button
+              variant="outline"
+              className="border-[#1a80a2] text-[#1a80a2] hover:bg-[#1a80a2] hover:text-white h-[40px] rounded-[5px] px-6 flex items-center gap-2"
+            >
+              <Calendar className="w-4 h-4" />
+              Xem lịch
+            </Button>
+          </Link>
+          <Link href="/dashboard/task-schedule/create">
+            <Button className="bg-[#1a80a2] hover:bg-[#308cab] text-white h-[40px] rounded-[5px] px-6 flex items-center gap-2">
+              Tạo task mới
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Search Bar */}
@@ -176,10 +197,7 @@ export default function TaskScheduleListPage() {
                       <button
                         type="button"
                         onClick={() => handleToggleStatus(schedule)}
-                        disabled={
-                          activateMutation.isPending ||
-                          deactivateMutation.isPending
-                        }
+                        disabled={processingScheduleId === schedule.id}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#1a80a2] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                           schedule.isActive ? "bg-[#1a80a2]" : "bg-gray-200"
                         }`}

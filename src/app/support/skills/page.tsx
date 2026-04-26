@@ -95,7 +95,6 @@ export default function SkillsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 pt-8 pb-12 px-4">
       <div className="max-w-6xl mx-auto">
-
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Quản lý kỹ năng</h1>
@@ -106,7 +105,6 @@ export default function SkillsPage() {
 
         {/* Search + Filter + Add */}
         <div className="flex gap-3 mb-6">
-
           {/* SEARCH */}
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-2.5 opacity-50 w-4 h-4" />
@@ -206,7 +204,7 @@ export default function SkillsPage() {
             )}
 
             {/* PAGINATION (chỉ dùng khi search API) */}
-            {!isFilterByCategory && (
+            {!isFilterByCategory && !Array.isArray(data) && (
               <div className="flex justify-between mt-4">
                 <p className="text-sm text-gray-500">
                   Trang {data?.pageNumber} / {data?.totalPages}

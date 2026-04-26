@@ -18,7 +18,7 @@ export function WorkflowCreateContainer({ sopId }: { sopId?: string }) {
   const [formData, setFormData] = useState<SOPFormData>({
     name: "",
     description: "",
-    serviceType: "Cleaning",
+    serviceType: "Vệ sinh",
     environmentTypeId: "",
     requiredSkillIds: [],
     requiredCertificationIds: [],
@@ -41,7 +41,7 @@ export function WorkflowCreateContainer({ sopId }: { sopId?: string }) {
       setFormData({
         name: existingSOP.name,
         description: existingSOP.description || "",
-        serviceType: existingSOP.serviceType || "Cleaning",
+        serviceType: existingSOP.serviceType || "Vệ sinh",
         environmentTypeId: existingSOP.environmentTypeId,
         requiredSkillIds: existingSOP.requiredSkillIds || [],
         requiredCertificationIds: existingSOP.requiredCertificationIds || [],

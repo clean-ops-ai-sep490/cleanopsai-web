@@ -22,8 +22,8 @@ export function useFormSubmission<T, R>({
   queryKey,
   onSuccess,
   onError,
-  successMessage = "Operation successful",
-  errorMessage = "Operation failed",
+  successMessage = "Thao tác thành công",
+  errorMessage = "Thao tác thất bại",
   transform,
 }: UseFormSubmissionOptions<T, R>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
