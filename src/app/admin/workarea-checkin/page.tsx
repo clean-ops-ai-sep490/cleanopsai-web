@@ -238,7 +238,7 @@ export default function WorkareaCheckinPointsPage() {
       <StandardDialog
         open={qrModal}
         onOpenChange={setQrModal}
-        title={`QR Check-in — ${workareaMap[qrWorkareaId]?.name ?? qrWorkareaId}`}
+        title={`QR Check-in`}
       >
         <div className="flex flex-col items-center gap-4 py-4">
           {qrUrl ? (

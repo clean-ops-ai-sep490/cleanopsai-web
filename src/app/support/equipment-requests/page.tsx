@@ -268,7 +268,7 @@ export default function SupportEquipmentRequestsPage() {
       <StandardDialog
         open={openDialog}
         onOpenChange={setOpenDialog}
-        title="Review Equipment Request"
+        title="Đánh giá yêu cầu"
       >
         {selected && (
           <div className="space-y-4">

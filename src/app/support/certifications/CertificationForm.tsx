@@ -91,17 +91,6 @@ export default function CertificationForm({
 
   return (
     <div className="w-full space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">
-          {initialData ? "Chỉnh sửa chứng chỉ" : "Thêm chứng chỉ mới"}
-        </h2>
-        <p className="text-muted-foreground mt-1">
-          {initialData
-            ? "Cập nhật thông tin chứng chỉ bên dưới"
-            : "Nhập thông tin để tạo chứng chỉ mới"}
-        </p>
-      </div>
 
       {/* Success */}
       {success && (
