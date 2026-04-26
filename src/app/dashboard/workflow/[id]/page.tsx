@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Edit, Trash2, ArrowLeft, Plus } from "lucide-react";
 import { useSOP, useDeleteSOP } from "@/hooks/useWorkflowBuilder";
+import { translateServiceType } from "@/lib/utils/translate";
 
 export default function WorkflowDetailPage() {
   const params = useParams();
@@ -140,7 +141,9 @@ export default function WorkflowDetailPage() {
                 <label className="text-sm font-medium text-[#70808f] block mb-1">
                   Loại dịch vụ
                 </label>
-                <p className="text-sm text-black">{sop.serviceType || "N/A"}</p>
+                <p className="text-sm text-black">
+                  {translateServiceType(sop.serviceType) || "N/A"}
+                </p>
               </div>
 
               {/* <div>

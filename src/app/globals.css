@@ -230,3 +230,8 @@ body {
   background-color: currentColor !important;
   opacity: 0.3 !important;
 }
+
+/* Custom grid columns for calendar */
+.grid-cols-16 {
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+}

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSLAWithDetails, useDeleteSLA } from "@/hooks/useSLAQuery";
+import { translateServiceType } from "@/lib/utils/translate";
 
 export default function SLADetailPage() {
   const params = useParams();
@@ -160,7 +161,7 @@ export default function SLADetailPage() {
                       variant="outline"
                       className="bg-blue-50 text-blue-700 border-blue-200"
                     >
-                      {sla.serviceType}
+                      {translateServiceType(sla.serviceType)}
                     </Badge>
                   </div>
                   <div>

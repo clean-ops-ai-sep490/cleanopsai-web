@@ -93,11 +93,22 @@ export default function TaskScheduleListPage() {
             Tạo và quản lý các lịch trình công việc định kỳ
           </p>
         </div>
-        <Link href="/dashboard/task-schedule/create">
-          <Button className="bg-[#1a80a2] hover:bg-[#308cab] text-white h-[40px] rounded-[5px] px-6 flex items-center gap-2">
-            Tạo task mới
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/task-schedule/calendar">
+            <Button
+              variant="outline"
+              className="border-[#1a80a2] text-[#1a80a2] hover:bg-[#1a80a2] hover:text-white h-[40px] rounded-[5px] px-6 flex items-center gap-2"
+            >
+              <Calendar className="w-4 h-4" />
+              Xem lịch
+            </Button>
+          </Link>
+          <Link href="/dashboard/task-schedule/create">
+            <Button className="bg-[#1a80a2] hover:bg-[#308cab] text-white h-[40px] rounded-[5px] px-6 flex items-center gap-2">
+              Tạo task mới
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Search Bar */}
