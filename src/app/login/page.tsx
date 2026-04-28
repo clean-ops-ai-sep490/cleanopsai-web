@@ -34,11 +34,11 @@ export default function LoginPage() {
         } else if (isAdmin) {
           router.push("/admin/users");
         } else {
-          router.push("/dashboard/sla-trigger");
+          router.push("/manager");
         }
       } catch (err) {
         // fallback
-        router.push("/dashboard/sla-trigger");
+        router.push("/manager");
       }
     } catch {
       setError("Email hoặc mật khẩu không đúng");

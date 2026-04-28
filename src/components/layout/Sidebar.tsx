@@ -20,15 +20,15 @@ const navigation = [
   {
     title: "TỔNG QUAN",
     items: [
-      // {
-      //   name: "Dashboard",
-      //   href: "/dashboard",
-      //   icon: LayoutDashboard,
-      //   roles: ["1"], // Admin, Manager
-      // },
+      {
+        name: "Dashboard",
+        href: "/manager",
+        icon: LayoutDashboard,
+        roles: ["1"], // Admin, Manager
+      },
       {
         name: "Sự cố & Yêu cầu",
-        href: "/dashboard/incidents",
+        href: "/manager/incidents",
         icon: AlertTriangle,
         roles: ["1"], // Admin, Manager
       },
@@ -39,19 +39,19 @@ const navigation = [
     items: [
       {
         name: "SLA Trigger",
-        href: "/dashboard/sla-trigger",
+        href: "/manager/sla-trigger",
         icon: Zap,
         roles: ["1"], // Admin, Manager
       },
       {
         name: "Workflow Builder",
-        href: "/dashboard/workflow",
+        href: "/manager/workflow",
         icon: Workflow,
         roles: ["1"], // Admin, Manager
       },
       {
         name: "Task Schedule",
-        href: "/dashboard/task-schedule",
+        href: "/manager/task-schedule",
         icon: Calendar,
         roles: ["1"], // Admin, Manager
       },
@@ -62,7 +62,7 @@ const navigation = [
   //   items: [
   //     {
   //       name: "Tìm nhân sự",
-  //       href: "/dashboard/staff-search",
+  //       href: "/manager/staff-search",
   //       icon: Users,
   //       roles: [ "1"], // Admin, Manager
   //     },
@@ -73,13 +73,13 @@ const navigation = [
   //   items: [
   //     {
   //       name: "Hợp đồng",
-  //       href: "/dashboard/contracts",
+  //       href: "/manager/contracts",
   //       icon: FileText,
   //       roles: [ "1"], // Admin, Manager
   //     },
   //     {
   //       name: "Khách hàng",
-  //       href: "/dashboard/clients",
+  //       href: "/manager/clients",
   //       icon: Building2,
   //       roles: [ "1"], // Admin, Manager
   //     },
@@ -135,7 +135,7 @@ export function Sidebar() {
                 const isActive =
                   pathname === item.href ||
                   (pathname.startsWith(item.href + "/") &&
-                    item.href !== "/dashboard");
+                    item.href !== "/manager");
                 const IconComponent = item.icon;
 
                 return (

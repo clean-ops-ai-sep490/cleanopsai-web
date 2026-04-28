@@ -124,7 +124,7 @@ export default function SLATriggerPage() {
               Quản lý và theo dõi các thỏa thuận mức độ dịch vụ
             </p>
           </div>
-          <Link href="/dashboard/sla-trigger/create">
+          <Link href="/manager/sla-trigger/create">
             <Button className="bg-[#1a80a2] hover:bg-[#1a80a2]/90 h-[35px] w-[140px]">
               Tạo SLA Mới
             </Button>
@@ -211,7 +211,7 @@ export default function SLATriggerPage() {
                         </TableCell> */}
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end space-x-1">
-                            <Link href={`/dashboard/sla-trigger/${sla.id}`}>
+                            <Link href={`/manager/sla-trigger/${sla.id}`}>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -220,9 +220,7 @@ export default function SLATriggerPage() {
                                 <Eye className="h-4 w-4" />
                               </Button>
                             </Link>
-                            <Link
-                              href={`/dashboard/sla-trigger/${sla.id}/edit`}
-                            >
+                            <Link href={`/manager/sla-trigger/${sla.id}/edit`}>
                               <Button
                                 variant="ghost"
                                 size="sm"

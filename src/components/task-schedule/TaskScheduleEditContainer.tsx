@@ -28,7 +28,7 @@ export function TaskScheduleEditContainer({
     setIsSubmitting(true);
     try {
       await updateMutation.mutateAsync({ id, data });
-      router.push(`/dashboard/task-schedule/${id}`);
+      router.push(`/manager/task-schedule/${id}`);
     } catch (error) {
       console.error("Error updating task schedule:", error);
     } finally {
@@ -51,7 +51,7 @@ export function TaskScheduleEditContainer({
     return (
       <div className="text-center py-12">
         <p className="text-red-500 mb-4">Không thể tải thông tin lịch trình</p>
-        <Link href="/dashboard/task-schedule">
+        <Link href="/manager/task-schedule">
           <Button variant="outline" className="border-[#e5e5e5]">
             Quay lại danh sách
           </Button>
@@ -64,7 +64,7 @@ export function TaskScheduleEditContainer({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href={`/dashboard/task-schedule/${id}`}>
+        <Link href={`/manager/task-schedule/${id}`}>
           <Button variant="ghost" size="sm" className="p-2">
             <ArrowLeft className="w-4 h-4" />
           </Button>

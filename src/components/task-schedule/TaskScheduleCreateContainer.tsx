@@ -20,7 +20,7 @@ export function TaskScheduleCreateContainer() {
     setIsSubmitting(true);
     try {
       await createMutation.mutateAsync(data);
-      router.push("/dashboard/task-schedule");
+      router.push("/manager/task-schedule");
     } catch (error) {
       console.error("Error creating task schedule:", error);
     } finally {
@@ -32,7 +32,7 @@ export function TaskScheduleCreateContainer() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/dashboard/task-schedule">
+        <Link href="/manager/task-schedule">
           <Button variant="ghost" size="sm" className="p-2">
             <ArrowLeft className="w-4 h-4" />
           </Button>

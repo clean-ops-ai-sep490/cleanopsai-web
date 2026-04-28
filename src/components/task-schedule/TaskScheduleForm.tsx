@@ -213,7 +213,7 @@ export function TaskScheduleForm({
         {/* Submit Buttons */}
         <div className="flex items-center justify-end gap-4 pt-6">
           <Button type="button" variant="outline" asChild>
-            <Link href="/dashboard/task-schedule">Hủy</Link>
+            <Link href="/manager/task-schedule">Hủy</Link>
           </Button>
           <Button
             type="submit"

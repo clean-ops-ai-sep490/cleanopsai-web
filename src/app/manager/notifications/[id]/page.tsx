@@ -46,7 +46,7 @@ export default function NotificationDetailPage() {
       } catch (error) {
         console.error("Failed to load notification detail:", error);
         notificationToasts.loadNotificationDetailError();
-        router.push("/dashboard/notifications");
+        router.push("/manager/notifications");
       } finally {
         setIsLoading(false);
       }
@@ -75,7 +75,7 @@ export default function NotificationDetailPage() {
           <Button
             variant="outline"
             className="mt-4"
-            onClick={() => router.push("/dashboard/notifications")}
+            onClick={() => router.push("/manager/notifications")}
           >
             Quay lại danh sách thông báo
           </Button>
@@ -91,7 +91,7 @@ export default function NotificationDetailPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => router.push("/dashboard/notifications")}
+          onClick={() => router.push("/manager/notifications")}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -196,7 +196,7 @@ export default function NotificationDetailPage() {
       <div className="flex justify-center">
         <Button
           variant="outline"
-          onClick={() => router.push("/dashboard/notifications")}
+          onClick={() => router.push("/manager/notifications")}
         >
           Quay lại danh sách thông báo
         </Button>

@@ -95,7 +95,7 @@ export default function SLADetailPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Link href="/dashboard/sla-trigger">
+            <Link href="/manager/sla-trigger">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Quay lại danh sách SLA
@@ -118,7 +118,7 @@ export default function SLADetailPage() {
           </div>
 
           {/* <div className="flex items-center space-x-2">
-            <Link href={`/dashboard/sla-trigger/${sla.id}/edit`}>
+            <Link href={`/manager/sla-trigger/${sla.id}/edit`}>
               <Button variant="outline">
                 <Edit className="h-4 w-4 mr-2" />
                 Chỉnh sửa
