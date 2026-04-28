@@ -31,7 +31,7 @@ export function WorkflowCreateContainer({ sopId }: { sopId?: string }) {
   });
 
   const createSOPMutation = useCreateSOP((sop) => {
-    router.push(`/dashboard/workflow/${sop.id}`);
+    router.push(`/manager/workflow/${sop.id}`);
   });
 
   // Load existing SOP data when in edit mode
