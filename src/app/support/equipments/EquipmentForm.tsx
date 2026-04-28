@@ -92,17 +92,6 @@ export default function EquipmentForm({
 
   return (
     <div className="w-full space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">
-          {initialData ? "Chỉnh sửa thiết bị" : "Thêm thiết bị mới"}
-        </h2>
-        <p className="text-muted-foreground mt-1">
-          {initialData
-            ? "Cập nhật thông tin thiết bị bên dưới"
-            : "Nhập thông tin để tạo thiết bị mới"}
-        </p>
-      </div>
 
       {/* Success */}
       {success && (

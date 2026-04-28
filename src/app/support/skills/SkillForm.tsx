@@ -98,18 +98,6 @@ export default function SkillForm({
   return (
     <div className="w-full space-y-6">
 
-      {/* TITLE (giống CertificationForm) */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">
-          {initialData ? "Chỉnh sửa kỹ năng" : "Thêm kỹ năng mới"}
-        </h2>
-        <p className="text-muted-foreground mt-1">
-          {initialData
-            ? "Cập nhật thông tin kỹ năng bên dưới"
-            : "Nhập thông tin để tạo kỹ năng mới"}
-        </p>
-      </div>
-
       {/* SUCCESS */}
       {success && (
         <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
