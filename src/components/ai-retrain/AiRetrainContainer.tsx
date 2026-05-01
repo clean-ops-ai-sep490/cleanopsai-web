@@ -384,7 +384,7 @@ function AnnotationQueue() {
                     <div className="h-16 w-24 overflow-hidden rounded border bg-gray-50">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={candidate.visualizationBlobUrl || candidate.imageUrl}
+                        src={candidate.imageUrl}
                         alt="Annotation candidate"
                         className="h-full w-full object-cover"
                       />

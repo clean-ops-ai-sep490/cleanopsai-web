@@ -297,7 +297,7 @@ export function AnnotationEditor() {
 
   const imageUrl = useMemo(() => {
     if (!candidate) return "";
-    return candidate.visualizationBlobUrl || candidate.imageUrl;
+    return candidate.imageUrl;
   }, [candidate]);
 
   const saveAnnotation = async (submit: boolean) => {
@@ -388,20 +388,40 @@ export function AnnotationEditor() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Ảnh và bbox</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AnnotationCanvas
-              imageUrl={imageUrl}
-              labels={labels}
-              activeLabel={activeLabel}
-              readOnly={readOnly}
-              onChange={setLabels}
-            />
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Ảnh gốc để annotate</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AnnotationCanvas
+                imageUrl={imageUrl}
+                labels={labels}
+                activeLabel={activeLabel}
+                readOnly={readOnly}
+                onChange={setLabels}
+              />
+            </CardContent>
+          </Card>
+
+          {candidate.visualizationBlobUrl && (
+            <Card>
+              <CardHeader>
+                <CardTitle>AI visualization tham chiếu</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-hidden rounded-lg border bg-gray-50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={candidate.visualizationBlobUrl}
+                    alt="AI visualization tham chiếu"
+                    className="block max-h-[520px] w-full object-contain"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         <div className="space-y-4">
           <Card>
