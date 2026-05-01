@@ -26,17 +26,23 @@ export default function LoginPage() {
         const roleStr = String(me.role ?? "").trim();
         const lower = roleStr.toLowerCase();
         const isSupporter =
-          roleStr === "4" || roleStr === "Supporter" || lower === "supporter";
+          roleStr === "5" || roleStr === "Supporter" || lower === "supporter";
         const isAdmin =
-          roleStr === "0" || roleStr === "Admin" || lower === "admin";
+          roleStr === "2" || roleStr === "Admin" || lower === "admin";
+        const isSupervisor =
+          roleStr === "4" ||
+          roleStr === "Supervisor" ||
+          lower === "supervisor";
         if (isSupporter) {
           router.push("/support/equipments");
         } else if (isAdmin) {
           router.push("/admin/users");
+        } else if (isSupervisor) {
+          router.push("/manager/ai-retrain");
         } else {
           router.push("/manager");
         }
-      } catch (err) {
+      } catch {
         // fallback
         router.push("/manager");
       }
