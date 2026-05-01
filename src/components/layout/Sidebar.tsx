@@ -9,12 +9,9 @@ import {
   Zap,
   Workflow,
   Calendar,
-  Users,
-  FileText,
-  Building2,
-  Settings,
+  BrainCircuit,
 } from "lucide-react";
-import { useRole } from "@/hooks/useRole";
+import { UserRole, useRole } from "@/hooks/useRole";
 
 const navigation = [
   {
@@ -24,13 +21,19 @@ const navigation = [
         name: "Dashboard",
         href: "/manager",
         icon: LayoutDashboard,
-        roles: ["1"], // Admin, Manager
+        roles: [UserRole.Manager],
       },
       {
         name: "Sự cố & Yêu cầu",
         href: "/manager/incidents",
         icon: AlertTriangle,
-        roles: ["1"], // Admin, Manager
+        roles: [UserRole.Manager],
+      },
+      {
+        name: "AI Retrain",
+        href: "/manager/ai-retrain",
+        icon: BrainCircuit,
+        roles: [UserRole.Admin, UserRole.Manager, UserRole.Supervisor],
       },
     ],
   },
@@ -41,19 +44,19 @@ const navigation = [
         name: "SLA Trigger",
         href: "/manager/sla-trigger",
         icon: Zap,
-        roles: ["1"], // Admin, Manager
+        roles: [UserRole.Manager],
       },
       {
         name: "Workflow Builder",
         href: "/manager/workflow",
         icon: Workflow,
-        roles: ["1"], // Admin, Manager
+        roles: [UserRole.Manager],
       },
       {
         name: "Task Schedule",
         href: "/manager/task-schedule",
         icon: Calendar,
-        roles: ["1"], // Admin, Manager
+        roles: [UserRole.Manager],
       },
     ],
   },
