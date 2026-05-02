@@ -98,7 +98,7 @@ export function SLACreateContainer() {
       );
 
       toastUtils.success("Tạo SLA thành công!");
-      router.push("/dashboard/sla-trigger");
+      router.push("/manager/sla-trigger");
     } catch (error) {
       console.error("Failed to create SLA:", error);
       toastUtils.error(
@@ -135,10 +135,10 @@ export function SLACreateContainer() {
     <div className="max-w-6xl mx-auto space-y-6 pb-16">
       {/* Header */}
       <div className="flex items-center space-x-4">
-        <Link href="/dashboard/sla-trigger">
+        <Link href="/manager/sla-trigger">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Dashboard
+            Manager
           </Button>
         </Link>
       </div>

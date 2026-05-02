@@ -40,7 +40,7 @@ export function TaskCalendarView() {
   };
 
   const handleCreateTask = () => {
-    router.push("/dashboard/task-schedule/create");
+    router.push("/manager/task-schedule/create");
   };
 
   return (

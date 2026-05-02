@@ -206,9 +206,7 @@ export default function WorkflowDetailPage() {
                 <p className="text-[#70808f] mb-4">Chưa có bước nào</p>
                 <Button
                   size="sm"
-                  onClick={() =>
-                    router.push(`/dashboard/workflow/${sopId}/edit`)
-                  }
+                  onClick={() => router.push(`/manager/workflow/${sopId}/edit`)}
                   className="bg-[#1a80a2] hover:bg-[#308cab] text-white"
                 >
                   Thêm bước đầu tiên

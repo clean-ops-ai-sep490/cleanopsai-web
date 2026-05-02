@@ -6,21 +6,21 @@ import { useEffect, type ReactNode } from "react";
 
 // Role enum matching API
 export enum UserRole {
-  Admin = "0",
-  Manager = "1",
-  Supervisor = "2",
-  Worker = "3",
-  Supporter = "4",
+  Worker = "1",
+  Admin = "2",
+  Manager = "3",
+  Supervisor = "4",
+  Supporter = "5",
 }
 
 // Map role names to role IDs - handle all possible formats
 const ROLE_MAP: Record<string, UserRole> = {
   // Numeric string format
-  "0": UserRole.Admin,
-  "1": UserRole.Manager,
-  "2": UserRole.Supervisor,
-  "3": UserRole.Worker,
-  "4": UserRole.Supporter,
+  "1": UserRole.Worker,
+  "2": UserRole.Admin,
+  "3": UserRole.Manager,
+  "4": UserRole.Supervisor,
+  "5": UserRole.Supporter,
   // Text format - exact case (from backend)
   Admin: UserRole.Admin,
   Manager: UserRole.Manager,

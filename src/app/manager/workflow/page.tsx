@@ -46,7 +46,7 @@ export default function WorkflowListPage() {
             Tạo và quản lý các quy trình chuẩn vận hành
           </p>
         </div>
-        <Link href="/dashboard/workflow/create">
+        <Link href="/manager/workflow/create">
           <Button className="bg-[#1a80a2] hover:bg-[#308cab] text-white h-[40px] rounded-[5px] px-6">
             Tạo SOP mới
           </Button>
@@ -105,7 +105,7 @@ export default function WorkflowListPage() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sops.map((sop) => (
-              <Link key={sop.id} href={`/dashboard/workflow/${sop.id}`}>
+              <Link key={sop.id} href={`/manager/workflow/${sop.id}`}>
                 <Card className="bg-white rounded-[8px] p-6 hover:shadow-lg transition-shadow cursor-pointer border">
                   <div className="flex items-start justify-between mb-4">
                     <h3 className="text-base font-semibold text-black line-clamp-2">

@@ -8,13 +8,17 @@ import RoleGuard, { UserRole } from "@/components/RoleGuard";
 
 interface DashboardLayoutProps {
   children: ReactNode;
+  allowedRoles?: UserRole[];
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export function DashboardLayout({
+  children,
+  allowedRoles = [UserRole.Admin, UserRole.Manager],
+}: DashboardLayoutProps) {
   return (
     <AuthGuard>
       <RoleGuard
-        allowedRoles={[UserRole.Admin, UserRole.Manager]}
+        allowedRoles={allowedRoles}
         fallbackPath="/unauthorized"
       >
         <div className="min-h-screen bg-[#f9fafb]">

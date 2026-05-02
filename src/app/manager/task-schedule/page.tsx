@@ -173,7 +173,7 @@ export default function TaskScheduleListPage() {
               >
                 <div className="flex items-start justify-between mb-4">
                   <Link
-                    href={`/dashboard/task-schedule/${schedule.id}`}
+                    href={`/manager/task-schedule/${schedule.id}`}
                     className="flex-1"
                   >
                     <h3 className="text-base font-semibold text-black line-clamp-2 hover:text-[#1a80a2] transition-colors">
