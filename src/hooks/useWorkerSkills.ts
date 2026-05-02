@@ -8,7 +8,7 @@ import { api } from "@/lib/api";
 
 // Giả định SkillLevelType của C# trả về number (hoặc string tùy vào cấu hình JSON serializer). 
 // Bạn có thể đổi thành Enum cụ thể của project nếu cần.
-export type SkillLevelType = number; 
+export type SkillLevelType = "Beginner" | "Intermediate" | "Expert"; 
 
 export interface WorkerSkillResponse {
   workerId: string;

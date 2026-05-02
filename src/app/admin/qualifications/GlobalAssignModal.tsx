@@ -13,6 +13,7 @@ import { useCreateWorkerSkill } from "@/hooks/useWorkerSkills";
 import { useCreateWorkerCertification } from "@/hooks/useWorkerCertifications";
 import useCertifications from "@/hooks/useCertifications";
 import { toast } from "sonner";
+import { useWorkers } from "@/hooks/useWorkers";
 
 type Props = {
   open: boolean;
@@ -26,8 +27,10 @@ export default function GlobalAssignModal({ open, onClose }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Lists Data
-  const [workersList, setWorkersList] = useState<any[]>([]);
-  const { getUsers } = useAuth();
+  const { data: workersData } = useWorkers();
+// Sửa lại
+  const workersList = workersData?.content ?? workersData ?? [];
+  console.log("workersData:", workersData);
   const { data: skillsData } = useSkills({ pageSize: 100 });
   const { data: certsData } = useCertifications({ pageSize: 100 });
 
@@ -36,31 +39,23 @@ export default function GlobalAssignModal({ open, onClose }: Props) {
   const { mutateAsync: assignCert } = useCreateWorkerCertification();
 
   // States for Skill
-  const [skillIds, setSkillIds] = useState<string[]>([]);
-  const [skillLevel, setSkillLevel] = useState<number>(1);
+  const [skillId, setSkillId] = useState("");
+  // GlobalAssignModal - state khởi tạo
+const [skillLevel, setSkillLevel] = useState<string>("Beginner");
 
   // States for Certs
-  const [certIds, setCertIds] = useState<string[]>([]);
+  const [certId, setCertId] = useState("");
   const [issuedDate, setIssuedDate] = useState("");
   const [expiredAt, setExpiredAt] = useState("");
 
-  // Load Workers khi mở Modal
-  useEffect(() => {
-    if (open) {
-      getUsers({ role: "Worker", pageSize: 100 }).then((res) => {
-        setWorkersList(res?.content || []);
-      });
-    }
-  }, [open]);
-
   // Options Mapping
-  const skillOptions: MultiSelectOption[] = useMemo(() => {
-    return (skillsData?.content || []).map((s: any) => ({ value: s.id, label: s.name }));
-  }, [skillsData]);
+  const skillOptions = useMemo(() => {
+  return (skillsData?.content || []).map((s: any) => ({ value: s.id, label: s.name }));
+}, [skillsData]);
 
-  const certOptions: MultiSelectOption[] = useMemo(() => {
-    return (certsData?.content || []).map((c: any) => ({ value: c.id, label: c.name }));
-  }, [certsData]);
+const certOptions = useMemo(() => {
+  return (certsData?.content || []).map((c: any) => ({ value: c.id, label: c.name }));
+}, [certsData]);
 
   // Handle Submit
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,40 +66,55 @@ export default function GlobalAssignModal({ open, onClose }: Props) {
     setIsSubmitting(true);
 
     if (assignType === "skill") {
-      if (skillIds.length === 0)
-        return toast.error("Vui lòng chọn kỹ năng");
+      if (!skillId) return toast.error("Vui lòng chọn kỹ năng");
 
-      await Promise.all(
-        skillIds.map((id) =>
-          assignSkill({
-            workerId: selectedWorkerId,
-            skillId: id,
-            skillLevel,
-          })
+      const results = await Promise.allSettled(
+        [skillId].map((id) =>
+          assignSkill({ workerId: selectedWorkerId, skillId: id, skillLevel })
         )
       );
+
+      const failed = results.filter((r) => r.status === "rejected");
+      const succeeded = results.filter((r) => r.status === "fulfilled");
+
+      if (succeeded.length > 0 && failed.length === 0) {
+        toast.success(`Cấp thành công ${succeeded.length} kỹ năng 🎉`);
+      } else if (succeeded.length > 0 && failed.length > 0) {
+        toast.warning(`Cấp được ${succeeded.length} kỹ năng, ${failed.length} kỹ năng đã tồn tại hoặc lỗi.`);
+      } else {
+        toast.error("Tất cả kỹ năng đều thất bại, có thể đã tồn tại từ trước.");
+        return; // Không đóng modal
+      }
+
     } else {
-      if (certIds.length === 0 || !issuedDate)
+      if (!certId || !issuedDate)
         return toast.error("Vui lòng chọn chứng chỉ và ngày cấp");
 
-      await Promise.all(
-        certIds.map((id) =>
+      const results = await Promise.allSettled(
+        [certId].map((id) =>
           assignCert({
             workerId: selectedWorkerId,
             certificationId: id,
             issuedDate: new Date(issuedDate).toISOString(),
-            expiredAt: expiredAt
-              ? new Date(expiredAt).toISOString()
-              : null,
+            expiredAt: expiredAt ? new Date(expiredAt).toISOString() : null,
           })
         )
       );
+
+      const failed = results.filter((r) => r.status === "rejected");
+      const succeeded = results.filter((r) => r.status === "fulfilled");
+
+      if (succeeded.length > 0 && failed.length === 0) {
+        toast.success(`Cấp thành công ${succeeded.length} chứng chỉ 🎉`);
+      } else if (succeeded.length > 0 && failed.length > 0) {
+        toast.warning(`Cấp được ${succeeded.length} chứng chỉ, ${failed.length} chứng chỉ đã tồn tại hoặc lỗi.`);
+      } else {
+        toast.error("Tất cả chứng chỉ đều thất bại, có thể đã tồn tại từ trước.");
+        return;
+      }
     }
 
-    toast.success("Cấp thành công 🎉");
     onClose();
-  } catch (error) {
-    toast.error("Có lỗi xảy ra, có thể dữ liệu đã tồn tại từ trước.");
   } finally {
     setIsSubmitting(false);
   }
@@ -126,7 +136,7 @@ export default function GlobalAssignModal({ open, onClose }: Props) {
           >
             <option value="">Chọn nhân viên</option>
             {workersList.map((w) => (
-              <option key={w.id} value={w.id}>{w.fullName} ({w.email})</option>
+              <option key={w.id} value={w.id}>{w.fullName}</option>
             ))}
           </select>
         </div>
@@ -151,40 +161,50 @@ export default function GlobalAssignModal({ open, onClose }: Props) {
           {assignType === "skill" ? (
             <>
               <div>
-                <label className="text-sm font-medium mb-1 block">Chọn Kỹ năng (Có thể chọn nhiều)</label>
-                <MultiSelect
-                  options={skillOptions}
-                  value={skillIds}
-                  onValueChange={setSkillIds}
-                  placeholder="Tìm và chọn kỹ năng..."
-                  disabled={isSubmitting}
-                />
-              </div>
+      <label className="text-sm font-medium mb-1 block">Chọn Kỹ năng</label>
+      <select
+        className="w-full border rounded-md px-3 py-2 text-sm"
+        value={skillId}
+        onChange={(e) => setSkillId(e.target.value)}
+        disabled={isSubmitting}
+        required
+      >
+        <option value="">Chọn kỹ năng</option>
+        {skillOptions.map((s) => (
+          <option key={s.value} value={s.value}>{s.label}</option>
+        ))}
+      </select>
+    </div>
               <div>
                 <label className="text-sm font-medium mb-1 block">Cấp độ (Skill Level)</label>
                 <select
                   className="w-full border rounded-md px-3 py-2 text-sm"
                   value={skillLevel}
-                  onChange={(e) => setSkillLevel(Number(e.target.value))}
+                  onChange={(e) => setSkillLevel(e.target.value)}
                   disabled={isSubmitting}
                 >
-                  <option value={1}>Cơ bản (1)</option>
-                  <option value={2}>Trung cấp (2)</option>
-                  <option value={3}>Thành thạo (3)</option>
+                  <option value="Beginner">Cơ bản</option>
+                  <option value="Intermediate">Trung cấp</option>
+                  <option value="Expert">Thành thạo</option>
                 </select>
               </div>
             </>
           ) : (
             <>
               <div>
-                <label className="text-sm font-medium mb-1 block">Chọn Chứng chỉ (Có thể chọn nhiều)</label>
-                <MultiSelect
-                  options={certOptions}
-                  value={certIds}
-                  onValueChange={setCertIds}
-                  placeholder="Tìm và chọn chứng chỉ..."
+                <label className="text-sm font-medium mb-1 block">Chọn Chứng chỉ</label>
+                <select
+                  className="w-full border rounded-md px-3 py-2 text-sm"
+                  value={certId}
+                  onChange={(e) => setCertId(e.target.value)}
                   disabled={isSubmitting}
-                />
+                  required
+                >
+                <option value="">Chọn chứng chỉ</option>
+                  {certOptions.map((c) => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
