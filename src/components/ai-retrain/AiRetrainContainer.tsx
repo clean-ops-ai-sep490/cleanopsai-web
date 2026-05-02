@@ -40,6 +40,7 @@ import type {
 } from "@/types/scoring";
 import {
   CheckCircle2,
+  Edit2,
   Eye,
   GitBranch,
   Loader2,
@@ -309,6 +310,8 @@ function ReviewQueue() {
 }
 
 function AnnotationQueue() {
+  const { hasRole } = useRole();
+  const canEditAnnotations = hasRole([UserRole.Manager, UserRole.Admin]);
   const [status, setStatus] = useState("all");
   const [environmentKey, setEnvironmentKey] = useState("");
   const filters = useMemo(
@@ -411,11 +414,22 @@ function AnnotationQueue() {
                       <Link
                         href={`/manager/ai-retrain/annotations/${candidate.candidateId}`}
                       >
-                        <Button size="sm">
+                        <Button size="sm" variant="outline">
                           <Eye className="mr-2 h-4 w-4" />
                           Mở
                         </Button>
                       </Link>
+                      {canEditAnnotations &&
+                        candidate.candidateStatus !== "APPROVED" && (
+                          <Link
+                            href={`/manager/ai-retrain/annotations/${candidate.candidateId}?mode=edit`}
+                          >
+                            <Button size="sm">
+                              <Edit2 className="mr-2 h-4 w-4" />
+                              Edit
+                            </Button>
+                          </Link>
+                        )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -435,7 +449,9 @@ function RetrainRuns() {
   const [form, setForm] = useState<TriggerScoringRetrainRequest>({
     lookbackDays: 7,
     minReviewedSamples: 25,
+    minApprovedAnnotations: 5,
     maxSamplesPerBatch: 500,
+    includeRejectedTrainingSamples: false,
   });
   const { data = [], isLoading, refetch, isFetching } = useRetrainBatches({
     take: 50,
@@ -511,8 +527,15 @@ function RetrainRuns() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">
-                    Reviewed {batch.reviewedSampleCount} / Approved ann.{" "}
-                    {batch.approvedAnnotationCount}
+                    <div>Reviewed {batch.reviewedSampleCount}</div>
+                    <div>
+                      Approved {batch.approvedAnnotationCount} / Eligible{" "}
+                      {batch.eligibleApprovedAnnotationCount}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Selected {batch.selectedAnnotationCount} / Used{" "}
+                      {batch.alreadyTrainedAnnotationCount}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -566,6 +589,20 @@ function RetrainRuns() {
                 }))
               }
             />
+            <label className="text-sm font-medium">
+              Min approved annotations mới
+            </label>
+            <Input
+              type="number"
+              min={1}
+              value={form.minApprovedAnnotations}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  minApprovedAnnotations: Number(event.target.value),
+                }))
+              }
+            />
             <label className="text-sm font-medium">Max samples per batch</label>
             <Input
               type="number"
@@ -579,6 +616,19 @@ function RetrainRuns() {
                 }))
               }
             />
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={Boolean(form.includeRejectedTrainingSamples)}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    includeRejectedTrainingSamples: event.target.checked,
+                  }))
+                }
+              />
+              Cho phép dùng lại mẫu từng bị REJECTED
+            </label>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setDialogOpen(false)}>

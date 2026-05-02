@@ -109,6 +109,9 @@ export interface ScoringRetrainBatchListItem {
   reviewedSampleCount: number;
   annotatedSampleCount: number;
   approvedAnnotationCount: number;
+  eligibleApprovedAnnotationCount: number;
+  alreadyTrainedAnnotationCount: number;
+  selectedAnnotationCount: number;
   calibrationSampleCount: number;
   completedAtUtc?: string | null;
   promoted: boolean;
@@ -139,5 +142,7 @@ export interface ScoringRetrainRun {
 export interface TriggerScoringRetrainRequest {
   lookbackDays: number;
   minReviewedSamples: number;
+  minApprovedAnnotations: number;
   maxSamplesPerBatch: number;
+  includeRejectedTrainingSamples?: boolean;
 }
