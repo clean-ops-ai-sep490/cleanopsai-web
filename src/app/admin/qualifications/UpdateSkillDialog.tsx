@@ -48,7 +48,7 @@ export default function UpdateSkillDialog({ data, onClose }: Props) {
           >
             <option value={1}>Cơ bản (1)</option>
             <option value={2}>Trung cấp (2)</option>
-            <option value={3}>Thành thạo (3)</option>
+            <option value={4}>Thành thạo (4)</option>
           </select>
         </div>
 
