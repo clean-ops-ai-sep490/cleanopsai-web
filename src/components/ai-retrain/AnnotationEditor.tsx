@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -277,9 +277,11 @@ function AnnotationCanvas({
 export function AnnotationEditor() {
   const params = useParams<{ candidateId: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const candidateId = params.candidateId;
   const { hasRole } = useRole();
-  const canManage = hasRole([UserRole.Supervisor, UserRole.Admin]);
+  const editRequested = searchParams.get("mode") === "edit";
+  const canManage = hasRole([UserRole.Manager, UserRole.Admin]);
   const { data: candidate, isLoading } = useAnnotationCandidate(candidateId);
   const upsertMutation = useUpsertScoringAnnotation(candidateId);
   const approveMutation = useApproveAnnotationCandidate();
@@ -297,7 +299,7 @@ export function AnnotationEditor() {
 
   const imageUrl = useMemo(() => {
     if (!candidate) return "";
-    return candidate.visualizationBlobUrl || candidate.imageUrl;
+    return candidate.imageUrl;
   }, [candidate]);
 
   const saveAnnotation = async (submit: boolean) => {
@@ -362,7 +364,15 @@ export function AnnotationEditor() {
     upsertMutation.isPending ||
     approveMutation.isPending ||
     rejectMutation.isPending;
-  const readOnly = !canManage || candidate.candidateStatus === "APPROVED";
+  const approvedLocked = candidate.candidateStatus === "APPROVED";
+  const readOnly = !editRequested || !canManage || approvedLocked;
+  const readOnlyMessage = approvedLocked
+    ? "Approved annotations are locked để giữ ground-truth và audit retrain."
+    : !editRequested
+      ? "Bạn đang ở chế độ chỉ xem. Bấm Edit từ danh sách annotation candidate để chỉnh sửa."
+      : !canManage
+        ? "Tài khoản hiện tại không có quyền chỉnh sửa annotation candidate."
+        : null;
 
   return (
     <div className="space-y-6">
@@ -379,7 +389,8 @@ export function AnnotationEditor() {
             Annotation Candidate
           </h1>
           <p className="mt-1 text-gray-600">
-            {candidate.environmentKey} / {candidate.requestId}
+            {candidate.environmentKey} / {candidate.requestId} /{" "}
+            {readOnly ? "View only" : "Edit mode"}
           </p>
         </div>
         <Badge variant="outline" className={statusBadgeClass(candidate.candidateStatus)}>
@@ -388,20 +399,42 @@ export function AnnotationEditor() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Ảnh và bbox</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AnnotationCanvas
-              imageUrl={imageUrl}
-              labels={labels}
-              activeLabel={activeLabel}
-              readOnly={readOnly}
-              onChange={setLabels}
-            />
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {readOnly ? "Ảnh gốc để xem annotation" : "Ảnh gốc để annotate"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AnnotationCanvas
+                imageUrl={imageUrl}
+                labels={labels}
+                activeLabel={activeLabel}
+                readOnly={readOnly}
+                onChange={setLabels}
+              />
+            </CardContent>
+          </Card>
+
+          {candidate.visualizationBlobUrl && (
+            <Card>
+              <CardHeader>
+                <CardTitle>AI visualization tham chiếu</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-hidden rounded-lg border bg-gray-50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={candidate.visualizationBlobUrl}
+                    alt="AI visualization tham chiếu"
+                    className="block max-h-[520px] w-full object-contain"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         <div className="space-y-4">
           <Card>
@@ -409,6 +442,12 @@ export function AnnotationEditor() {
               <CardTitle>Công cụ</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {readOnlyMessage && (
+                <div className="rounded-md border border-blue-100 bg-blue-50 p-3 text-sm text-blue-800">
+                  {readOnlyMessage}
+                </div>
+              )}
+
               <div>
                 <label className="mb-2 block text-sm font-medium">Label</label>
                 <Select
