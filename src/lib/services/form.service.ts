@@ -51,7 +51,7 @@ export class FormService {
    */
   static validationRules = {
     required:
-      (message = "This field is required") =>
+      (message = "Trường này là bắt buộc") =>
       (value: any) => {
         if (value === null || value === undefined || value === "") {
           return message;
@@ -60,7 +60,7 @@ export class FormService {
       },
 
     email:
-      (message = "Invalid email format") =>
+      (message = "Định dạng email không hợp lệ") =>
       (value: string) => {
         if (!value) return null; // Let required rule handle empty values
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -71,14 +71,14 @@ export class FormService {
       if (!value) return null; // Let required rule handle empty values
       return value.length >= min
         ? null
-        : message || `Must be at least ${min} characters`;
+        : message || `Phải có ít nhất ${min} ký tự`;
     },
 
     maxLength: (max: number, message?: string) => (value: string) => {
       if (!value) return null;
       return value.length <= max
         ? null
-        : message || `Must be no more than ${max} characters`;
+        : message || `Không được vượt quá ${max} ký tự`;
     },
 
     fileSize: (maxSizeInMB: number, message?: string) => (file: File) => {
@@ -86,14 +86,14 @@ export class FormService {
       const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
       return file.size <= maxSizeInBytes
         ? null
-        : message || `File size must be less than ${maxSizeInMB}MB`;
+        : message || `Dung lượng file phải nhỏ hơn ${maxSizeInMB}MB`;
     },
 
     fileType: (allowedTypes: string[], message?: string) => (file: File) => {
       if (!file) return null;
       return allowedTypes.includes(file.type)
         ? null
-        : message || `File type must be one of: ${allowedTypes.join(", ")}`;
+        : message || `Định dạng file phải là: ${allowedTypes.join(", ")}`;
     },
   };
 

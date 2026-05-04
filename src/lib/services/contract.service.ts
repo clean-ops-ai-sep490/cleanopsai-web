@@ -13,11 +13,11 @@ export class ContractService {
   static async createContract(data: ContractFormData): Promise<Contract> {
     // Business validation
     if (!data.name?.trim()) {
-      throw new Error("Contract name is required");
+      throw new Error("Tên hợp đồng là bắt buộc");
     }
 
     if (!data.clientId) {
-      throw new Error("Client selection is required");
+      throw new Error("Vui lòng chọn khách hàng");
     }
 
     // Business logic for contract creation
@@ -53,7 +53,7 @@ export class ContractService {
    */
   static getClientName(clientId: string, clients: Client[]): string {
     const client = clients.find((c) => c.id === clientId);
-    return client?.name || "Unknown Client";
+    return client?.name || "Khách hàng không xác định";
   }
 
   /**
@@ -65,15 +65,15 @@ export class ContractService {
     const errors: Record<string, string> = {};
 
     if (!data.name?.trim()) {
-      errors.name = "Contract name is required";
+      errors.name = "Tên hợp đồng là bắt buộc";
     }
 
     if (!data.clientId) {
-      errors.clientId = "Client selection is required";
+      errors.clientId = "Vui lòng chọn khách hàng";
     }
 
     if (data.file && data.file.size > 10 * 1024 * 1024) {
-      errors.file = "File size must be less than 10MB";
+      errors.file = "Dung lượng file phải nhỏ hơn 10MB";
     }
 
     return errors;
