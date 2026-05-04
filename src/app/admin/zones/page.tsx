@@ -21,12 +21,14 @@ import { useAllLocations } from "@/hooks/useLocations";
 import { usePagination } from "@/hooks/usePagination";
 
 import { StandardDialog } from "@/components/ui/standard-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import ZoneForm from "./ZoneForm";
 import { toast } from "sonner";
 
 export default function ZonesPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
   const [locationId, setLocationId] = useState<string>("");
 
   const { data: locations } = useAllLocations();
@@ -91,14 +93,16 @@ export default function ZonesPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Xóa zone này?")) return;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
 
     try {
-      await deleteMutation.mutateAsync(id);
+      await deleteMutation.mutateAsync(deleteTarget.id);
       toast.success("Xóa zone thành công");
     } catch {
       toast.error("Xóa thất bại");
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -183,7 +187,7 @@ export default function ZonesPage() {
                       <Button
                         variant="ghost"
                         className="text-red-500"
-                        onClick={() => handleDelete(z.id)}
+                        onClick={() => setDeleteTarget(z)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -230,6 +234,15 @@ export default function ZonesPage() {
           onCancel={() => setOpen(false)}
         />
       </StandardDialog>
+
+      <ConfirmDialog 
+        open={!!deleteTarget} 
+        title="Xóa zone này?" 
+        description="Hành động này không thể hoàn tác." 
+        confirmLabel="Xóa" 
+        onConfirm={handleDelete} 
+        onOpenChange={(open) => !open && setDeleteTarget(null)} 
+      />
     </div>
   );
 }

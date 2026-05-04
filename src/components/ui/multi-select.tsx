@@ -274,7 +274,7 @@ export function MultiSelect({
                   <Badge
                     key={option.value}
                     variant="secondary"
-                    className="text-xs bg-[#e6f3f7] text-[#1a80a2] hover:bg-[#d1ecf1] flex items-center gap-1 flex-shrink-0 max-w-[150px]"
+                    className="text-xs bg-primary-soft text-primary hover:bg-[#d1ecf1] flex items-center gap-1 flex-shrink-0 max-w-[150px]"
                   >
                     <span className="truncate" title={option.label}>
                       {option.label}
@@ -282,7 +282,7 @@ export function MultiSelect({
                     <div
                       role="button"
                       tabIndex={0}
-                      className="h-3 w-3 cursor-pointer flex-shrink-0 text-[#1a80a2] hover:text-red-500 transition-colors"
+                      className="h-3 w-3 cursor-pointer flex-shrink-0 text-primary hover:text-red-500 transition-colors"
                       onClick={(e) => handleRemove(option.value, e)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
@@ -299,7 +299,7 @@ export function MultiSelect({
                 {remainingCount > 0 && (
                   <Badge
                     variant="secondary"
-                    className="text-xs flex-shrink-0 bg-[#1a80a2] text-white hover:bg-[#308cab]"
+                    className="text-xs flex-shrink-0 bg-primary text-white hover:bg-[#308cab]"
                   >
                     +{remainingCount}
                   </Badge>
@@ -362,8 +362,8 @@ export function MultiSelect({
                         "relative flex cursor-default select-none items-start rounded-md px-2 py-1.5 text-sm outline-none transition-colors duration-200",
                         // Keyboard selection styling
                         selectedIndex === index
-                          ? "bg-[#e6f3f7] text-[#1a80a2]"
-                          : "text-black hover:bg-[#e6f3f7] hover:text-[#1a80a2]",
+                          ? "bg-primary-soft text-primary"
+                          : "text-black hover:bg-primary-soft hover:text-primary",
                       )}
                       onClick={() => handleItemClick(option)}
                       onMouseEnter={() => handleItemMouseEnter(index)}

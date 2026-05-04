@@ -1,30 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { FilterBar } from "@/components/ui/filter-bar";
+import { SectionCard } from "@/components/ui/section-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, Search } from "lucide-react";
-
-import {
-  useSearchSkills,
-  useCreateSkill,
-  useUpdateSkill,
-  useDeleteSkill,
-  useSkillsByCategory,
-  useSkillCategories,
-} from "@/hooks/useSkills";
-
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ListPageSkeleton } from "@/components/ui/page-skeleton";
+import { Plus, Edit2, Trash2, Search, Star } from "lucide-react";
+import { useSearchSkills, useCreateSkill, useUpdateSkill, useDeleteSkill, useSkillsByCategory, useSkillCategories } from "@/hooks/useSkills";
 import { StandardDialog } from "@/components/ui/standard-dialog";
 import SkillForm from "./SkillForm";
 
@@ -33,216 +24,96 @@ export default function SkillsPage() {
   const [category, setCategory] = useState("all");
   const [pageNumber, setPageNumber] = useState(1);
   const pageSize = 10;
-
-  const queryClient = useQueryClient();
-
-  const isFilterByCategory = category !== "all";
-
-  // ===== API SEARCH =====
-  const searchResult = useSearchSkills(keyword, pageNumber, pageSize);
-
-  // ===== API CATEGORY =====
-  const categoryResult = useSkillsByCategory(category);
-
-  const data = isFilterByCategory ? categoryResult.data : searchResult.data;
-  const isLoading = isFilterByCategory
-    ? categoryResult.isLoading
-    : searchResult.isLoading;
-
-  // ===== CATEGORY LIST =====
-  const { data: categories } = useSkillCategories();
-
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+
+  const queryClient = useQueryClient();
+  const isFilterByCategory = category !== "all";
+  const searchResult = useSearchSkills(keyword, pageNumber, pageSize);
+  const categoryResult = useSkillsByCategory(category);
+  const { data: categories } = useSkillCategories();
+
+  const data = isFilterByCategory ? categoryResult.data : searchResult.data;
+  const isLoading = isFilterByCategory ? categoryResult.isLoading : searchResult.isLoading;
+  const error = isFilterByCategory ? categoryResult.error : searchResult.error;
+  const refetch = isFilterByCategory ? categoryResult.refetch : searchResult.refetch;
 
   const createMutation = useCreateSkill();
   const updateMutation = useUpdateSkill();
   const deleteMutation = useDeleteSkill();
 
-  const handleSearch = (value: string) => {
-    setKeyword(value);
-    setCategory("all"); // reset filter
-    setPageNumber(1);
-  };
-
-  const handleCategoryChange = (value: string) => {
-    setCategory(value);
-    setKeyword("");
-    setPageNumber(1);
-  };
+  const items = useMemo(() => (data?.content ?? data ?? []), [data]);
 
   const handleSubmit = async (form: any) => {
-    if (editing) {
-      await updateMutation.mutateAsync({
-        id: editing.id,
-        data: form,
-      });
-    } else {
-      await createMutation.mutateAsync(form);
-    }
-
+    if (editing) await updateMutation.mutateAsync({ id: editing.id, data: form });
+    else await createMutation.mutateAsync(form);
     setOpen(false);
     setEditing(null);
-
-    queryClient.invalidateQueries(["skills"]);
+    queryClient.invalidateQueries({ queryKey: ["skills"] });
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Bạn có chắc muốn xóa kỹ năng này?")) return;
-    await deleteMutation.mutateAsync(id);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await deleteMutation.mutateAsync(deleteTarget.id);
+    setDeleteTarget(null);
+    queryClient.invalidateQueries({ queryKey: ["skills"] });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 pt-8 pb-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Quản lý kỹ năng</h1>
-          <p className="text-muted-foreground">
-            Quản lý các kỹ năng chuyên môn
-          </p>
+    <div className="space-y-6">
+      <PageHeader title="Quản lý kỹ năng" description="Quản lý kỹ năng chuyên môn theo list view gọn và rõ." action={<Button onClick={() => { setEditing(null); setOpen(true); }}><Plus className="h-4 w-4" />Thêm kỹ năng</Button>} />
+
+      <FilterBar>
+        <div className="relative w-full max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input placeholder="Tìm kiếm kỹ năng..." value={keyword} onChange={(e) => { setKeyword(e.target.value); setCategory("all"); setPageNumber(1); }} className="pl-10" disabled={isFilterByCategory} />
         </div>
+        <Select value={category} onValueChange={(value) => { setCategory(value); setKeyword(""); setPageNumber(1); }}>
+          <SelectTrigger className="w-full md:w-52"><SelectValue placeholder="Danh mục" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tất cả danh mục</SelectItem>
+            {categories?.map((c: any) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </FilterBar>
 
-        {/* Search + Filter + Add */}
-        <div className="flex gap-3 mb-6">
-          {/* SEARCH */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-2.5 opacity-50 w-4 h-4" />
-            <Input
-              placeholder="Tìm kiếm kỹ năng..."
-              value={keyword}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="pl-9"
-              disabled={isFilterByCategory}
-            />
-          </div>
-
-          {/* CATEGORY FILTER */}
-          <select
-            className="border rounded px-3 py-2"
-            value={category}
-            onChange={(e) => handleCategoryChange(e.target.value)}
-          >
-            <option value="all">Tất cả danh mục</option>
-            {categories?.map((c: any) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-
-          {/* ADD */}
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setOpen(true);
-            }}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Thêm kỹ năng
-          </Button>
-        </div>
-
-        {/* TABLE */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Danh sách ({data?.totalElements ?? data?.length ?? 0})
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            {isLoading ? (
-              <p>Đang tải...</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tên</TableHead>
-                    <TableHead>Danh mục</TableHead>
-                    <TableHead>Mô tả</TableHead>
-                    <TableHead className="text-right">Hành động</TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {(data?.content ?? data ?? []).map((item: any) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-semibold">
-                        {item.name}
-                      </TableCell>
-
-                      <TableCell>
-                        <Badge>{item.category}</Badge>
-                      </TableCell>
-
-                      <TableCell>{item.description}</TableCell>
-
-                      <TableCell className="text-right flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          onClick={() => {
-                            setEditing(item);
-                            setOpen(true);
-                          }}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          className="text-red-500"
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-
-            {/* PAGINATION (chỉ dùng khi search API) */}
-            {!isFilterByCategory && !Array.isArray(data) && (
-              <div className="flex justify-between mt-4">
-                <p className="text-sm text-gray-500">
-                  Trang {data?.pageNumber} / {data?.totalPages}
-                </p>
-
-                <div className="flex gap-2">
-                  <Button
-                    disabled={!data?.hasPreviousPage}
-                    onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
-                  >
-                    Trước
-                  </Button>
-
-                  <Button
-                    disabled={!data?.hasNextPage}
-                    onClick={() => setPageNumber((p) => p + 1)}
-                  >
-                    Sau
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* DIALOG */}
-      <StandardDialog
-        open={open}
-        onOpenChange={setOpen}
-        title={editing ? "Cập nhật kỹ năng" : "Thêm kỹ năng"}
-      >
-        <SkillForm
-          initialData={editing}
-          onSubmit={handleSubmit}
-          onCancel={() => setOpen(false)}
-        />
+      {isLoading ? (
+        <ListPageSkeleton cards={3} rows={6} />
+      ) : error ? (
+        <ErrorState title="Không thể tải kỹ năng" description="Vui lòng thử lại sau." onAction={() => refetch()} />
+      ) : items.length === 0 ? (
+        <EmptyState title="Chưa có kỹ năng" description="Kỹ năng sẽ hiển thị tại đây sau khi được tạo." icon={<Star className="h-10 w-10" />} actionLabel="Thêm kỹ năng" onAction={() => { setEditing(null); setOpen(true); }} />
+      ) : (
+        <SectionCard title={`Danh sách kỹ năng (${data?.totalElements ?? data?.length ?? 0})`}>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tên</TableHead>
+                <TableHead>Danh mục</TableHead>
+                <TableHead>Mô tả</TableHead>
+                <TableHead className="text-right">Hành động</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((item: any) => (
+                <TableRow key={item.id}>
+                  <TableCell className="max-w-[260px] truncate font-semibold text-slate-950">{item.name}</TableCell>
+                  <TableCell><StatusBadge status={item.category || "Unknown"} /></TableCell>
+                  <TableCell className="max-w-[320px] truncate text-slate-500">{item.description || "-"}</TableCell>
+                  <TableCell className="text-right"><div className="flex justify-end gap-1"><Button variant="ghost" size="icon-sm" onClick={() => { setEditing(item); setOpen(true); }}><Edit2 className="h-4 w-4" /></Button><Button variant="ghost" size="icon-sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setDeleteTarget(item)}><Trash2 className="h-4 w-4" /></Button></div></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          {!isFilterByCategory && !Array.isArray(data) ? <div className="mt-4 flex items-center justify-between text-sm text-slate-500"><span>Trang {data?.pageNumber} / {data?.totalPages}</span><div className="flex gap-2"><Button variant="outline" disabled={!data?.hasPreviousPage} onClick={() => setPageNumber((p) => Math.max(1, p - 1))}>Trước</Button><Button variant="outline" disabled={!data?.hasNextPage} onClick={() => setPageNumber((p) => p + 1)}>Sau</Button></div></div> : null}
+        </SectionCard>
+      )}
+      <StandardDialog open={open} onOpenChange={setOpen} title={editing ? "Cập nhật kỹ năng" : "Thêm kỹ năng"}>
+        <SkillForm initialData={editing} onSubmit={handleSubmit} onCancel={() => setOpen(false)} />
       </StandardDialog>
+
+      <ConfirmDialog open={!!deleteTarget} title="Xóa kỹ năng này?" description="Thao tác này không thể hoàn tác." confirmLabel="Xóa" onConfirm={handleDelete} onOpenChange={(open) => !open && setDeleteTarget(null)} />
     </div>
   );
 }

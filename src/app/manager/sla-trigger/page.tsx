@@ -1,264 +1,121 @@
 "use client";
 
 import { useState } from "react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { PaginationWithInfo } from "@/components/ui/pagination";
-import { Badge } from "@/components/ui/badge";
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Search,
-  Eye,
-  Settings,
-  Loader2,
-} from "lucide-react";
-import { SLAStats } from "@/components/sla/SLAStats";
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
+import { FilterBar } from "@/components/ui/filter-bar";
+import { SectionCard } from "@/components/ui/section-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PaginationWithInfo } from "@/components/ui/pagination";
+import { ListPageSkeleton } from "@/components/ui/page-skeleton";
+import { Plus, Edit, Trash2, Search, Eye, Loader2, Zap } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getSLAsPaginated } from "@/lib/sla-api";
 import { useDeleteSLA } from "@/hooks/useSLAQuery";
 import { usePaginatedData } from "@/hooks/usePagination";
-import type { SLA } from "@/types/sla";
 import { translateServiceType } from "@/lib/utils/translate";
 
 export default function SLATriggerPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [serviceTypeFilter, setServiceTypeFilter] = useState("all");
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
 
-  // Initialize pagination
-  const pagination = usePaginatedData({
-    initialPageSize: 10,
+  const pagination = usePaginatedData({ initialPageSize: 10 });
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["slas", pagination.currentPage, pagination.pageSize, searchTerm, serviceTypeFilter],
+    queryFn: () => getSLAsPaginated(pagination.currentPage, pagination.pageSize, {
+      search: searchTerm || undefined,
+      serviceType: serviceTypeFilter !== "all" ? serviceTypeFilter : undefined,
+    }),
   });
 
-  // Fetch SLAs with pagination and filters
-  const {
-    data: slasResponse,
-    isLoading,
-    refetch,
-  } = useQuery({
-    queryKey: [
-      "slas",
-      pagination.currentPage,
-      pagination.pageSize,
-      searchTerm,
-      serviceTypeFilter,
-    ],
-    queryFn: () =>
-      getSLAsPaginated(pagination.currentPage, pagination.pageSize, {
-        search: searchTerm || undefined,
-        serviceType:
-          serviceTypeFilter !== "all" ? serviceTypeFilter : undefined,
-      }),
-  });
+  const paginatedSLAs = usePaginatedData({ data, initialPageSize: 10 });
+  const deleteMutation = useDeleteSLA();
+  const slas = paginatedSLAs.items;
 
-  // Update pagination data when response changes
-  const paginatedSLAs = usePaginatedData({
-    data: slasResponse,
-    initialPageSize: 10,
-  });
-
-  const deleteSOPMutation = useDeleteSLA();
-
-  const handleDeleteSLA = (id: string) => {
-    if (confirm("Bạn có chắc chắn muốn xóa SLA này?")) {
-      deleteSOPMutation.mutate(id, {
-        onSuccess: () => {
-          refetch();
-        },
-      });
-    }
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await deleteMutation.mutateAsync(deleteTarget.id);
+    setDeleteTarget(null);
+    refetch();
   };
-
-  // Handle search with debounce effect
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-    pagination.goToFirstPage(); // Reset to first page when searching
-  };
-
-  const handleServiceTypeChange = (value: string) => {
-    setServiceTypeFilter(value);
-    pagination.goToFirstPage(); // Reset to first page when filtering
-  };
-
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-[#1a80a2]" />
-          <span className="ml-2 text-[#70808f]">Đang tải SLA...</span>
-        </div>
-      </DashboardLayout>
-    );
-  }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
-        {/* Stats Overview */}
-        {/* <SLAStats /> */}
+        <PageHeader
+          title="Bộ kích hoạt SLA"
+          description="Quản lý các luật SLA bằng dạng danh sách rõ ràng, dễ lọc và dễ kiểm tra."
+          action={<Button asChild><Link href="/manager/sla-trigger/create"><Plus className="h-4 w-4" />Tạo SLA mới</Link></Button>}
+        />
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-black">Quản lý SLA</h1>
-            <p className="text-gray-600 mt-1">
-              Quản lý và theo dõi các thỏa thuận mức độ dịch vụ
-            </p>
-          </div>
-          <Link href="/manager/sla-trigger/create">
-            <Button className="bg-[#1a80a2] hover:bg-[#1a80a2]/90 h-[35px] w-[140px]">
-              Tạo SLA Mới
-            </Button>
-          </Link>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <SectionCard title="Tổng SLA"><div className="text-3xl font-semibold">{paginatedSLAs.totalElements}</div></SectionCard>
+          <SectionCard title="Loại dịch vụ"><div className="text-3xl font-semibold">3+</div></SectionCard>
+          <SectionCard title="Trạng thái"><div className="text-3xl font-semibold">Rule</div></SectionCard>
         </div>
 
-        {/* Search and Filters */}
-        <div className="flex items-center space-x-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Tìm kiếm SLA..."
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="pl-10"
-            />
+        <FilterBar>
+          <div className="flex w-full flex-col gap-3 md:flex-row md:items-center">
+            <div className="relative w-full max-w-md">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input placeholder="Tìm kiếm SLA..." className="pl-10" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); pagination.goToFirstPage(); }} />
+            </div>
+            <Select value={serviceTypeFilter} onValueChange={(value) => { setServiceTypeFilter(value); pagination.goToFirstPage(); }}>
+              <SelectTrigger className="w-full md:w-[220px]"><SelectValue placeholder="Lọc loại dịch vụ" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="Cleaning">Vệ sinh</SelectItem>
+                <SelectItem value="Maintenance">Bảo trì</SelectItem>
+                <SelectItem value="Repair">Sửa chữa</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Select
-            value={serviceTypeFilter}
-            onValueChange={handleServiceTypeChange}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Lọc theo loại dịch vụ" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả loại dịch vụ</SelectItem>
-              <SelectItem value="Cleaning">Vệ sinh</SelectItem>
-              <SelectItem value="Maintenance">Bảo trì</SelectItem>
-              <SelectItem value="Repair">Sửa chữa</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          <Button variant="outline" onClick={() => refetch()}><Loader2 className="h-4 w-4" />Làm mới</Button>
+        </FilterBar>
 
-        {/* SLA Table */}
-        <Card>
-          <CardContent>
-            {paginatedSLAs.isEmpty ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500">
-                  Không tìm thấy SLA nào phù hợp với tiêu chí tìm kiếm.
-                </p>
-              </div>
-            ) : (
-              <>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tên SLA</TableHead>
-                      <TableHead>Loại dịch vụ</TableHead>
-                      <TableHead>Mô tả</TableHead>
-                      {/* <TableHead>Ngày tạo</TableHead> */}
-                      <TableHead className="text-right">Thao tác</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedSLAs.items.map((sla) => (
-                      <TableRow key={sla.id} className="hover:bg-gray-50">
-                        <TableCell className="font-medium">
-                          <div>
-                            <p className="font-semibold text-black">
-                              {sla.name}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className="bg-blue-50 text-blue-700 border-blue-200"
-                          >
-                            {translateServiceType(sla.serviceType)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm">
-                            {sla.description || "Không có mô tả"}
-                          </span>
-                        </TableCell>
-                        {/* <TableCell className="text-sm text-gray-600">
-                          {sla.createdAt
-                            ? new Date(sla.createdAt).toLocaleDateString(
-                                "vi-VN",
-                              )
-                            : "N/A"}
-                        </TableCell> */}
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end space-x-1">
-                            <Link href={`/manager/sla-trigger/${sla.id}`}>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                            <Link href={`/manager/sla-trigger/${sla.id}/edit`}>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteSLA(sla.id)}
-                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+        {isLoading ? <ListPageSkeleton cards={3} rows={6} /> : paginatedSLAs.isEmpty ? <EmptyState title="Chưa có SLA phù hợp" description="Tạo SLA để quản lý ngưỡng và phản ứng vận hành." actionLabel="Tạo SLA mới" onAction={() => window.location.assign('/manager/sla-trigger/create')} icon={<Zap className="h-10 w-10" />} /> : (
+          <SectionCard title="Danh sách SLA" description="Xem nhanh, mở chi tiết hoặc sửa ngay từ danh sách.">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tên SLA</TableHead>
+                  <TableHead>Loại dịch vụ</TableHead>
+                  <TableHead>Mô tả</TableHead>
+                  <TableHead className="text-right">Thao tác</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {slas.map((sla: any) => (
+                  <TableRow key={sla.id}>
+                    <TableCell className="font-medium">{sla.name}</TableCell>
+                    <TableCell><StatusBadge status={translateServiceType(sla.serviceType)} /></TableCell>
+                    <TableCell>{sla.description || "Không có mô tả"}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button asChild variant="ghost" size="icon-sm"><Link href={`/manager/sla-trigger/${sla.id}`}><Eye className="h-4 w-4" /></Link></Button>
+                        <Button asChild variant="ghost" size="icon-sm"><Link href={`/manager/sla-trigger/${sla.id}/edit`}><Edit className="h-4 w-4" /></Link></Button>
+                        <Button variant="ghost" size="icon-sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setDeleteTarget(sla)}><Trash2 className="h-4 w-4" /></Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </SectionCard>
+        )}
 
-                {/* Pagination */}
-                <div className="mt-6">
-                  <PaginationWithInfo
-                    currentPage={paginatedSLAs.currentPage}
-                    totalPages={paginatedSLAs.totalPages || 1}
-                    pageSize={paginatedSLAs.pageSize}
-                    totalElements={paginatedSLAs.totalElements}
-                    onPageChange={paginatedSLAs.setPage}
-                  />
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        {!isLoading && !paginatedSLAs.isEmpty ? <PaginationWithInfo currentPage={paginatedSLAs.currentPage} totalPages={paginatedSLAs.totalPages || 1} pageSize={paginatedSLAs.pageSize} totalElements={paginatedSLAs.totalElements} onPageChange={paginatedSLAs.setPage} /> : null}
       </div>
-    </DashboardLayout>
+
+      <ConfirmDialog open={!!deleteTarget} title="Xóa SLA này?" description="Hành động này không thể hoàn tác." confirmLabel="Xóa" onConfirm={handleDelete} onOpenChange={(open) => !open && setDeleteTarget(null)} />
+    </>
   );
 }

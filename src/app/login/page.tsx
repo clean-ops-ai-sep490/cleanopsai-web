@@ -3,15 +3,27 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { getMe } from "@/lib/auth-api";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
+import { getRouteByRole } from "@/lib/auth-utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Auto redirect if already logged in
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user) {
+      const redirectPath = getRouteByRole(user.role);
+      window.location.href = redirectPath;
+    }
+  }, [isAuthenticated, isLoading, user]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -20,31 +32,11 @@ export default function LoginPage() {
 
     try {
       await login({ email, password });
-      // Fetch fresh user from API to determine redirect target
       try {
         const me = await getMe();
-        const roleStr = String(me.role ?? "").trim();
-        const lower = roleStr.toLowerCase();
-        const isSupporter =
-          roleStr === "5" || roleStr === "Supporter" || lower === "supporter";
-        const isAdmin =
-          roleStr === "2" || roleStr === "Admin" || lower === "admin";
-        const isSupervisor =
-          roleStr === "4" ||
-          roleStr === "Supervisor" ||
-          lower === "supervisor";
-        if (isSupporter) {
-          router.push("/support/equipments");
-        } else if (isAdmin) {
-          router.push("/admin/users");
-        } else if (isSupervisor) {
-          router.push("/manager/ai-retrain");
-        } else {
-          router.push("/manager");
-        }
+        router.push(getRouteByRole(me.role));
       } catch {
-        // fallback
-        router.push("/manager");
+        router.push(getRouteByRole(undefined));
       }
     } catch {
       setError("Email hoặc mật khẩu không đúng");
@@ -53,70 +45,39 @@ export default function LoginPage() {
     }
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
-        <h1 className="text-2xl font-bold text-center mb-6">Đăng nhập</h1>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="you@example.com"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Mật khẩu
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
-          </button>
-        </form>
-
-        {/* <p className="mt-4 text-center text-sm text-gray-600">
-          Don&apos;t have an account?{" "}
-          <a href="/register" className="text-blue-600 hover:underline">
-            Register
-          </a>
-        </p> */}
+  if (isLoading || isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--app-bg)] px-4">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[var(--app-primary)]" />
+          <p className="text-sm font-medium text-slate-500">Đang chuyển hướng...</p>
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[var(--app-bg)] px-4">
+      <Card className="w-full max-w-md shadow-[var(--app-shadow)]">
+        <CardHeader>
+          <CardTitle>Đăng nhập</CardTitle>
+          <CardDescription>Truy cập hệ thống OPMS bằng tài khoản của bạn.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error ? <div className="mb-4 rounded-[var(--radius-md)] border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div> : null}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium text-slate-700">Email</label>
+              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm font-medium text-slate-700">Mật khẩu</label>
+              <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+            </div>
+            <Button type="submit" className="w-full" disabled={isSubmitting}>{isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}</Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

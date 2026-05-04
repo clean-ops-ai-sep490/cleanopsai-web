@@ -152,7 +152,7 @@ function TimePicker({
               "absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 transition-colors duration-200",
               disabled
                 ? "text-gray-400"
-                : "text-gray-500 group-hover:text-[#1a80a2]",
+                : "text-gray-500 group-hover:text-primary",
             )}
           />
         </div>
@@ -181,9 +181,9 @@ function TimePicker({
                     }}
                     className={cn(
                       "w-full px-3 py-2 text-sm transition-all duration-200 rounded-md",
-                      "hover:bg-[#1a80a2]/10 hover:text-[#1a80a2] hover:scale-105 hover:shadow-sm",
+                      "hover:bg-primary/10 hover:text-primary hover:scale-105 hover:shadow-sm",
                       selectedHour === hour
-                        ? "bg-[#1a80a2] text-white font-medium shadow-md hover:bg-[#1a80a2] hover:text-white hover:scale-100"
+                        ? "bg-primary text-white font-medium shadow-md hover:bg-primary hover:text-white hover:scale-100"
                         : "hover:font-medium",
                     )}
                   >
@@ -213,9 +213,9 @@ function TimePicker({
                     }}
                     className={cn(
                       "w-full px-3 py-2 text-sm transition-all duration-200 rounded-md",
-                      "hover:bg-[#1a80a2]/10 hover:text-[#1a80a2] hover:scale-105 hover:shadow-sm",
+                      "hover:bg-primary/10 hover:text-primary hover:scale-105 hover:shadow-sm",
                       selectedMinute === minute
-                        ? "bg-[#1a80a2] text-white font-medium shadow-md hover:bg-[#1a80a2] hover:text-white hover:scale-100"
+                        ? "bg-primary text-white font-medium shadow-md hover:bg-primary hover:text-white hover:scale-100"
                         : "hover:font-medium",
                     )}
                   >
@@ -252,9 +252,9 @@ function TimePicker({
                     }}
                     className={cn(
                       "w-full px-3 py-2 text-sm transition-all duration-200 rounded-md mb-1",
-                      "hover:bg-[#1a80a2]/10 hover:text-[#1a80a2] hover:scale-105 hover:shadow-sm",
+                      "hover:bg-primary/10 hover:text-primary hover:scale-105 hover:shadow-sm",
                       period === p
-                        ? "bg-[#1a80a2] text-white font-medium shadow-md hover:bg-[#1a80a2] hover:text-white hover:scale-100"
+                        ? "bg-primary text-white font-medium shadow-md hover:bg-primary hover:text-white hover:scale-100"
                         : "hover:font-medium",
                     )}
                   >

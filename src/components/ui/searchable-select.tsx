@@ -370,8 +370,8 @@ export function SearchableSelect<T extends SearchableSelectItem>({
                         "relative flex cursor-default select-none items-center rounded-md px-2 py-1.5 text-sm outline-none transition-colors duration-200",
                         // Keyboard selection styling
                         selectedIndex === index
-                          ? "bg-[#e6f3f7] text-[#1a80a2]"
-                          : "text-black hover:bg-[#e6f3f7] hover:text-[#1a80a2]",
+                          ? "bg-primary-soft text-primary"
+                          : "text-black hover:bg-primary-soft hover:text-primary",
                       )}
                       onClick={() => handleItemClick(item)}
                       onMouseEnter={() => handleItemMouseEnter(index)}

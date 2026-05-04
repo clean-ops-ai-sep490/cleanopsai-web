@@ -13,16 +13,16 @@ export function NotificationHeader({
   onMarkAllAsRead,
 }: NotificationHeaderProps) {
   return (
-    <div className="flex items-center justify-between p-3 border-b">
-      <h3 className="font-semibold text-sm">Thông báo</h3>
+    <div className="flex items-center justify-between border-b border-slate-200 px-3 py-3">
+      <h3 className="text-sm font-semibold text-slate-950">Thông báo</h3>
       {unreadCount > 0 && (
         <Button
           variant="ghost"
           size="sm"
           onClick={onMarkAllAsRead}
-          className="text-xs h-auto p-1"
+          className="h-auto px-2 py-1 text-xs"
         >
-          <CheckCheck className="h-3 w-3 mr-1" />
+          <CheckCheck className="mr-1 h-3 w-3" />
           Đánh dấu tất cả đã đọc
         </Button>
       )}

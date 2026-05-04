@@ -19,27 +19,14 @@ import { NotificationList } from "@/components/notifications/NotificationList";
 export function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const {
-    notifications,
-    unreadCount,
-    isLoading,
-    loadNotifications,
-    markAllAsRead,
-  } = useNotifications();
+  const { notifications, unreadCount, isLoading, markAllAsRead } =
+    useNotifications();
 
   const {
     handleNotificationClick,
     handleMarkAsRead,
     navigateToAllNotifications,
   } = useNotificationActions();
-
-  // Handle dropdown open/close
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-    if (open && notifications.length === 0) {
-      loadNotifications();
-    }
-  };
 
   // Handle mark all as read
   const handleMarkAllAsReadClick = async () => {
@@ -59,12 +46,12 @@ export function NotificationDropdown() {
   };
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="icon-xl"
-          className="relative hover:bg-transparent !border-0 shadow-none rounded-md ring-0 focus-visible:ring-0"
+          size="icon-lg"
+          className="relative rounded-md border-0 shadow-none ring-0 hover:bg-transparent focus-visible:ring-0"
         >
           <Bell className="h-6 w-6 text-gray-600" />
           {unreadCount > 0 && (

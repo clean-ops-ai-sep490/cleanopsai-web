@@ -28,7 +28,7 @@ export function FormActions({
       <Button
         type="submit"
         disabled={isLoading}
-        className="flex-1 bg-[#1a80a2] hover:bg-[#1a80a2]/90"
+        className="flex-1 bg-primary hover:bg-primary/90"
       >
         {isLoading ? "Đang xử lý..." : submitLabel}
       </Button>

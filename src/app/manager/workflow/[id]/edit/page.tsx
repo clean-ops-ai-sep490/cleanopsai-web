@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+
 import { WorkflowCreateContainer } from "@/components/workflow/WorkflowCreateContainer";
 
 export default function WorkflowEditPage() {
@@ -9,8 +9,8 @@ export default function WorkflowEditPage() {
   const sopId = params.id as string;
 
   return (
-    <DashboardLayout>
+    <>
       <WorkflowCreateContainer sopId={sopId} />
-    </DashboardLayout>
+    </>
   );
 }

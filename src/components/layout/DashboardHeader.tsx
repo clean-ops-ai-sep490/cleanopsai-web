@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { Bell, User, LogOut } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -15,7 +15,9 @@ import { LogoutConfirmation } from "@/components/ui/logout-confirmation";
 import { NotificationDropdown } from "./NotificationDropdown";
 import { useLogout } from "@/hooks/useLogout";
 
-export function DashboardHeader() {
+interface DashboardHeaderProps {}
+
+export function DashboardHeader({}: DashboardHeaderProps = {}) {
   const { user } = useAuth();
   const {
     isLoggingOut,
@@ -23,37 +25,32 @@ export function DashboardHeader() {
     setShowLogoutDialog,
     handleLogoutClick,
     handleLogoutConfirm,
-    handleLogoutCancel,
   } = useLogout();
 
   return (
-    <header className="fixed top-0 left-[240px] right-0 h-[106px] bg-white border-b border-gray-200 z-10">
-      <div className="flex items-center justify-between h-full px-8">
-        {/* Left side - CleanOPS logo and user info */}
-        <div className="flex items-center gap-6">
-          {/* User Welcome Message */}
-          <div className="text-left">
-            <p className="text-[14px] text-gray-500 leading-tight">Xin chào,</p>
-            <p className="text-[18px] font-semibold text-gray-900 leading-tight">
-              {user?.fullName || "Người dùng"}
-            </p>
-          </div>
+    <header
+      className="fixed right-0 top-0 z-10 h-[var(--app-header-height)] border-b border-slate-200/70 bg-white/85 backdrop-blur-2xl"
+      style={{ left: "var(--app-sidebar-width)" }}
+    >
+      <div className="flex h-full items-center justify-between px-6">
+        <div className="text-left">
+          <p className="text-sm leading-tight text-slate-500">Xin chào,</p>
+          <p className="text-lg font-semibold leading-tight text-slate-950">
+            {user?.fullName || "Người dùng"}
+          </p>
         </div>
 
-        {/* Right side - Notifications and User Menu */}
         <div className="flex items-center gap-4">
-          {/* Notification Bell */}
           <NotificationDropdown />
 
-          {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="flex items-center gap-2 p-2 hover:bg-transparent border-0 shadow-none"
+                className="flex items-center gap-2 border-0 bg-transparent p-2 shadow-none hover:bg-slate-50"
               >
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-[#1a80a2] text-white text-sm">
+                  <AvatarFallback className="bg-primary text-sm text-white">
                     {user?.fullName?.charAt(0) || "U"}
                   </AvatarFallback>
                 </Avatar>
@@ -77,7 +74,6 @@ export function DashboardHeader() {
         </div>
       </div>
 
-      {/* Logout Confirmation Dialog */}
       <LogoutConfirmation
         open={showLogoutDialog}
         onOpenChange={setShowLogoutDialog}

@@ -1,8 +1,16 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { notificationApi } from "@/lib/notification-api";
-import type { NotificationRecipientDto } from "@/types/notification";
+import { useAuth } from "@/contexts/AuthContext";
+import type {
+  NotificationRecipientDto,
+  NotificationParams,
+} from "@/types/notification";
 import { notificationToasts } from "@/lib/utils/toast-utils";
 
 // Query keys
@@ -13,61 +21,95 @@ const NOTIFICATION_KEYS = {
   detail: (id: string) => [...NOTIFICATION_KEYS.all, "detail", id] as const,
 };
 
-export function useNotifications() {
+interface UseNotificationsOptions {
+  isRead?: boolean;
+  pageSize?: number;
+}
+
+export function useNotifications(options?: UseNotificationsOptions) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-  // Query for unread count - auto-fetch on mount with caching
-  const {
-    data: unreadCount = 0,
-    isLoading: isLoadingCount,
-    refetch: refetchUnreadCount,
-  } = useQuery({
-    queryKey: NOTIFICATION_KEYS.unreadCount(),
-    queryFn: async () => {
-      const response = await notificationApi.getNotifications({
-        isRead: false,
-        pageNumber: 1,
-        pageSize: 1,
-      });
-      return response.unreadCount;
-    },
-    staleTime: 30000, // Cache for 30 seconds
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-  });
+  const baseParams = {
+    isRead: options?.isRead,
+    pageSize: options?.pageSize || 10,
+  };
 
-  // Query for notifications list - manual fetch
+  // Use infinite query for pagination
   const {
-    data: notificationsData,
-    isLoading: isLoadingNotifications,
-    refetch: refetchNotifications,
-  } = useQuery({
-    queryKey: NOTIFICATION_KEYS.list({ pageNumber: 1, pageSize: 10 }),
-    queryFn: async () => {
-      const response = await notificationApi.getNotifications({
-        pageNumber: 1,
-        pageSize: 10,
-      });
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: NOTIFICATION_KEYS.list(baseParams),
+    queryFn: async ({ pageParam = 1 }) => {
+      if (!user?.userId) {
+        return {
+          pageNumber: 1,
+          pageSize: 10,
+          totalElements: 0,
+          totalPages: 0,
+          hasPreviousPage: false,
+          hasNextPage: false,
+          content: [],
+          unreadCount: 0,
+        };
+      }
+
+      // Build params in correct order
+      const params: NotificationParams = {
+        workerId: user.userId,
+        isRead: baseParams.isRead,
+        pageNumber: pageParam,
+        pageSize: baseParams.pageSize,
+      };
+
+      const response = await notificationApi.getNotifications(params);
       return response;
     },
-    enabled: false, // Don't auto-fetch, only when explicitly called
-    staleTime: 30000,
+    getNextPageParam: (lastPage) => {
+      // Return next page number if there are more pages
+      if (lastPage.hasNextPage) {
+        return lastPage.pageNumber + 1;
+      }
+      return undefined;
+    },
+    initialPageParam: 1,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    enabled: !!user?.userId,
   });
 
-  const notifications = notificationsData?.content || [];
+  // Flatten all pages into single array
+  const notifications = data?.pages.flatMap((page) => page.content) || [];
+  const unreadCount = data?.pages[0]?.unreadCount || 0;
+  const totalElements = data?.pages[0]?.totalElements || 0;
 
   // Mutation for marking as read
   const markAsReadMutation = useMutation({
     mutationFn: (notificationId: string) =>
       notificationApi.markAsRead(notificationId),
-    onSuccess: (_, notificationId) => {
-      // Update notifications list cache
-      queryClient.setQueryData(
-        NOTIFICATION_KEYS.list({ pageNumber: 1, pageSize: 10 }),
-        (old: any) => {
-          if (!old) return old;
-          return {
-            ...old,
-            content: old.content.map((notif: NotificationRecipientDto) =>
+    onMutate: async (notificationId) => {
+      const queryKey = NOTIFICATION_KEYS.list(baseParams);
+
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey });
+
+      // Snapshot previous value
+      const previousData = queryClient.getQueryData(queryKey);
+
+      // Optimistically update all pages
+      queryClient.setQueryData(queryKey, (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            content: page.content.map((notif: NotificationRecipientDto) =>
               notif.id === notificationId
                 ? {
                     ...notif,
@@ -76,71 +118,91 @@ export function useNotifications() {
                   }
                 : notif,
             ),
-          };
-        },
-      );
+            unreadCount: Math.max(0, (page.unreadCount || 0) - 1),
+          })),
+        };
+      });
 
-      // Update unread count cache
-      queryClient.setQueryData(
-        NOTIFICATION_KEYS.unreadCount(),
-        (old: number = 0) => Math.max(0, old - 1),
-      );
-
-      notificationToasts.markAsReadSuccess();
+      return { previousData, queryKey };
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      // Rollback on error
+      if (context?.previousData && context?.queryKey) {
+        queryClient.setQueryData(context.queryKey, context.previousData);
+      }
       console.error("Failed to mark as read:", error);
       notificationToasts.markAsReadError();
+    },
+    onSuccess: () => {
+      notificationToasts.markAsReadSuccess();
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: NOTIFICATION_KEYS.all });
     },
   });
 
   // Mutation for marking all as read
   const markAllAsReadMutation = useMutation({
     mutationFn: () => notificationApi.markAllAsRead(),
-    onSuccess: () => {
-      // Update notifications list cache
-      queryClient.setQueryData(
-        NOTIFICATION_KEYS.list({ pageNumber: 1, pageSize: 10 }),
-        (old: any) => {
-          if (!old) return old;
-          return {
-            ...old,
-            content: old.content.map((notif: NotificationRecipientDto) => ({
+    onMutate: async () => {
+      const queryKey = NOTIFICATION_KEYS.list(baseParams);
+
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey });
+
+      // Snapshot previous value
+      const previousData = queryClient.getQueryData(queryKey);
+
+      // Optimistically update all pages
+      queryClient.setQueryData(queryKey, (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            content: page.content.map((notif: NotificationRecipientDto) => ({
               ...notif,
               isRead: true,
               isReadAt: new Date().toISOString(),
             })),
-          };
-        },
-      );
+            unreadCount: 0,
+          })),
+        };
+      });
 
-      // Update unread count cache
-      queryClient.setQueryData(NOTIFICATION_KEYS.unreadCount(), 0);
-
-      notificationToasts.markAllAsReadSuccess();
+      return { previousData, queryKey };
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      // Rollback on error
+      if (context?.previousData && context?.queryKey) {
+        queryClient.setQueryData(context.queryKey, context.previousData);
+      }
       console.error("Failed to mark all as read:", error);
       notificationToasts.markAllAsReadError();
+    },
+    onSuccess: () => {
+      notificationToasts.markAllAsReadSuccess();
+    },
+    onSettled: () => {
+      // Invalidate all notification queries to refetch
+      queryClient.invalidateQueries({ queryKey: NOTIFICATION_KEYS.all });
     },
   });
 
   // Load notifications manually
   const loadNotifications = async () => {
     try {
-      await refetchNotifications();
+      await refetch();
     } catch (error) {
       console.error("Failed to load notifications:", error);
       notificationToasts.loadNotificationsError();
     }
   };
 
-  // Load unread count manually
-  const loadUnreadCount = async () => {
-    try {
-      await refetchUnreadCount();
-    } catch (error) {
-      console.error("Failed to load unread count:", error);
+  // Load more notifications (next page)
+  const loadMore = async () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      await fetchNextPage();
     }
   };
 
@@ -180,9 +242,12 @@ export function useNotifications() {
   return {
     notifications,
     unreadCount,
-    isLoading: isLoadingNotifications || isLoadingCount,
+    totalElements,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
     loadNotifications,
-    loadUnreadCount,
+    loadMore,
     markAsRead,
     markAllAsRead,
     getNotificationDetail,

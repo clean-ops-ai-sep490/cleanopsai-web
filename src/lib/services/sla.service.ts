@@ -45,7 +45,7 @@ export class SLAService {
    */
   private static validateTimeFormat(time: string, fieldName: string): void {
     if (!time) {
-      throw new Error(`${fieldName} is required`);
+      throw new Error(`${fieldName} là bắt buộc`);
     }
 
     // Check if time matches expected formats
@@ -56,7 +56,7 @@ export class SLAService {
 
     const isValidFormat = validFormats.some((format) => format.test(time));
     if (!isValidFormat) {
-      throw new Error(`${fieldName} must be in HH:MM or HH:MM:SS format`);
+      throw new Error(`${fieldName} phải có định dạng HH:MM hoặc HH:MM:SS`);
     }
 
     // Parse and validate time range
@@ -65,11 +65,11 @@ export class SLAService {
     const minute = parseInt(minuteStr, 10);
 
     if (hour < 0 || hour > 23) {
-      throw new Error(`${fieldName}: Hour must be between 00-23`);
+      throw new Error("Giờ phải nằm trong khoảng 00-23");
     }
 
     if (minute < 0 || minute > 59) {
-      throw new Error(`${fieldName}: Minute must be between 00-59`);
+      throw new Error("Phút phải nằm trong khoảng 00-59");
     }
   }
 
@@ -89,7 +89,7 @@ export class SLAService {
 
     if (start >= end) {
       throw new Error(
-        `Shift "${shiftName}": End time must be after start time`,
+        `Ca "${shiftName}": Thời gian kết thúc phải sau thời gian bắt đầu`,
       );
     }
   }
@@ -232,34 +232,34 @@ export class SLAService {
     taskRequirements: SLATaskRequirement[],
   ): void {
     if (!basicInfo.slaName?.trim()) {
-      throw new Error("SLA name is required");
+      throw new Error("Tên SLA là bắt buộc");
     }
 
     if (!basicInfo.contractId) {
-      throw new Error("Contract selection is required");
+      throw new Error("Vui lòng chọn hợp đồng");
     }
 
     if (!basicInfo.workAreaId) {
-      throw new Error("Work area selection is required");
+      throw new Error("Vui lòng chọn khu vực làm việc");
     }
 
     if (staffRequirements.length === 0) {
-      throw new Error("At least one staff requirement is needed");
+      throw new Error("Cần ít nhất một yêu cầu nhân sự");
     }
 
     if (taskRequirements.length === 0) {
-      throw new Error("At least one task requirement is needed");
+      throw new Error("Cần ít nhất một yêu cầu công việc");
     }
 
     // Validate each staff requirement
     staffRequirements.forEach((staff, index) => {
       SLAService.validateTimeFormat(
         staff.startTime,
-        `Staff ${index + 1} start time`,
+        `Nhân sự ${index + 1}: thời gian bắt đầu`,
       );
       SLAService.validateTimeFormat(
         staff.endTime,
-        `Staff ${index + 1} end time`,
+        `Nhân sự ${index + 1}: thời gian kết thúc`,
       );
       SLAService.validateTimeOrder(staff.startTime, staff.endTime, staff.name);
     });
@@ -284,7 +284,7 @@ export class SLAService {
       for (let j = i + 1; j < shifts.length; j++) {
         if (SLAService.shiftsOverlap(shifts[i], shifts[j])) {
           throw new Error(
-            `Shifts "${shifts[i].name}" and "${shifts[j].name}" have overlapping times`,
+            `Ca "${shifts[i].name}" và "${shifts[j].name}" bị trùng lặp thời gian`,
           );
         }
       }

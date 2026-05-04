@@ -162,18 +162,6 @@ export function TaskDetailDialog({
 
           <Separator />
 
-          {/* System Info */}
-          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-            <div className="text-xs text-gray-600">
-              <span className="font-medium">Task Schedule ID:</span>{" "}
-              <span className="font-mono">{task.taskScheduleId}</span>
-            </div>
-            <div className="text-xs text-gray-600">
-              <span className="font-medium">Task Assignment ID:</span>{" "}
-              <span className="font-mono">{task.id}</span>
-            </div>
-          </div>
-
           {/* Actions */}
           <div className="flex items-center justify-end gap-3">
             <Button
@@ -196,7 +184,7 @@ export function TaskDetailDialog({
                 </Button>
                 <Button
                   size="sm"
-                  className="bg-[#1a80a2] hover:bg-[#308cab] text-white"
+                  className="bg-primary hover:bg-[#308cab] text-white"
                 >
                   <Edit className="w-4 h-4 mr-2" />
                   Chỉnh sửa

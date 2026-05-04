@@ -120,46 +120,40 @@ class HttpClient {
     body?: unknown,
     options?: RequestOptions,
   ): Promise<T> {
-    const response = await this.doFetch(method, path, body, options);
+    let response = await this.doFetch(method, path, body, options);
 
     // On 401 try to refresh the token once, then retry
     if (response.status === 401 && this.refreshToken) {
       try {
         await this.handleRefresh();
-      } catch {
+        // Retry the request with new token
+        response = await this.doFetch(method, path, body, options);
+      } catch (refreshError) {
+        // Refresh failed - clear tokens and throw
         this.onAuthFailure?.();
-        // Don't consume the response body here, let parseResponse handle it
         throw new HttpClientError(
           401,
-          response.statusText,
-          "Token refresh failed",
+          "Không có quyền truy cập",
+          "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
         );
       }
-
-      const retry = await this.doFetch(method, path, body, options);
-
-      if (!retry.ok) {
-        if (retry.status === 401) {
-          this.onAuthFailure?.();
-        }
-        let errorBody: unknown;
-        try {
-          errorBody = await retry.json();
-        } catch {
-          errorBody = await retry.text();
-        }
-        throw new HttpClientError(retry.status, retry.statusText, errorBody);
-      }
-
-      return this.parseResponse<T>(retry);
     }
 
+    // Handle non-OK responses (including retry failures)
     if (!response.ok) {
+      if (response.status === 401) {
+        this.onAuthFailure?.();
+      }
+
       let errorBody: unknown;
       try {
         errorBody = await response.json();
       } catch {
-        errorBody = await response.text();
+        try {
+          errorBody = await response.text();
+        } catch {
+          errorBody = response.statusText;
+        }
       }
       throw new HttpClientError(
         response.status,

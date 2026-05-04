@@ -76,7 +76,7 @@ export function ActionRegistry({
         <div className="space-y-3 overflow-y-auto flex-1 pr-2 -mr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
           {isLoading ? (
             <div className="flex items-center justify-center py-4">
-              <Loader2 className="w-4 h-4 animate-spin text-[#1a80a2]" />
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
               <span className="ml-2 text-xs text-[#70808f]">Đang tải...</span>
             </div>
           ) : filteredSteps.length === 0 ? (

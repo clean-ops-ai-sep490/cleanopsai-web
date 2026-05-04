@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function useLogout() {
+  const router = useRouter();
   const { logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
@@ -14,10 +16,10 @@ export function useLogout() {
     setIsLoggingOut(true);
     try {
       await logout();
+      router.replace("/login");
     } catch (error) {
       console.error("Logout failed:", error);
-      // Still redirect even if logout fails
-      window.location.href = "/login";
+      router.replace("/login");
     } finally {
       setIsLoggingOut(false);
       setShowLogoutDialog(false);

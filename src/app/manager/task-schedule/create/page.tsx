@@ -1,12 +1,20 @@
 "use client";
 
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { TaskScheduleCreateContainer } from "@/components/task-schedule/TaskScheduleCreateContainer";
+import { useEffect, useState } from "react";
+import { TaskScheduleForm } from "@/components/task-schedule/TaskScheduleForm";
+import { DetailPageSkeleton } from "@/components/ui/page-skeleton";
 
 export default function CreateTaskSchedulePage() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 0);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
-    <DashboardLayout>
-      <TaskScheduleCreateContainer />
-    </DashboardLayout>
+    <>
+      {ready ? <TaskScheduleForm /> : <DetailPageSkeleton />}
+    </>
   );
 }

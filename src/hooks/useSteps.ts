@@ -1,60 +1,94 @@
-import {
-  useBaseQuery,
-  useBaseSearchQuery,
-  useBaseMutation,
-} from "./useBaseQuery";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiToasts } from "@/lib/utils/toast-utils";
 import {
   getSteps,
-  searchSteps,
+  getStepById,
   createStep,
   updateStep,
   deleteStep,
-  getAllSteps,
 } from "@/lib/step-api";
-
+import type { CreateStepData, UpdateStepData, Step } from "@/types/sop";
 import type { PaginationParams } from "@/types/common";
-import type { CreateStepData, UpdateStepData } from "@/types/sop";
 
-// list pagination
+/**
+ * Hook for fetching steps with pagination
+ */
 export function useSteps(params?: PaginationParams) {
-  return useBaseQuery(["steps", params], () => getSteps(params));
+  return useQuery({
+    queryKey: ["steps", params],
+    queryFn: () => getSteps(params),
+  });
 }
 
-// search
-export function useSearchSteps(
-  keyword?: string | null,
-  pageNumber = 1,
-  pageSize = 10,
-) {
-  return useBaseSearchQuery(
-    ["steps", "search", keyword, pageNumber, pageSize],
-    () => searchSteps(keyword ?? "", pageNumber, pageSize),
-  );
+/**
+ * Hook for fetching a single step by ID
+ */
+export function useStep(id: string) {
+  return useQuery({
+    queryKey: ["steps", id],
+    queryFn: () => getStepById(id),
+    enabled: !!id,
+  });
 }
 
-// all
-export function useAllSteps() {
-  return useBaseQuery(["steps", "all"], () => getAllSteps());
+/**
+ * Hook for creating a new step
+ */
+export function useCreateStep(onSuccess?: (step: Step) => void) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createStep,
+    onSuccess: (data) => {
+      apiToasts.createSuccess("bước");
+      queryClient.invalidateQueries({ queryKey: ["steps"] });
+      onSuccess?.(data);
+    },
+    onError: (error) => {
+      apiToasts.createError("bước");
+      console.error("Step creation error:", error);
+    },
+  });
 }
 
-// create
-export function useCreateStep() {
-  return useBaseMutation(
-    (data: CreateStepData) => createStep(data),
-    [["steps"]],
-  );
-}
+/**
+ * Hook for updating an existing step
+ */
+export function useUpdateStep(onSuccess?: (step: Step) => void) {
+  const queryClient = useQueryClient();
 
-// update
-export function useUpdateStep() {
-  return useBaseMutation(
-    ({ id, data }: { id: string; data: UpdateStepData }) =>
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateStepData }) =>
       updateStep(id, data),
-    [["steps"]],
-  );
+    onSuccess: (data, variables) => {
+      apiToasts.updateSuccess("bước");
+      queryClient.invalidateQueries({ queryKey: ["steps"] });
+      queryClient.invalidateQueries({ queryKey: ["steps", variables.id] });
+      onSuccess?.(data);
+    },
+    onError: (error) => {
+      apiToasts.updateError("bước");
+      console.error("Step update error:", error);
+    },
+  });
 }
 
-// delete
-export function useDeleteStep() {
-  return useBaseMutation((id: string) => deleteStep(id), [["steps"]]);
+/**
+ * Hook for deleting a step
+ */
+export function useDeleteStep(onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteStep,
+    onSuccess: () => {
+      apiToasts.deleteSuccess("bước");
+      queryClient.invalidateQueries({ queryKey: ["steps"] });
+      onSuccess?.();
+    },
+    onError: (error) => {
+      apiToasts.deleteError("bước");
+      console.error("Step deletion error:", error);
+    },
+  });
 }

@@ -267,7 +267,7 @@ export function WorkflowStepList({
                       <h3 className="font-medium text-gray-900 truncate">
                         {step.name}
                       </h3>
-                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-[#1a80a2] text-white">
+                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-primary text-white">
                         {step.actionKey}
                       </span>
                     </div>
