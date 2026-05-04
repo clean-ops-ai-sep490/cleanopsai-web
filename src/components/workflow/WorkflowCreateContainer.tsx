@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { useCreateSOP, useSteps, useSOP } from "@/hooks/useWorkflowBuilder";
+import { useCreateSOP, useSOP } from "@/hooks/useSOPs";
+import { useSteps } from "@/hooks/useSteps";
 import { WorkflowForm, type SOPFormData } from "./WorkflowForm";
 import { ActionRegistry } from "./ActionRegistry";
 import { WorkflowStepList, type WorkflowStep } from "./WorkflowStepList";
@@ -319,7 +320,7 @@ export function WorkflowCreateContainer({ sopId }: { sopId?: string }) {
               Hủy bỏ
             </Button>
             <Button
-              className="bg-[#1a80a2] hover:bg-[#308cab] text-white h-[45px] w-[170px] rounded-[5px] text-lg font-semibold disabled:opacity-50"
+              className="bg-primary hover:bg-[#308cab] text-white h-[45px] w-[170px] rounded-[5px] text-lg font-semibold disabled:opacity-50"
               onClick={handleSubmit}
               disabled={isLoading}
             >

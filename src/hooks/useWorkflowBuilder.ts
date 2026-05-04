@@ -1,466 +1,89 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiToasts } from "@/lib/utils/toast-utils";
+/**
+ * Workflow Builder Hooks
+ *
+ * This file contains hooks specifically for workflow building functionality.
+ * For other domains, use their respective hook files:
+ * - useTaskAssignments.ts - Task assignment queries
+ * - useTaskActions.ts - Task actions (start, complete, etc.)
+ * - useTaskStepExecution.ts - Task step execution
+ * - useSOPs.ts - SOP management
+ * - useSteps.ts - Step management
+ */
 
-// Task Assignment APIs
-import {
-  getTaskAssignments,
-  getTaskAssignmentById,
-  updateTaskAssignmentStatus,
-  cancelTaskAssignment,
-  deleteTaskAssignment,
-} from "@/lib/task-assignment-api";
+import { useState, useCallback } from "react";
 
-// Task Step Execution APIs
-import {
-  completeTaskStep,
-  completeCheckBoxStep,
-  completePhotoStep,
-  completeSignatureStep,
-  completeTextInputStep,
-  completeTimerStep,
-  completeQRCodeStep,
-  completeLocationStep,
-} from "@/lib/task-step-execution-api";
+// Re-export hooks from their respective files for backward compatibility
+// TODO: Update imports in components to use specific hook files directly
+export {
+  useTaskAssignments,
+  useTaskAssignment,
+  useTaskAssignmentsByWorker,
+  useTaskAssignmentsByWorkArea,
+  useTaskAssignmentsByStatus,
+  useTaskAssignmentsByDateRange,
+} from "./useTaskAssignments";
 
-// SOP APIs
-import {
-  getSOPs,
-  getSOPById,
-  createSOP,
-  updateSOP,
-  deleteSOP,
-} from "@/lib/sop-api";
+export {
+  useStartTask,
+  useCompleteTask,
+  useCreateAdhocTask,
+} from "./useTaskActions";
 
-// Step APIs
-import {
-  getSteps,
-  getStepById,
-  createStep,
-  updateStep,
-  deleteStep,
-} from "@/lib/step-api";
+export {
+  useCompleteTaskStep,
+  useCompleteCheckBoxStep,
+  useCompletePhotoStep,
+  useCompleteSignatureStep,
+  useCompleteTextInputStep,
+} from "./useTaskStepExecution";
 
-// Types
-import type {
-  CreateAdhocTaskData,
-  StartTaskData,
-  CompleteTaskData,
-  SubmitStepExecutionData,
-  TaskAssignmentStatus,
-} from "@/types/task";
+export {
+  useSOPs,
+  useSOP,
+  useCreateSOP,
+  useUpdateSOP,
+  useDeleteSOP,
+} from "./useSOPs";
 
-import type { CreateSOPData, UpdateSOPData, SOP } from "@/types/sop";
+export {
+  useSteps,
+  useStep,
+  useCreateStep,
+  useUpdateStep,
+  useDeleteStep,
+} from "./useSteps";
 
-import type { CreateStepData, UpdateStepData, Step } from "@/types/sop";
+/**
+ * Hook for managing workflow builder state
+ */
+export function useWorkflowBuilder() {
+  const [selectedSOP, setSelectedSOP] = useState<string | null>(null);
+  const [selectedSteps, setSelectedSteps] = useState<string[]>([]);
+  const [isBuilding, setIsBuilding] = useState(false);
 
-import type { PaginationParams } from "@/types/common";
+  const addStep = useCallback((stepId: string) => {
+    setSelectedSteps((prev) => [...prev, stepId]);
+  }, []);
 
-// Task Assignment Hooks (based on actual API)
-export function useTaskAssignments(params?: {
-  assignedToWorkerId?: string;
-  workAreaId?: string;
-  status?: TaskAssignmentStatus;
-  fromDate?: string;
-  toDate?: string;
-  pageNumber?: number;
-  pageSize?: number;
-}) {
-  return useQuery({
-    queryKey: ["task-assignments", params],
-    queryFn: () => getTaskAssignments(params),
-  });
-}
+  const removeStep = useCallback((stepId: string) => {
+    setSelectedSteps((prev) => prev.filter((id) => id !== stepId));
+  }, []);
 
-export function useTaskAssignment(id: string) {
-  return useQuery({
-    queryKey: ["task-assignments", id],
-    queryFn: () => getTaskAssignmentById(id),
-    enabled: !!id,
-  });
-}
+  const clearWorkflow = useCallback(() => {
+    setSelectedSOP(null);
+    setSelectedSteps([]);
+    setIsBuilding(false);
+  }, []);
 
-export function useTaskAssignmentsByWorker(
-  workerId: string,
-  params?: PaginationParams,
-) {
-  return useQuery({
-    queryKey: ["task-assignments", "worker", workerId, params],
-    queryFn: () => getTaskAssignments({ assigneeId: workerId, ...params }),
-    enabled: !!workerId,
-  });
-}
-
-export function useTaskAssignmentsByWorkArea(
-  workAreaId: string,
-  params?: PaginationParams,
-) {
-  return useQuery({
-    queryKey: ["task-assignments", "work-area", workAreaId, params],
-    queryFn: () => getTaskAssignments({ workAreaId, ...params }),
-    enabled: !!workAreaId,
-  });
-}
-
-export function useTaskAssignmentsByStatus(
-  status: TaskAssignmentStatus,
-  params?: PaginationParams,
-) {
-  return useQuery({
-    queryKey: ["task-assignments", "status", status, params],
-    queryFn: () => getTaskAssignments({ status, ...params }),
-  });
-}
-
-export function useTaskAssignmentsByDateRange(
-  fromDate: string,
-  toDate: string,
-  params?: PaginationParams,
-) {
-  return useQuery({
-    queryKey: ["task-assignments", "date-range", fromDate, toDate, params],
-    queryFn: () => getTaskAssignments({ fromDate, toDate, ...params }),
-    enabled: !!fromDate && !!toDate,
-  });
-}
-
-export function useStartTask(onSuccess?: () => void) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: StartTaskData }) =>
-      updateTaskAssignmentStatus(id, "InProgress"),
-    onSuccess: (_, variables) => {
-      apiToasts.updateSuccess("bắt đầu công việc");
-      queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
-      queryClient.invalidateQueries({
-        queryKey: ["task-assignments", variables.id],
-      });
-      onSuccess?.();
-    },
-    onError: (error) => {
-      apiToasts.updateError("bắt đầu công việc");
-      console.error("Task start error:", error);
-    },
-  });
-}
-
-export function useCompleteTask(onSuccess?: () => void) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: CompleteTaskData }) =>
-      updateTaskAssignmentStatus(id, "Completed"),
-    onSuccess: (_, variables) => {
-      apiToasts.updateSuccess("hoàn thành công việc");
-      queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
-      queryClient.invalidateQueries({
-        queryKey: ["task-assignments", variables.id],
-      });
-      onSuccess?.();
-    },
-    onError: (error) => {
-      apiToasts.updateError("hoàn thành công việc");
-      console.error("Task completion error:", error);
-    },
-  });
-}
-
-export function useCreateAdhocTask(onSuccess?: () => void) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreateAdhocTaskData) => {
-      // TODO: Implement createAdhocTask API endpoint
-      throw new Error("createAdhocTask API not yet implemented");
-    },
-    onSuccess: () => {
-      apiToasts.createSuccess("công việc đột xuất");
-      queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
-      onSuccess?.();
-    },
-    onError: (error) => {
-      apiToasts.createError("công việc đột xuất");
-      console.error("Adhoc task creation error:", error);
-    },
-  });
-}
-
-// Task Step Execution Hooks
-export function useCompleteTaskStep(onSuccess?: () => void) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: SubmitStepExecutionData }) =>
-      completeTaskStep(id, data),
-    onSuccess: () => {
-      apiToasts.updateSuccess("hoàn thành bước");
-      queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
-      onSuccess?.();
-    },
-    onError: (error) => {
-      apiToasts.updateError("hoàn thành bước");
-      console.error("Step completion error:", error);
-    },
-  });
-}
-
-export function useCompleteCheckBoxStep(onSuccess?: () => void) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      stepExecutionId,
-      checked,
-      note,
-    }: {
-      stepExecutionId: string;
-      checked: boolean;
-      note?: string;
-    }) => completeCheckBoxStep(stepExecutionId, checked, note),
-    onSuccess: () => {
-      apiToasts.updateSuccess("hoàn thành checkbox");
-      queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
-      onSuccess?.();
-    },
-    onError: (error) => {
-      apiToasts.updateError("hoàn thành checkbox");
-      console.error("Checkbox step error:", error);
-    },
-  });
-}
-
-export function useCompletePhotoStep(onSuccess?: () => void) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      stepExecutionId,
-      photoUrls,
-      note,
-    }: {
-      stepExecutionId: string;
-      photoUrls: string[];
-      note?: string;
-    }) => completePhotoStep(stepExecutionId, photoUrls, note),
-    onSuccess: () => {
-      apiToasts.updateSuccess("hoàn thành chụp ảnh");
-      queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
-      onSuccess?.();
-    },
-    onError: (error) => {
-      apiToasts.updateError("hoàn thành chụp ảnh");
-      console.error("Photo step error:", error);
-    },
-  });
-}
-
-export function useCompleteSignatureStep(onSuccess?: () => void) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      stepExecutionId,
-      signatureUrl,
-      signedBy,
-    }: {
-      stepExecutionId: string;
-      signatureUrl: string;
-      signedBy: string;
-    }) => completeSignatureStep(stepExecutionId, signatureUrl, signedBy),
-    onSuccess: () => {
-      apiToasts.updateSuccess("hoàn thành chữ ký");
-      queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
-      onSuccess?.();
-    },
-    onError: (error) => {
-      apiToasts.updateError("hoàn thành chữ ký");
-      console.error("Signature step error:", error);
-    },
-  });
-}
-
-export function useCompleteTextInputStep(onSuccess?: () => void) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      stepExecutionId,
-      text,
-    }: {
-      stepExecutionId: string;
-      text: string;
-    }) => completeTextInputStep(stepExecutionId, text),
-    onSuccess: () => {
-      apiToasts.updateSuccess("hoàn thành nhập text");
-      queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
-      onSuccess?.();
-    },
-    onError: (error) => {
-      apiToasts.updateError("hoàn thành nhập text");
-      console.error("Text input step error:", error);
-    },
-  });
-}
-
-// SOP Hooks (now implemented)
-export function useSOPs(params?: PaginationParams) {
-  return useQuery({
-    queryKey: ["sops", params],
-    queryFn: () => getSOPs(params),
-  });
-}
-
-export function useSOP(id: string, options?: { enabled?: boolean }) {
-  return useQuery({
-    queryKey: ["sops", id],
-    queryFn: async () => {
-      try {
-        const result = await getSOPById(id);
-        // Ensure we always return a value, never undefined
-        return result || null;
-      } catch (error: any) {
-        // For 404 errors, throw a proper error instead of returning undefined
-        if (error?.status === 404 || error?.message?.includes("404")) {
-          throw new Error(`SOP with ID ${id} not found`);
-        }
-        // Re-throw other errors
-        throw error;
-      }
-    },
-    enabled: options?.enabled !== undefined ? options.enabled : !!id,
-    retry: (failureCount, error: any) => {
-      // Don't retry on 404 errors
-      if (error?.message?.includes("not found")) {
-        return false;
-      }
-      return failureCount < 3;
-    },
-  });
-}
-
-export function useCreateSOP(onSuccess?: (sop: SOP) => void) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: createSOP,
-    onSuccess: (data) => {
-      apiToasts.createSuccess("SOP");
-      queryClient.invalidateQueries({ queryKey: ["sops"] });
-      onSuccess?.(data);
-    },
-    onError: (error) => {
-      apiToasts.createError("SOP");
-      console.error("SOP creation error:", error);
-    },
-  });
-}
-
-export function useUpdateSOP(onSuccess?: (sop: SOP) => void) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateSOPData }) =>
-      updateSOP(id, data),
-    onSuccess: (data, variables) => {
-      apiToasts.updateSuccess("SOP");
-      queryClient.invalidateQueries({ queryKey: ["sops"] });
-      queryClient.invalidateQueries({ queryKey: ["sops", variables.id] });
-      onSuccess?.(data);
-    },
-    onError: (error) => {
-      apiToasts.updateError("SOP");
-      console.error("SOP update error:", error);
-    },
-  });
-}
-
-export function useDeleteSOP(onSuccess?: () => void) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: deleteSOP,
-    onSuccess: (_, deletedId) => {
-      apiToasts.deleteSuccess("SOP");
-      // Remove the specific SOP from cache immediately
-      queryClient.removeQueries({ queryKey: ["sops", deletedId] });
-      // Cancel any outgoing queries for this SOP
-      queryClient.cancelQueries({ queryKey: ["sops", deletedId] });
-      // Invalidate the SOPs list to refresh it
-      queryClient.invalidateQueries({ queryKey: ["sops"] });
-      onSuccess?.();
-    },
-    onError: (error) => {
-      apiToasts.deleteError("SOP");
-      console.error("SOP deletion error:", error);
-    },
-  });
-}
-
-// Step Hooks (now implemented)
-export function useSteps(params?: PaginationParams) {
-  return useQuery({
-    queryKey: ["steps", params],
-    queryFn: () => getSteps(params),
-  });
-}
-
-export function useStep(id: string) {
-  return useQuery({
-    queryKey: ["steps", id],
-    queryFn: () => getStepById(id),
-    enabled: !!id,
-  });
-}
-
-export function useCreateStep(onSuccess?: (step: Step) => void) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: createStep,
-    onSuccess: (data) => {
-      apiToasts.createSuccess("bước");
-      queryClient.invalidateQueries({ queryKey: ["steps"] });
-      onSuccess?.(data);
-    },
-    onError: (error) => {
-      apiToasts.createError("bước");
-      console.error("Step creation error:", error);
-    },
-  });
-}
-
-export function useUpdateStep(onSuccess?: (step: Step) => void) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateStepData }) =>
-      updateStep(id, data),
-    onSuccess: (data, variables) => {
-      apiToasts.updateSuccess("bước");
-      queryClient.invalidateQueries({ queryKey: ["steps"] });
-      queryClient.invalidateQueries({ queryKey: ["steps", variables.id] });
-      onSuccess?.(data);
-    },
-    onError: (error) => {
-      apiToasts.updateError("bước");
-      console.error("Step update error:", error);
-    },
-  });
-}
-
-export function useDeleteStep(onSuccess?: () => void) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: deleteStep,
-    onSuccess: () => {
-      apiToasts.deleteSuccess("bước");
-      queryClient.invalidateQueries({ queryKey: ["steps"] });
-      onSuccess?.();
-    },
-    onError: (error) => {
-      apiToasts.deleteError("bước");
-      console.error("Step deletion error:", error);
-    },
-  });
+  return {
+    selectedSOP,
+    setSelectedSOP,
+    selectedSteps,
+    setSelectedSteps,
+    isBuilding,
+    setIsBuilding,
+    addStep,
+    removeStep,
+    clearWorkflow,
+  };
 }

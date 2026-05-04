@@ -55,8 +55,8 @@ export function FinishConfig({
               <button
                 type="button"
                 onClick={toggleRequireNote}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#1a80a2] focus:ring-offset-2 ${
-                  requireNote ? "bg-[#1a80a2]" : "bg-gray-200"
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+                  requireNote ? "bg-primary" : "bg-gray-200"
                 }`}
               >
                 <span
