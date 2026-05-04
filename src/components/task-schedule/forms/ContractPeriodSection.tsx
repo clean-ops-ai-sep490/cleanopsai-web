@@ -1,17 +1,18 @@
 "use client";
 
-import { UseFormRegister, FieldErrors } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface ContractPeriodSectionProps {
-  register: UseFormRegister<any>;
-  errors: FieldErrors<any>;
+  formData: any;
+  errors: Record<string, string>;
+  updateField: (field: string, value: any) => void;
 }
 
 export function ContractPeriodSection({
-  register,
+  formData,
   errors,
+  updateField,
 }: ContractPeriodSectionProps) {
   return (
     <div className="space-y-6">
@@ -25,12 +26,13 @@ export function ContractPeriodSection({
             <Input
               id="contractStartDate"
               type="date"
-              {...register("contractStartDate")}
+              value={formData.contractStartDate || ""}
+              onChange={(e) => updateField("contractStartDate", e.target.value)}
               className="bg-white border-[#e5e5e5]"
             />
             {errors.contractStartDate && (
               <p className="text-sm text-red-500">
-                {errors.contractStartDate.message}
+                {errors.contractStartDate}
               </p>
             )}
           </div>
@@ -40,12 +42,13 @@ export function ContractPeriodSection({
             <Input
               id="contractEndDate"
               type="date"
-              {...register("contractEndDate")}
+              value={formData.contractEndDate || ""}
+              onChange={(e) => updateField("contractEndDate", e.target.value)}
               className="bg-white border-[#e5e5e5]"
             />
             {errors.contractEndDate && (
               <p className="text-sm text-red-500">
-                {errors.contractEndDate.message}
+                {errors.contractEndDate}
               </p>
             )}
           </div>

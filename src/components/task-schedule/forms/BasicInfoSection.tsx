@@ -1,41 +1,45 @@
 "use client";
 
-import { UseFormRegister, FieldErrors } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-
-interface BasicInfoData {
-  name: string;
-  description: string;
-  durationMinutes: number;
-}
+import { Info } from "lucide-react";
 
 interface BasicInfoSectionProps {
-  register: UseFormRegister<any>;
-  errors: FieldErrors<any>;
+  formData: any;
+  errors: Record<string, string>;
+  updateField: (field: string, value: any) => void;
 }
 
-export function BasicInfoSection({ register, errors }: BasicInfoSectionProps) {
+export function BasicInfoSection({
+  formData,
+  errors,
+  updateField,
+}: BasicInfoSectionProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-black mb-4">
-          Thông tin cơ bản
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-black">Thông tin cơ bản</h2>
+          <div className="flex items-center gap-2 text-sm text-primary">
+            <Info className="w-4 h-4" />
+            <span>
+              Các trường sẽ tự động điền khi chọn SOP, SLA, SLA Shift và SLA Task
+            </span>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="name">Tên lịch trình *</Label>
             <Input
               id="name"
-              {...register("name")}
-              placeholder="Nhập tên lịch trình"
+              value={formData.name || ""}
+              onChange={(e) => updateField("name", e.target.value)}
+              placeholder="Sẽ tự động điền từ SOP và SLA Task"
               className="bg-white border-[#e5e5e5]"
             />
             {errors.name && (
-              <p className="text-sm text-red-500">
-                {(errors.name as any)?.message || "Trường này là bắt buộc"}
-              </p>
+              <p className="text-sm text-red-500">{errors.name}</p>
             )}
           </div>
 
@@ -46,15 +50,13 @@ export function BasicInfoSection({ register, errors }: BasicInfoSectionProps) {
             <Input
               id="durationMinutes"
               type="number"
-              {...register("durationMinutes", { valueAsNumber: true })}
-              placeholder="60"
+              value={formData.durationMinutes || ""}
+              onChange={(e) => updateField("durationMinutes", Number(e.target.value))}
+              placeholder="Sẽ tự động tính từ SLA Shift"
               className="bg-white border-[#e5e5e5]"
             />
             {errors.durationMinutes && (
-              <p className="text-sm text-red-500">
-                {(errors.durationMinutes as any)?.message ||
-                  "Trường này là bắt buộc"}
-              </p>
+              <p className="text-sm text-red-500">{errors.durationMinutes}</p>
             )}
           </div>
         </div>
@@ -63,8 +65,9 @@ export function BasicInfoSection({ register, errors }: BasicInfoSectionProps) {
           <Label htmlFor="description">Mô tả</Label>
           <Textarea
             id="description"
-            {...register("description")}
-            placeholder="Nhập mô tả lịch trình"
+            value={formData.description || ""}
+            onChange={(e) => updateField("description", e.target.value)}
+            placeholder="Sẽ tự động điền từ SOP"
             className="bg-white border-[#e5e5e5] min-h-[100px]"
           />
         </div>

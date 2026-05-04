@@ -39,7 +39,7 @@ export function TaskScheduleEditContainer({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-[#1a80a2]" />
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
         <span className="ml-2 text-[#70808f]">
           Đang tải thông tin lịch trình...
         </span>
