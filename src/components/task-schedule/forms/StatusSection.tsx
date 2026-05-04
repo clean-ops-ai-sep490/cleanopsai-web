@@ -1,18 +1,17 @@
 "use client";
 
-import { UseFormSetValue, UseFormWatch } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 
 interface StatusSectionProps {
-  setValue: UseFormSetValue<any>;
-  watch: UseFormWatch<any>;
+  formData: any;
+  updateField: (field: string, value: any) => void;
 }
 
-export function StatusSection({ setValue, watch }: StatusSectionProps) {
-  const isActive = watch("isActive");
+export function StatusSection({ formData, updateField }: StatusSectionProps) {
+  const isActive = formData.isActive;
 
   const handleToggle = () => {
-    setValue("isActive", !isActive);
+    updateField("isActive", !isActive);
   };
 
   return (
@@ -28,8 +27,8 @@ export function StatusSection({ setValue, watch }: StatusSectionProps) {
       <button
         type="button"
         onClick={handleToggle}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#1a80a2] focus:ring-offset-2 ${
-          isActive ? "bg-[#1a80a2]" : "bg-gray-200"
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
+          isActive ? "bg-primary" : "bg-gray-200"
         }`}
       >
         <span

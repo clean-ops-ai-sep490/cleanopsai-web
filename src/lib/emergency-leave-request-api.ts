@@ -24,8 +24,7 @@ export interface EmergencyLeaveRequest {
   lastModified: string;
 }
 
-export interface EmergencyLeaveRequestsPaginatedRequest
-  extends PaginatedRequest {
+export interface EmergencyLeaveRequestsPaginatedRequest extends PaginatedRequest {
   status?: EmergencyLeaveRequestStatus;
   workerId?: string;
 }
@@ -56,7 +55,9 @@ export async function getEmergencyLeaveRequestsPaginated(
 
 export async function reviewEmergencyLeaveRequest(
   id: string,
-  data: { status: Extract<EmergencyLeaveRequestStatus, "Approved" | "Rejected"> },
+  data: {
+    status: Extract<EmergencyLeaveRequestStatus, "Approved" | "Rejected">;
+  },
 ): Promise<EmergencyLeaveRequest> {
   return api.patch<EmergencyLeaveRequest>(
     `/EmergencyLeaveRequests/${id}/review`,

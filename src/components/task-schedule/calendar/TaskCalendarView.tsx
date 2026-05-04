@@ -44,7 +44,7 @@ export function TaskCalendarView() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-50">
+    <div className="flex flex-col bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
@@ -59,21 +59,10 @@ export function TaskCalendarView() {
 
           <div className="flex items-center gap-3">
             <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-              className="border-gray-300"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Xuất
-            </Button>
-
-            <Button
-              className="bg-[#1a80a2] hover:bg-[#308cab] text-white"
+              className="bg-primary hover:bg-[#308cab] text-white"
               size="sm"
               onClick={handleCreateTask}
             >
-              <Plus className="w-4 h-4 mr-2" />
               Tạo mới
             </Button>
           </div>
@@ -142,7 +131,7 @@ export function TaskCalendarView() {
       </div>
 
       {/* Calendar Content */}
-      <div className="flex-1 overflow-hidden">
+      <div>
         <CalendarGrid
           currentDate={currentDate}
           searchQuery={searchQuery}

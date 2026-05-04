@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { format, parseISO, isSameDay } from "date-fns";
 import { vi } from "date-fns/locale";
 import { TaskCard } from "./TaskCard";
-import { useQuery } from "@tanstack/react-query";
-import { getTaskAssignments } from "@/lib/task-assignment-api";
+import { useTaskAssignments } from "@/hooks/useTaskAssignments";
 import type { TaskAssignment } from "@/types/task-assignment";
+import { TaskAssignmentStatus } from "@/types/task";
+import { getDayRange } from "@/lib/utils";
 import { Loader2, MapPin, Clock } from "lucide-react";
 
 interface CalendarGridProps {
@@ -28,17 +29,18 @@ export function CalendarGrid({
   searchQuery,
   selectedFilter,
 }: CalendarGridProps) {
+  // Get date range for the selected date (00:00:00 to 23:59:59)
+  const { fromDate, toDate } = getDayRange(currentDate);
+
   // Fetch task assignments for the selected date
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["task-assignments-calendar", currentDate, selectedFilter],
-    queryFn: () =>
-      getTaskAssignments({
-        fromDate: currentDate.toISOString(),
-        toDate: currentDate.toISOString(),
-        pageNumber: 1,
-        pageSize: 500,
-        ...(selectedFilter !== "all" && { status: selectedFilter }),
-      }),
+  const { data, isLoading, error } = useTaskAssignments({
+    fromDate, // e.g., "2026-04-29T00:00:00.000Z"
+    toDate, // e.g., "2026-04-29T23:59:59.999Z"
+    pageNumber: 1,
+    pageSize: 500,
+    ...(selectedFilter !== "all" && {
+      status: selectedFilter as TaskAssignmentStatus,
+    }),
   });
 
   // Group tasks by worker
@@ -101,7 +103,7 @@ export function CalendarGrid({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin text-[#1a80a2] mr-2" />
+        <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
         <span className="text-gray-600">Đang tải dữ liệu...</span>
       </div>
     );
@@ -133,7 +135,7 @@ export function CalendarGrid({
   const currentHour = new Date().getHours();
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="flex flex-col bg-white">
       {/* Date Header */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 py-4">
         <div className="text-center">
@@ -142,13 +144,13 @@ export function CalendarGrid({
           </div>
           <div
             className={`text-2xl font-bold mt-1 ${
-              isToday ? "text-[#1a80a2]" : "text-gray-900"
+              isToday ? "text-primary" : "text-gray-900"
             }`}
           >
             {format(currentDate, "dd/MM/yyyy")}
           </div>
           {isToday && (
-            <div className="text-xs text-[#1a80a2] font-medium mt-1">
+            <div className="text-xs text-primary font-medium mt-1">
               HÔM NAY
             </div>
           )}
@@ -206,7 +208,7 @@ export function CalendarGrid({
       </div>
 
       {/* Worker Rows */}
-      <div className="flex-1 overflow-y-auto">
+      <div>
         <div className="divide-y divide-gray-200">
           {workerGroups.map((worker, index) => {
             const tasksForWorker = getTasksForWorker(worker);
@@ -242,9 +244,9 @@ export function CalendarGrid({
                       <div className="flex gap-2 mt-2">
                         <Badge
                           variant="outline"
-                          className="text-xs px-2 py-1 border-[#1a80a2] text-[#1a80a2] bg-blue-50"
+                          className="text-xs px-2 py-1 border-primary text-primary bg-blue-50"
                         >
-                          {totalTasks} tasks
+                          {totalTasks} công việc
                         </Badge>
                         {completedTasks > 0 && (
                           <Badge

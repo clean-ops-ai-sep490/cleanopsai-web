@@ -67,12 +67,7 @@ export default function LocationForm({
     try {
       setLoading(true);
       await onSubmit(form);
-
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        onCancel();
-      }, 1000);
+      onCancel();
     } catch {
       setErrors({ submit: "Lưu thất bại" });
     } finally {

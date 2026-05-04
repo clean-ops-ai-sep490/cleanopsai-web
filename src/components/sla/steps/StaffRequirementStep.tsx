@@ -97,9 +97,9 @@ export function StaffRequirementStep({
       {/* Header */}
       <div className="bg-blue-100 p-6 rounded-lg">
         <div className="flex items-center justify-center mb-4">
-          <Clock className="h-12 w-12 text-[#1a80a2]" />
+          <Clock className="h-12 w-12 text-primary" />
         </div>
-        <h3 className="text-center text-lg font-medium text-[#1a80a2] mb-2">
+        <h3 className="text-center text-lg font-medium text-primary mb-2">
           Bố trí ca làm việc
         </h3>
         <p className="text-center text-gray-600 text-sm">
@@ -115,7 +115,7 @@ export function StaffRequirementStep({
           </h2>
           <Button
             onClick={addStaffRequirement}
-            className="bg-[#1a80a2] hover:bg-[#1a80a2]/90"
+            className="bg-primary hover:bg-primary/90"
           >
             Thêm ca làm việc
           </Button>
@@ -274,7 +274,7 @@ export function StaffRequirementStep({
             <Button
               variant="outline"
               onClick={addStaffRequirement}
-              className="text-[#1a80a2] border-[#1a80a2] hover:bg-[#1a80a2] hover:text-white"
+              className="text-primary border-primary hover:bg-primary hover:text-white"
             >
               <Plus className="h-4 w-4 mr-2" />
               Thêm ca làm việc khác

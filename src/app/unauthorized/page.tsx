@@ -1,59 +1,24 @@
-"use client";
-
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ShieldAlert } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ShieldAlert } from "lucide-react";
 
 export default function UnauthorizedPage() {
-  const { user, logout } = useAuth();
-
   return (
-    <div className="min-h-screen bg-[#f9fafb] flex items-center justify-center p-4">
-      <Card className="max-w-md w-full p-8 text-center">
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-            <ShieldAlert className="w-8 h-8 text-red-600" />
+    <div className="flex min-h-screen items-center justify-center bg-[var(--app-bg)] px-4">
+      <Card className="w-full max-w-lg shadow-[var(--app-shadow)]">
+        <CardHeader>
+          <div className="mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+            <ShieldAlert className="h-7 w-7" />
           </div>
-        </div>
-
-        <h1 className="text-2xl font-bold text-black mb-2">
-          Không có quyền truy cập
-        </h1>
-
-        <p className="text-gray-600 mb-6">
-          Tài khoản của bạn ({user?.email}) không có quyền truy cập vào Web App.
-        </p>
-
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
-          <p className="text-sm text-blue-900 font-medium mb-2">
-            Quyền truy cập Web App:
-          </p>
-          <ul className="text-sm text-blue-800 space-y-1">
-            <li>✓ Admin - Toàn quyền quản trị hệ thống</li>
-            <li>✓ Manager - Quản lý SLA, Workflow, Contracts</li>
-            <li>✗ Supervisor - Chỉ sử dụng Mobile App</li>
-            <li>✗ Worker - Chỉ sử dụng Mobile App</li>
-          </ul>
-        </div>
-
-        <div className="space-y-3">
-          <p className="text-sm text-gray-600">
-            Nếu bạn là Supervisor hoặc Worker, vui lòng sử dụng Mobile App.
-          </p>
-
-          <div className="flex gap-3">
-            <Link href="/login" className="flex-1">
-              <Button variant="outline" className="w-full">
-                Đăng nhập tài khoản khác
-              </Button>
-            </Link>
-            <Button onClick={() => logout()} className="flex-1">
-              Đăng xuất
-            </Button>
-          </div>
-        </div>
+          <CardTitle>Không có quyền truy cập</CardTitle>
+          <CardDescription>
+            Bạn không có quyền truy cập vào trang này. Hãy đăng nhập bằng tài khoản phù hợp.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild className="w-full"><Link href="/login">Về trang đăng nhập</Link></Button>
+        </CardContent>
       </Card>
     </div>
   );

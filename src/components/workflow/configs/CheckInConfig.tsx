@@ -54,7 +54,7 @@ export function CheckInConfig({
           <div
             className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
               selectedMethod === "qr"
-                ? "border-[#1a80a2] bg-blue-50"
+                ? "border-primary bg-blue-50"
                 : "border-gray-200 hover:border-gray-300"
             }`}
             onClick={() => selectMethod("qr")}
@@ -68,7 +68,7 @@ export function CheckInConfig({
             <div
               className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
                 selectedMethod === "qr"
-                  ? "border-[#1a80a2] bg-[#1a80a2]"
+                  ? "border-primary bg-primary"
                   : "border-gray-300"
               }`}
             >
@@ -81,7 +81,7 @@ export function CheckInConfig({
           <div
             className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
               selectedMethod === "ble"
-                ? "border-[#1a80a2] bg-blue-50"
+                ? "border-primary bg-blue-50"
                 : "border-gray-200 hover:border-gray-300"
             }`}
             onClick={() => selectMethod("ble")}
@@ -95,7 +95,7 @@ export function CheckInConfig({
             <div
               className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
                 selectedMethod === "ble"
-                  ? "border-[#1a80a2] bg-[#1a80a2]"
+                  ? "border-primary bg-primary"
                   : "border-gray-300"
               }`}
             >

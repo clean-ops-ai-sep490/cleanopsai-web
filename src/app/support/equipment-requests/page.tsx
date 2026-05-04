@@ -1,327 +1,137 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { FilterBar } from "@/components/ui/filter-bar";
+import { SectionCard } from "@/components/ui/section-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, ClipboardList, Check, X } from "lucide-react";
-
-import {
-  useEquipmentRequests,
-  useEquipmentRequestsByStatus,
-  useReviewEquipmentRequest,
-} from "@/hooks/useEquipmentRequest";
-
+import { ListPageSkeleton } from "@/components/ui/page-skeleton";
+import { Search, ClipboardList, Check, X, Loader2 } from "lucide-react";
+import { useEquipmentRequests, useEquipmentRequestsByStatus, useReviewEquipmentRequest } from "@/hooks/useEquipmentRequest";
 import { StandardDialog } from "@/components/ui/standard-dialog";
 import { usePagination } from "@/hooks/usePagination";
-
-/* ================= PAGE ================= */
 
 export default function SupportEquipmentRequestsPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-
-  const [statusFilter, setStatusFilter] = useState<
-    "All" | "Pending" | "Approved" | "Rejected"
-  >("All");
-
+  const [statusFilter, setStatusFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All");
   const [selected, setSelected] = useState<any | null>(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<"Approved" | "Rejected" | null>(null);
 
   const reviewMutation = useReviewEquipmentRequest();
+  const pagination = usePagination({ initialPage: 1, initialPageSize: 10 });
 
-  /* ================= PAGINATION ================= */
-  const pagination = usePagination({
-    initialPage: 1,
-    initialPageSize: 10,
-  });
-
-  /* ================= DEBOUNCE SEARCH ================= */
   useEffect(() => {
     const t = setTimeout(() => {
       setDebouncedSearch(search);
       pagination.setPage(1);
     }, 300);
-
     return () => clearTimeout(t);
   }, [search]);
 
-  /* ================= RESET PAGE WHEN FILTER CHANGE ================= */
-  useEffect(() => {
-    pagination.setPage(1);
-  }, [statusFilter]);
-
-  /* ================= API LOGIC (CORE FIX) ================= */
-
   const isAll = statusFilter === "All";
-
-  const allQuery = useEquipmentRequests({
-    pageNumber: pagination.currentPage,
-    pageSize: pagination.pageSize,
-  });
-
-  const statusQuery = useEquipmentRequestsByStatus(
-    isAll ? undefined : statusFilter,
-    {
-      pageNumber: pagination.currentPage,
-      pageSize: pagination.pageSize,
-    }
-  );
-
-  // CHỈ PICK 1 QUERY ACTIVE
+  const allQuery = useEquipmentRequests({ pageNumber: pagination.currentPage, pageSize: pagination.pageSize });
+  const statusQuery = useEquipmentRequestsByStatus(isAll ? undefined : statusFilter, { pageNumber: pagination.currentPage, pageSize: pagination.pageSize });
   const activeQuery = isAll ? allQuery : statusQuery;
 
   const data = activeQuery.data;
   const isLoading = activeQuery.isLoading;
   const refetch = activeQuery.refetch;
-
   const items = useMemo(() => data?.items || [], [data]);
 
-  /* ================= CLIENT SEARCH ================= */
   const filtered = useMemo(() => {
     if (!debouncedSearch) return items;
-
-    return items.filter(
-      (x: any) =>
-        x.workerName?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        x.reason?.toLowerCase().includes(debouncedSearch.toLowerCase())
-    );
+    return items.filter((x: any) => x.workerName?.toLowerCase().includes(debouncedSearch.toLowerCase()) || x.reason?.toLowerCase().includes(debouncedSearch.toLowerCase()));
   }, [items, debouncedSearch]);
 
-  /* ================= REVIEW ================= */
-  const handleReview = async (status: "Approved" | "Rejected") => {
-    if (!selected) return;
-
-    await reviewMutation.mutateAsync({
-      id: selected.id,
-      data: { status },
-    });
-
+  const handleReview = async () => {
+    if (!selected || !confirmAction) return;
+    await reviewMutation.mutateAsync({ id: selected.id, data: { status: confirmAction } });
     setOpenDialog(false);
     setSelected(null);
+    setConfirmAction(null);
     refetch();
   };
 
-  /* ================= UI ================= */
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 pt-8 pb-12 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="space-y-6">
+      <PageHeader title="Yêu cầu thiết bị" description="Review yêu cầu thiết bị từ worker theo danh sách rõ và nhanh." />
 
-        {/* HEADER */}
-        <div className="mb-8 flex items-center gap-3">
-          <div className="p-2.5 bg-blue-600 rounded-lg">
-            <ClipboardList className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Yêu cầu thiết bị</h1>
-            <p className="text-muted-foreground">
-              Review yêu cầu thiết bị từ worker
-            </p>
-          </div>
+      <FilterBar>
+        <div className="relative w-full max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input placeholder="Tìm theo worker / lý do..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
         </div>
+        <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value as any); pagination.setPage(1); }}>
+          <SelectTrigger className="w-full md:w-44"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">Tất cả</SelectItem>
+            <SelectItem value="Pending">Chờ xử lý</SelectItem>
+            <SelectItem value="Approved">Đã duyệt</SelectItem>
+            <SelectItem value="Rejected">Bị từ chối</SelectItem>
+          </SelectContent>
+        </Select>
+      </FilterBar>
 
-        {/* FILTER */}
-        <div className="mb-6 flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50" />
-            <Input
-              placeholder="Tìm theo worker / lý do..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
+      {isLoading ? (
+        <ListPageSkeleton cards={3} rows={6} />
+      ) : filtered.length === 0 ? (
+        <EmptyState title="Không có yêu cầu" description="Danh sách request sẽ hiển thị tại đây khi có dữ liệu." icon={<ClipboardList className="h-10 w-10" />} />
+      ) : (
+        <SectionCard title={`Danh sách request (${data?.totalCount ?? 0})`}>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Worker</TableHead>
+                <TableHead>Lý do</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead>Ngày tạo</TableHead>
+                <TableHead className="text-right">Hành động</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((req: any) => (
+                <TableRow key={req.id}>
+                  <TableCell className="max-w-[220px] truncate font-medium">{req.workerName}</TableCell>
+                  <TableCell className="max-w-[320px] truncate">{req.reason || "-"}</TableCell>
+                  <TableCell><StatusBadge status={req.status} /></TableCell>
+                  <TableCell className="text-slate-500">{new Date(req.created).toLocaleString()}</TableCell>
+                  <TableCell className="text-right"><Button variant="outline" size="sm" onClick={() => { setSelected(req); setOpenDialog(true); }}>Xem</Button></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
+            <span>Trang {pagination.currentPage} / {Math.ceil((data?.totalCount ?? 0) / pagination.pageSize)}</span>
+            <div className="flex gap-2"><Button variant="outline" disabled={pagination.currentPage === 1} onClick={pagination.prevPage}>Trước</Button><Button variant="outline" disabled={pagination.currentPage >= Math.ceil((data?.totalCount ?? 0) / pagination.pageSize)} onClick={pagination.nextPage}>Sau</Button></div>
           </div>
+        </SectionCard>
+      )}
 
-          <Select
-            value={statusFilter}
-            onValueChange={(value) => setStatusFilter(value as any)}
-          >
-            <SelectTrigger className="w-44">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">Tất cả</SelectItem>
-              <SelectItem value="Pending">Chờ xử lý</SelectItem>
-              <SelectItem value="Approved">Đã duyệt</SelectItem>
-              <SelectItem value="Rejected">Bị từ chối</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* TABLE */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Danh sách request ({data?.totalCount ?? 0})
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            {isLoading ? (
-              <div className="py-10 text-center">Đang tải...</div>
-            ) : filtered.length === 0 ? (
-              <div className="py-10 text-center text-gray-500">
-                Không có dữ liệu
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Worker</TableHead>
-                    <TableHead>Lý do</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead>Ngày tạo</TableHead>
-                    <TableHead className="text-right">Hành động</TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {filtered.map((req: any) => (
-                    <TableRow key={req.id}>
-                      <TableCell className="font-medium">
-                        {req.workerName}
-                      </TableCell>
-
-                      <TableCell>{req.reason || "-"}</TableCell>
-
-                      <TableCell>
-                        <Badge
-                          className={
-                            req.status === "Pending"
-                              ? "bg-yellow-500 text-white"
-                              : req.status === "Approved"
-                              ? "bg-green-600 text-white"
-                              : "bg-red-500 text-white"
-                          }
-                        >
-                          {req.status}
-                        </Badge>
-                      </TableCell>
-
-                      <TableCell className="text-muted-foreground">
-                        {new Date(req.created).toLocaleString()}
-                      </TableCell>
-
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setSelected(req);
-                            setOpenDialog(true);
-                          }}
-                        >
-                          Xem
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-
-            {/* PAGINATION */}
-            <div className="flex justify-between mt-4">
-              <Button
-                disabled={pagination.currentPage === 1}
-                onClick={pagination.prevPage}
-              >
-                Trước
-              </Button>
-
-              <div className="text-sm text-gray-500">
-                Trang {pagination.currentPage} /{" "}
-                {Math.ceil((data?.totalCount ?? 0) / pagination.pageSize)}
-              </div>
-
-              <Button
-                disabled={
-                  pagination.currentPage >=
-                  Math.ceil((data?.totalCount ?? 0) / pagination.pageSize)
-                }
-                onClick={pagination.nextPage}
-              >
-                Sau
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* DIALOG */}
-      <StandardDialog
-        open={openDialog}
-        onOpenChange={setOpenDialog}
-        title="Đánh giá yêu cầu"
-      >
+      <StandardDialog open={openDialog} onOpenChange={setOpenDialog} title="Đánh giá yêu cầu">
         {selected && (
           <div className="space-y-4">
-            <div>
-              <p className="text-sm text-gray-500">Worker</p>
-              <p className="font-semibold">{selected.workerName}</p>
+            <div><p className="text-sm text-slate-500">Worker</p><p className="font-semibold">{selected.workerName}</p></div>
+            <div><p className="text-sm text-slate-500">Lý do</p><p>{selected.reason || "-"}</p></div>
+            <div><p className="text-sm text-slate-500">Trạng thái</p><Badge variant="outline"><StatusBadge status={selected.status} /></Badge></div>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button variant="destructive" onClick={() => setConfirmAction("Rejected")}><X className="mr-1 h-4 w-4" />Từ chối</Button>
+              <Button onClick={() => setConfirmAction("Approved")}><Check className="mr-1 h-4 w-4" />Đồng ý</Button>
             </div>
-
-            <div>
-              <p className="text-sm text-gray-500">Lí do</p>
-              <p>{selected.reason || "-"}</p>
-            </div>
-
-            {/* STATUS */}
-<div>
-  <p className="text-sm text-gray-500">Trạng thái</p>
-
-  <Badge
-    className={
-      selected.status === "Pending"
-        ? "bg-yellow-500 text-white"
-        : selected.status === "Approved"
-        ? "bg-green-600 text-white"
-        : "bg-red-500 text-white"
-    }
-  >
-    {selected.status}
-  </Badge>
-</div>
-
-{/* ACTION BUTTONS */}
-<div className="flex gap-3 justify-end pt-4">
-  
-  <Button
-    variant="destructive"
-    className="bg-red-600 text-white"
-    onClick={() => handleReview("Rejected")}
-  >
-    <X className="w-4 h-4 mr-1" />
-    Từ chối
-  </Button>
-
-  <Button
-    className="bg-green-600 text-white"
-    onClick={() => handleReview("Approved")}
-  >
-    <Check className="w-4 h-4 mr-1" />
-    Đồng ý
-  </Button>
-</div>
           </div>
         )}
       </StandardDialog>
+
+      <ConfirmDialog open={!!confirmAction} title={confirmAction === "Approved" ? "Duyệt yêu cầu?" : "Từ chối yêu cầu?"} description="Hành động này sẽ cập nhật trạng thái yêu cầu." confirmLabel="Xác nhận" onConfirm={handleReview} onOpenChange={(open) => !open && setConfirmAction(null)} />
     </div>
   );
 }

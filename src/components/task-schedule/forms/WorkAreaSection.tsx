@@ -1,11 +1,5 @@
 "use client";
 
-import {
-  UseFormRegister,
-  UseFormSetValue,
-  FieldErrors,
-  UseFormWatch,
-} from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -24,27 +18,24 @@ import { useLocationsByClient } from "@/hooks/useLocations";
 import { useState, useEffect } from "react";
 
 interface WorkAreaSectionProps {
-  register: UseFormRegister<any>;
-  setValue: UseFormSetValue<any>;
-  watch: UseFormWatch<any>;
-  errors: FieldErrors<any>;
+  formData: any;
+  errors: Record<string, string>;
+  updateField: (field: string, value: any) => void;
 }
 
 export function WorkAreaSection({
-  register,
-  setValue,
-  watch,
+  formData,
   errors,
+  updateField,
 }: WorkAreaSectionProps) {
-  const [selectedLocationId, setSelectedLocationId] = useState<string>("");
-  const [selectedZoneId, setSelectedZoneId] = useState<string>("");
-  const [selectedWorkAreaId, setSelectedWorkAreaId] = useState<string>("");
-
-  // Watch form values to get SLA selection
-  const slaId = watch("slaId");
+  // Use formData instead of local state where possible
+  const selectedLocationId = formData.locationId;
+  const selectedZoneId = formData.zoneId;
+  const selectedWorkAreaId = formData.workAreaId;
+  const slaId = formData.slaId;
 
   // Fetch SLA details to get contractId
-  const { data: slaData, isLoading: slaLoading } = useSLA(slaId, {
+  const { data: slaData } = useSLA(slaId, {
     enabled: !!slaId,
   });
 
@@ -55,14 +46,12 @@ export function WorkAreaSection({
   // Fetch contract details to get clientId
   const {
     data: contractData,
-    isLoading: contractLoading,
-    error: contractError,
   } = useContract(slaObject?.contractId);
+  
   // Fetch locations by clientId
   const {
     data: locationsData,
     isLoading: locationsLoading,
-    error: locationsError,
   } = useLocationsByClient(contractData?.clientId);
   const locations = locationsData?.items || [];
 
@@ -78,24 +67,20 @@ export function WorkAreaSection({
   const workAreas = workAreasData?.items || [];
 
   // Fetch work area details based on selected work area
-  const { data: workAreaDetailsData, isLoading: workAreaDetailsLoading } =
+  const { data: workAreaDetailsData } =
     useWorkAreaDetailsByWorkArea(selectedWorkAreaId);
   const workAreaDetails = workAreaDetailsData?.items || [];
 
   // Reset dependent selections when parent changes
   useEffect(() => {
     if (slaId) {
-      // Reset all selections when SLA changes
-      setSelectedLocationId("");
-      setSelectedZoneId("");
-      setSelectedWorkAreaId("");
-      setValue("locationId", "");
-      setValue("zoneId", "");
-      setValue("workAreaId", "");
-      setValue("workAreaDetailId", "");
-      setValue("displayLocation", "");
+      updateField("locationId", "");
+      updateField("zoneId", "");
+      updateField("workAreaId", "");
+      updateField("workAreaDetailId", "");
+      updateField("displayLocation", "");
     }
-  }, [slaId, setValue]);
+  }, [slaId]);
 
   // Auto-generate displayLocation when all selections are made
   useEffect(() => {
@@ -106,66 +91,55 @@ export function WorkAreaSection({
     const selectedWorkArea = workAreas.find(
       (area) => area.id === selectedWorkAreaId,
     );
-    const selectedWorkAreaDetail = workAreaDetails.find(
-      (detail) => detail.id === watch("workAreaDetailId"),
-    );
+    // Note: We're currently creating a NEW work area detail in the form, 
+    // but the original code had some logic for existing details too.
+    // Let's stick to the creation logic as per the form fields below.
 
     if (
       selectedLocation &&
       selectedZone &&
       selectedWorkArea &&
-      selectedWorkAreaDetail
+      formData.workAreaDetailName
     ) {
-      const displayLocation = `${selectedLocation.address}, ${selectedZone.name}, ${selectedWorkArea.name}, ${selectedWorkAreaDetail.name}`;
-      setValue("displayLocation", displayLocation);
-    } else {
-      setValue("displayLocation", "");
+      const displayLocation = `${selectedLocation.address}, ${selectedZone.name}, ${selectedWorkArea.name}, ${formData.workAreaDetailName}`;
+      updateField("displayLocation", displayLocation);
     }
   }, [
     selectedLocationId,
     selectedZoneId,
     selectedWorkAreaId,
-    watch("workAreaDetailId"),
+    formData.workAreaDetailName,
     locations,
     zones,
     workAreas,
-    workAreaDetails,
-    setValue,
-    watch,
   ]);
 
   const handleLocationChange = (value: string) => {
-    setSelectedLocationId(value);
-    setValue("locationId", value);
+    updateField("locationId", value);
 
     // Lưu address vào form để AssignmentSection sử dụng
     const selectedLocation = locations.find((loc) => loc.id === value);
     if (selectedLocation) {
-      setValue("locationAddress", selectedLocation.address);
+      updateField("locationAddress", selectedLocation.address);
     }
 
     // Reset dependent selections
-    setSelectedZoneId("");
-    setSelectedWorkAreaId("");
-    setValue("zoneId", "");
-    setValue("workAreaId", "");
-    setValue("workAreaDetailId", "");
+    updateField("zoneId", "");
+    updateField("workAreaId", "");
+    updateField("workAreaDetailId", "");
   };
 
   const handleZoneChange = (value: string) => {
-    setSelectedZoneId(value);
-    setValue("zoneId", value);
+    updateField("zoneId", value);
     // Reset dependent selections
-    setSelectedWorkAreaId("");
-    setValue("workAreaId", "");
-    setValue("workAreaDetailId", "");
+    updateField("workAreaId", "");
+    updateField("workAreaDetailId", "");
   };
 
   const handleWorkAreaChange = (value: string) => {
-    setSelectedWorkAreaId(value);
-    setValue("workAreaId", value);
+    updateField("workAreaId", value);
     // Reset work area detail when work area changes
-    setValue("workAreaDetailId", "");
+    updateField("workAreaDetailId", "");
   };
 
   return (
@@ -180,6 +154,7 @@ export function WorkAreaSection({
           <div className="space-y-2">
             <Label>Địa điểm *</Label>
             <Select
+              value={selectedLocationId || ""}
               onValueChange={handleLocationChange}
               disabled={!contractData?.clientId || locationsLoading}
             >
@@ -207,10 +182,7 @@ export function WorkAreaSection({
               </SelectContent>
             </Select>
             {errors.locationId && (
-              <p className="text-sm text-red-500">
-                {(errors.locationId as any)?.message ||
-                  "Trường này là bắt buộc"}
-              </p>
+              <p className="text-sm text-red-500">{errors.locationId}</p>
             )}
           </div>
 
@@ -218,6 +190,7 @@ export function WorkAreaSection({
           <div className="space-y-2">
             <Label>Zone *</Label>
             <Select
+              value={selectedZoneId || ""}
               onValueChange={handleZoneChange}
               disabled={!selectedLocationId || zonesLoading}
             >
@@ -243,15 +216,14 @@ export function WorkAreaSection({
               </SelectContent>
             </Select>
             {errors.zoneId && (
-              <p className="text-sm text-red-500">
-                {(errors.zoneId as any)?.message || "Trường này là bắt buộc"}
-              </p>
+              <p className="text-sm text-red-500">{errors.zoneId}</p>
             )}
           </div>
 
           <div className="space-y-2">
             <Label>Khu vực làm việc *</Label>
             <Select
+              value={selectedWorkAreaId || ""}
               onValueChange={handleWorkAreaChange}
               disabled={!selectedZoneId}
             >
@@ -275,49 +247,10 @@ export function WorkAreaSection({
               </SelectContent>
             </Select>
             {errors.workAreaId && (
-              <p className="text-sm text-red-500">
-                {(errors.workAreaId as any)?.message ||
-                  "Trường này là bắt buộc"}
-              </p>
+              <p className="text-sm text-red-500">{errors.workAreaId}</p>
             )}
           </div>
-
-          {/* <div className="space-y-2">
-            <Label>Chi tiết khu vực *</Label>
-            <Select
-              onValueChange={(value) => setValue("workAreaDetailId", value)}
-              disabled={!selectedWorkAreaId}
-            >
-              <SelectTrigger className="bg-white border-[#e5e5e5]">
-                <SelectValue
-                  placeholder={
-                    !selectedWorkAreaId
-                      ? "Chọn khu vực trước"
-                      : workAreaDetailsLoading
-                        ? "Đang tải..."
-                        : "Chọn chi tiết khu vực"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {workAreaDetails.map((detail: any) => (
-                  <SelectItem key={detail.id} value={detail.id!}>
-                    {detail.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.workAreaDetailId && (
-              <p className="text-sm text-red-500">
-                {(errors.workAreaDetailId as any)?.message ||
-                  "Trường này là bắt buộc"}
-              </p>
-            )}
-          </div> */}
         </div>
-
-        {/* Hidden field for auto-generated displayLocation */}
-        <input type="hidden" {...register("displayLocation")} />
 
         {/* WorkAreaDetail Creation Fields */}
         <div className="mt-8">
@@ -326,14 +259,13 @@ export function WorkAreaSection({
               <Label htmlFor="workAreaDetailName">Tên chi tiết khu vực</Label>
               <Input
                 id="workAreaDetailName"
-                {...register("workAreaDetailName")}
+                value={formData.workAreaDetailName || ""}
+                onChange={(e) => updateField("workAreaDetailName", e.target.value)}
                 placeholder="Nhập tên chi tiết khu vực"
                 className="bg-white border-[#e5e5e5]"
               />
               {errors.workAreaDetailName && (
-                <p className="text-sm text-red-500">
-                  {(errors.workAreaDetailName as any)?.message}
-                </p>
+                <p className="text-sm text-red-500">{errors.workAreaDetailName}</p>
               )}
             </div>
 
@@ -343,14 +275,13 @@ export function WorkAreaSection({
                 id="workAreaDetailArea"
                 type="number"
                 step="0.01"
-                {...register("workAreaDetailArea", { valueAsNumber: true })}
+                value={formData.workAreaDetailArea || ""}
+                onChange={(e) => updateField("workAreaDetailArea", Number(e.target.value))}
                 placeholder="Nhập diện tích"
                 className="bg-white border-[#e5e5e5]"
               />
               {errors.workAreaDetailArea && (
-                <p className="text-sm text-red-500">
-                  {(errors.workAreaDetailArea as any)?.message}
-                </p>
+                <p className="text-sm text-red-500">{errors.workAreaDetailArea}</p>
               )}
             </div>
           </div>

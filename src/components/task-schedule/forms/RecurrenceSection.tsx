@@ -1,7 +1,6 @@
 "use client";
 
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { TimePicker } from "@/components/ui/time-picker";
 import {
@@ -11,10 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, X, Clock } from "lucide-react";
+import { Clock } from "lucide-react";
 
-// Import types and constants
-import type { RecurrenceSectionProps } from "@/types/recurrence";
+// Import constants
 import {
   RECURRENCE_TYPES,
   WEEKDAY_OPTIONS,
@@ -24,10 +22,31 @@ import {
   getDaysArrayForMonth,
 } from "@/constants/recurrence";
 
+interface RecurrenceSectionProps {
+  formData: any;
+  errors: Record<string, string>;
+  updateField: (field: string, value: any) => void;
+  times: string[];
+  setTimes: (times: string[]) => void;
+  selectedDaysOfWeek: string[];
+  setSelectedDaysOfWeek: (days: string[]) => void;
+  daysOfMonth: number[];
+  setDaysOfMonth: (days: number[]) => void;
+  newTime: string;
+  setNewTime: (time: string) => void;
+  newDayOfMonth: string;
+  setNewDayOfMonth: (day: string) => void;
+  addTime: () => void;
+  removeTime: (time: string) => void;
+  addDayOfMonth: () => void;
+  removeDayOfMonth: (day: number) => void;
+  toggleDayOfWeek: (day: string) => void;
+}
+
 export function RecurrenceSection({
-  setValue,
-  watch,
+  formData,
   errors,
+  updateField,
   times,
   setTimes,
   selectedDaysOfWeek,
@@ -36,15 +55,9 @@ export function RecurrenceSection({
   setDaysOfMonth,
   newTime,
   setNewTime,
-  newDayOfMonth,
-  setNewDayOfMonth,
-  addTime,
-  removeTime,
-  addDayOfMonth,
-  removeDayOfMonth,
   toggleDayOfWeek,
 }: RecurrenceSectionProps) {
-  const recurrenceType = watch("recurrenceType");
+  const recurrenceType = formData.recurrenceType;
 
   // Helper functions for new UI
   const addTimeSlot = () => {
@@ -66,11 +79,7 @@ export function RecurrenceSection({
   };
 
   const toggleWeekday = (weekdayId: string) => {
-    if (selectedDaysOfWeek.includes(weekdayId)) {
-      setSelectedDaysOfWeek(selectedDaysOfWeek.filter((d) => d !== weekdayId));
-    } else {
-      setSelectedDaysOfWeek([...selectedDaysOfWeek, weekdayId]);
-    }
+    toggleDayOfWeek(weekdayId);
   };
 
   const toggleDay = (day: number) => {
@@ -84,9 +93,13 @@ export function RecurrenceSection({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-black mb-4">
-          Cấu hình lặp lại
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-black">Cấu hình lặp lại</h2>
+          <div className="flex items-center gap-2 text-sm text-primary">
+            <Clock className="w-4 h-4" />
+            <span>Cấu hình sẽ tự động điền từ SLA Task</span>
+          </div>
+        </div>
 
         <div className="space-y-6">
           {/* Loại lặp lại */}
@@ -95,10 +108,10 @@ export function RecurrenceSection({
               Loại lặp lại <span className="text-red-500">*</span>
             </Label>
             <Select
-              onValueChange={(value) => setValue("recurrenceType", value)}
-              defaultValue="Daily"
+              onValueChange={(value) => updateField("recurrenceType", value)}
+              value={recurrenceType || "Daily"}
             >
-              <SelectTrigger className="bg-white border-[#e5e5e5] focus:ring-2 focus:ring-[#1a80a2] focus:border-transparent">
+              <SelectTrigger className="bg-white border-[#e5e5e5] focus:ring-2 focus:ring-primary focus:border-transparent">
                 <SelectValue placeholder="Chọn loại lặp lại" />
               </SelectTrigger>
               <SelectContent>
@@ -111,8 +124,7 @@ export function RecurrenceSection({
             </Select>
             {errors.recurrenceType && (
               <p className="text-sm text-red-500">
-                {(errors.recurrenceType as any)?.message ||
-                  "Vui lòng chọn loại lặp lại"}
+                {errors.recurrenceType}
               </p>
             )}
           </div>
@@ -131,7 +143,7 @@ export function RecurrenceSection({
                   <div className="flex-1 max-w-xs">
                     <TimePicker
                       value={time}
-                      onChange={(newTime) => updateTimeSlot(time, newTime)}
+                      onChange={(newTimeValue) => updateTimeSlot(time, newTimeValue)}
                       placeholder="Chọn thời gian"
                       format="24"
                       className="w-full"
@@ -158,7 +170,7 @@ export function RecurrenceSection({
                       onClick={() => toggleWeekday(weekday.id)}
                       className={`px-3 py-4 rounded-lg font-medium transition-all text-center ${
                         isSelected
-                          ? "bg-[#1a80a2] text-white hover:bg-[#1a80a2]/90"
+                          ? "bg-primary text-white hover:bg-primary/90"
                           : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
                       }`}
                     >
@@ -190,7 +202,7 @@ export function RecurrenceSection({
                         onClick={() => toggleDay(day)}
                         className={`aspect-square rounded-lg font-medium transition-all ${
                           isSelected
-                            ? "bg-[#1a80a2] text-white hover:bg-[#1a80a2]/90"
+                            ? "bg-primary text-white hover:bg-primary/90"
                             : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
                         }`}
                       >
@@ -212,13 +224,13 @@ export function RecurrenceSection({
                 </Label>
                 <Select
                   onValueChange={(value) => {
-                    setValue("selectedMonth", parseInt(value));
-                    // Clear selected days when month changes since different months have different day counts
+                    updateField("selectedMonth", parseInt(value));
+                    // Clear selected days when month changes
                     setDaysOfMonth([]);
                   }}
-                  defaultValue="1"
+                  value={(formData.selectedMonth || 1).toString()}
                 >
-                  <SelectTrigger className="bg-white border-[#e5e5e5] focus:ring-2 focus:ring-[#1a80a2] focus:border-transparent">
+                  <SelectTrigger className="bg-white border-[#e5e5e5] focus:ring-2 focus:ring-primary focus:border-transparent">
                     <SelectValue placeholder="Chọn tháng" />
                   </SelectTrigger>
                   <SelectContent>
@@ -236,7 +248,7 @@ export function RecurrenceSection({
                   Chọn ngày
                 </Label>
                 <div className="grid grid-cols-7 gap-2">
-                  {getDaysArrayForMonth(watch("selectedMonth") || 1).map(
+                  {getDaysArrayForMonth(formData.selectedMonth || 1).map(
                     (day) => {
                       const isSelected = daysOfMonth.includes(day);
                       return (
@@ -246,7 +258,7 @@ export function RecurrenceSection({
                           onClick={() => toggleDay(day)}
                           className={`aspect-square rounded-lg font-medium transition-all ${
                             isSelected
-                              ? "bg-[#1a80a2] text-white hover:bg-[#1a80a2]/90"
+                              ? "bg-primary text-white hover:bg-primary/90"
                               : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
                           }`}
                         >

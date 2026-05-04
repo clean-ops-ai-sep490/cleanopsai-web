@@ -1,29 +1,23 @@
 /**
  * Standard Operating Procedure (SOP) and Step related types
- * Based on product requirements and future API implementation
+ * Based on actual API response structure
  */
-
-import type { SkillLevel } from "./common";
 
 // SOP (Standard Operating Procedure) types
 export interface SOP {
-  steps: any;
   id: string;
   name: string;
   description?: string;
-  serviceType?: string;
+  serviceType: string; // e.g., "Cleaning"
   environmentTypeId: string;
   version: number;
-  isActive?: boolean;
-  isRequiredSkill?: boolean;
-  isRequiredCertification?: boolean;
-  createdBy?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  sopSteps?: SOPStep[]; // Changed from steps to sopSteps
-  requiredSkillIds?: string[];
-  requiredCertificationIds?: string[];
-  environmentType?: any; // Can be null
+  requiredSkillIds?: string[] | null;
+  requiredCertificationIds?: string[] | null;
+  stepCount: number; // Number of steps in the SOP
+  environmentType?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 export interface SOPStep {
@@ -51,8 +45,8 @@ export interface CreateSOPData {
   serviceType: string; // e.g., "Cleaning"
   environmentTypeId: string;
   steps: SOPStepRequest[];
-  requiredSkillIds: string[];
-  requiredCertificationIds: string[];
+  requiredSkillIds?: string[];
+  requiredCertificationIds?: string[];
 }
 
 export interface SOPStepRequest {

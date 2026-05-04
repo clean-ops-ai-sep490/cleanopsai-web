@@ -5,7 +5,7 @@ import {
   type WorkerFilterParams,
   type Worker,
 } from "@/lib/worker-api";
-import { useSOP } from "./useWorkflowBuilder";
+import { useSOP } from "./useSOPs";
 
 export interface TaskScheduleWorkerFilterConfig {
   // Form data from task-schedule

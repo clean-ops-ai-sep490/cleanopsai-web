@@ -26,14 +26,6 @@ export async function getMe(): Promise<User> {
 }
 
 export async function logoutUser(): Promise<void> {
-  try {
-    // Call backend logout endpoint to invalidate tokens on server
-    await api.post("/Auths/logout", {});
-  } catch (error) {
-    // Even if backend call fails, we still clear local tokens
-    console.warn("Backend logout failed, clearing local tokens anyway:", error);
-  } finally {
-    // Always clear local tokens
-    clearTokens();
-  }
+  // Clear local tokens immediately. No backend call needed for this architecture.
+  clearTokens();
 }

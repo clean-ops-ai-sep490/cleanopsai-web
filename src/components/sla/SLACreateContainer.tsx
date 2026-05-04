@@ -157,9 +157,9 @@ export function SLACreateContainer() {
               <div
                 className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold ${
                   step.active
-                    ? "bg-[#1a80a2]"
+                    ? "bg-primary"
                     : currentStep > step.number
-                      ? "bg-[#1a80a2]"
+                      ? "bg-primary"
                       : "bg-gray-300"
                 }`}
               >
@@ -167,7 +167,7 @@ export function SLACreateContainer() {
               </div>
               <p
                 className={`mt-2 text-sm font-medium ${
-                  step.active ? "text-[#1a80a2]" : "text-gray-600"
+                  step.active ? "text-primary" : "text-gray-600"
                 }`}
               >
                 {step.title}
@@ -176,7 +176,7 @@ export function SLACreateContainer() {
             {index < steps.length - 1 && (
               <div
                 className={`w-24 h-0.5 mx-4 ${
-                  currentStep > step.number ? "bg-[#1a80a2]" : "bg-gray-300"
+                  currentStep > step.number ? "bg-primary" : "bg-gray-300"
                 }`}
               />
             )}
@@ -221,7 +221,7 @@ export function SLACreateContainer() {
         <Button
           onClick={handleNext}
           disabled={!isStepValid() || isSubmitting}
-          className="bg-[#1a80a2] hover:bg-[#1a80a2]/90"
+          className="bg-primary hover:bg-primary/90"
         >
           {isSubmitting ? (
             <>

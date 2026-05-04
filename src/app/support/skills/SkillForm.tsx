@@ -78,13 +78,7 @@ export default function SkillForm({
       setSuccess(false);
 
       await onSubmit(form);
-
-      setSuccess(true);
-
-      setTimeout(() => {
-        setSuccess(false);
-        onCancel();
-      }, 1200);
+      onCancel();
     } catch (err) {
       setErrors({
         submit: "Lưu kỹ năng thất bại. Vui lòng thử lại.",

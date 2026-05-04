@@ -1,17 +1,28 @@
 export interface TaskAssignment {
   id: string;
   taskScheduleId: string;
+  taskName: string;
   assigneeId: string;
   originalAssigneeId: string;
-  status: "NotStarted" | "InProgress" | "Completed" | "Cancelled";
+  status: "NotStarted" | "InProgress" | "Completed" | "Cancelled" | "Block";
   scheduledStartAt: string;
   scheduledEndAt: string;
+  durationMinutes: number;
   isAdhocTask: boolean;
   nameAdhocTask: string | null;
   displayLocation: string;
   assigneeName: string;
   originalAssigneeName: string;
   steps: any[];
+}
+
+export interface TaskAssignmentUpdatePayload {
+  taskName: string;
+  scheduledStartAt: string;
+  durationMinutes: number;
+  assigneeId: string;
+  assigneeName: string;
+  displayLocation: string;
 }
 
 export interface TaskAssignmentResponse {

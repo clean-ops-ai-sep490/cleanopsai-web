@@ -93,7 +93,7 @@ export function Pagination({
             onClick={() => onPageChange(page)}
             className={cn(
               "h-8 w-8 p-0",
-              page === currentPage && "bg-[#1a80a2] hover:bg-[#1a80a2]/90",
+              page === currentPage && "bg-primary hover:bg-primary/90",
             )}
             aria-label={`Go to page ${page}`}
             aria-current={page === currentPage ? "page" : undefined}

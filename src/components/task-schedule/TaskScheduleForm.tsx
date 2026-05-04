@@ -1,9 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,34 +16,31 @@ import { RecurrenceSection } from "./forms/RecurrenceSection";
 import { ContractPeriodSection } from "./forms/ContractPeriodSection";
 import { StatusSection } from "./forms/StatusSection";
 
-// Validation schema
-const taskScheduleSchema = z.object({
-  sopId: z.string().min(1, "SOP là bắt buộc"),
-  slaId: z.string().min(1, "SLA là bắt buộc"),
-  slaTaskId: z.string().min(1, "SLA Task là bắt buộc"),
-  slaShiftId: z.string().min(1, "SLA Shift là bắt buộc"),
-  locationId: z.string().min(1, "Địa điểm là bắt buộc"),
-  locationAddress: z.string(), // Address của location đã chọn
-  zoneId: z.string().min(1, "Zone là bắt buộc"),
-  workAreaId: z.string().min(1, "Khu vực làm việc là bắt buộc"),
-  workAreaDetailId: z.string().min(1, "Chi tiết khu vực là bắt buộc"),
-  name: z.string().min(1, "Tên lịch trình là bắt buộc"),
-  description: z.string(),
-  assigneeId: z.string().min(1, "Người thực hiện là bắt buộc"),
-  assigneeName: z.string().min(1, "Tên người thực hiện là bắt buộc"),
-  supervisorId: z.string().min(1, "Người giám sát là bắt buộc"),
-  displayLocation: z.string().min(1, "Địa điểm hiển thị là bắt buộc"),
-  durationMinutes: z.number().min(1, "Thời gian thực hiện phải lớn hơn 0"),
-  recurrenceType: z.string().min(1, "Loại lặp lại là bắt buộc"),
-  contractStartDate: z.string().min(1, "Ngày bắt đầu hợp đồng là bắt buộc"),
-  contractEndDate: z.string().min(1, "Ngày kết thúc hợp đồng là bắt buộc"),
-  isActive: z.boolean(),
-  // WorkAreaDetail creation fields
-  workAreaDetailName: z.string().min(1, "Tên chi tiết khu vực là bắt buộc"),
-  workAreaDetailArea: z.number().min(0, "Diện tích là bắt buộc"),
-});
-
-type TaskScheduleFormData = z.infer<typeof taskScheduleSchema>;
+export interface TaskScheduleFormData {
+  sopId: string;
+  slaId: string;
+  slaTaskId: string;
+  slaShiftId: string;
+  locationId: string;
+  locationAddress?: string;
+  zoneId: string;
+  workAreaId: string;
+  workAreaDetailId: string;
+  name: string;
+  description: string;
+  assigneeId: string;
+  assigneeName: string;
+  supervisorId: string;
+  displayLocation: string;
+  durationMinutes: number;
+  recurrenceType: string;
+  contractStartDate: string;
+  contractEndDate: string;
+  isActive: boolean;
+  workAreaDetailName: string;
+  workAreaDetailArea: number;
+  selectedMonth?: number;
+}
 
 interface TaskScheduleFormProps {
   initialData?: Partial<CreateTaskScheduleData & { supervisorId: string }>;
@@ -62,30 +56,133 @@ export function TaskScheduleForm({
   submitButtonText = "Lưu",
 }: TaskScheduleFormProps) {
   // Form state
+  const [formData, setFormData] = useState<TaskScheduleFormData>({
+    sopId: "",
+    slaId: "",
+    slaTaskId: "",
+    slaShiftId: "",
+    locationId: "",
+    locationAddress: "",
+    zoneId: "",
+    workAreaId: "",
+    workAreaDetailId: "",
+    name: "",
+    description: "",
+    assigneeId: "",
+    assigneeName: "",
+    supervisorId: "",
+    displayLocation: "",
+    durationMinutes: 60,
+    recurrenceType: "Daily",
+    contractStartDate: "",
+    contractEndDate: "",
+    isActive: true,
+    workAreaDetailName: "",
+    workAreaDetailArea: 0,
+    selectedMonth: 1,
+    ...initialData,
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [times, setTimes] = useState<string[]>(["08:00"]);
   const [selectedDaysOfWeek, setSelectedDaysOfWeek] = useState<string[]>([]);
   const [daysOfMonth, setDaysOfMonth] = useState<number[]>([]);
   const [newTime, setNewTime] = useState("");
   const [newDayOfMonth, setNewDayOfMonth] = useState("");
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors },
-  } = useForm<TaskScheduleFormData>({
-    resolver: zodResolver(taskScheduleSchema),
-    defaultValues: {
-      isActive: true,
-      durationMinutes: 60,
-      recurrenceType: "Daily",
-      description: "",
-      ...initialData,
-    },
-  });
+  // Helper to update form fields
+  const updateField = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error when field is changed
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
 
-  // Time management functions
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.sopId) newErrors.sopId = "Vui lòng chọn SOP";
+    if (!formData.slaId) newErrors.slaId = "Vui lòng chọn SLA";
+    if (!formData.slaTaskId) newErrors.slaTaskId = "Vui lòng chọn SLA Task";
+    if (!formData.slaShiftId) newErrors.slaShiftId = "Vui lòng chọn ca làm việc";
+    if (!formData.locationId) newErrors.locationId = "Vui lòng chọn địa điểm";
+    if (!formData.zoneId) newErrors.zoneId = "Vui lòng chọn Zone";
+    if (!formData.workAreaId) newErrors.workAreaId = "Vui lòng chọn khu vực làm việc";
+    if (!formData.name.trim()) newErrors.name = "Tên lịch trình không được để trống";
+    if (!formData.assigneeId) newErrors.assigneeId = "Vui lòng chọn nhân viên thực hiện";
+    if (!formData.supervisorId) newErrors.supervisorId = "Vui lòng chọn người giám sát";
+    if (!formData.contractStartDate) newErrors.contractStartDate = "Vui lòng chọn ngày bắt đầu";
+    if (!formData.contractEndDate) newErrors.contractEndDate = "Vui lòng chọn ngày kết thúc";
+    
+    if (formData.workAreaDetailName && formData.workAreaDetailName.trim() === "") {
+        newErrors.workAreaDetailName = "Tên chi tiết khu vực không được để trống";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle auto-fill logic
+  const handleAutoFill = (data: {
+    sop?: any;
+    sla?: any;
+    slaShift?: any;
+    slaTask?: any;
+  }) => {
+    const { sop, sla, slaShift, slaTask } = data;
+    const updates: Partial<TaskScheduleFormData> = {};
+
+    if (sop && slaTask) {
+      updates.name = `${sop.name} - ${slaTask.name}`;
+    }
+
+    if (sop && sop.description) {
+      updates.description = sop.description;
+    }
+
+    if (slaShift && slaShift.startTime && slaShift.endTime) {
+      const [startHour, startMin] = slaShift.startTime.split(":").map(Number);
+      const [endHour, endMin] = slaShift.endTime.split(":").map(Number);
+      const duration = endHour * 60 + endMin - (startHour * 60 + startMin);
+      if (duration > 0) {
+        updates.durationMinutes = duration;
+      }
+    }
+
+    if (slaTask) {
+      updates.recurrenceType = slaTask.recurrenceType;
+      if (slaTask.recurrenceConfig) {
+        const config = slaTask.recurrenceConfig;
+        if (slaTask.recurrenceType === "Weekly" && config.daysOfWeek) {
+          setSelectedDaysOfWeek(config.daysOfWeek);
+        }
+        if (slaTask.recurrenceType === "Monthly" && config.daysOfMonth) {
+          setDaysOfMonth(config.daysOfMonth);
+        }
+        if (slaTask.recurrenceType === "Yearly" && config.monthDays) {
+          const days = config.monthDays.map((md: any) => md.day);
+          setDaysOfMonth(days);
+          if (config.monthDays.length > 0) {
+            updates.selectedMonth = config.monthDays[0].month;
+          }
+        }
+      }
+
+      if (slaShift && slaShift.startTime) {
+        const timeStr = slaShift.startTime.substring(0, 5);
+        setTimes([timeStr]);
+      }
+    }
+
+    setFormData((prev) => ({ ...prev, ...updates }));
+  };
+
+  // Time and day management
   const addTime = () => {
     if (newTime && !times.includes(newTime)) {
       setTimes([...times, newTime]);
@@ -94,10 +191,9 @@ export function TaskScheduleForm({
   };
 
   const removeTime = (timeToRemove: string) => {
-    setTimes(times.filter((time) => time !== timeToRemove));
+    setTimes(times.filter((t) => t !== timeToRemove));
   };
 
-  // Day of month management functions
   const addDayOfMonth = () => {
     const day = parseInt(newDayOfMonth);
     if (day >= 1 && day <= 31 && !daysOfMonth.includes(day)) {
@@ -107,36 +203,31 @@ export function TaskScheduleForm({
   };
 
   const removeDayOfMonth = (dayToRemove: number) => {
-    setDaysOfMonth(daysOfMonth.filter((day) => day !== dayToRemove));
+    setDaysOfMonth(daysOfMonth.filter((d) => d !== dayToRemove));
   };
 
-  // Day of week management function
   const toggleDayOfWeek = (day: string) => {
     setSelectedDaysOfWeek((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
     );
   };
 
-  const onFormSubmit = (data: TaskScheduleFormData) => {
-    // Convert times from HH:MM to HH:MM:SS format for API
-    const formattedTimes = times.map((time) => {
-      // If time is already in HH:MM:SS format, keep it
-      if (time.split(":").length === 3) {
-        return time;
-      }
-      // If time is in HH:MM format, add :00 seconds
-      return `${time}:00`;
-    });
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    // Convert times for API
+    const formattedTimes = times.map((t) => (t.split(":").length === 3 ? t : `${t}:00`));
 
     const recurrenceConfig: RecurrenceConfig = {
       times: formattedTimes,
       daysOfWeek: selectedDaysOfWeek,
       daysOfMonth,
-      monthDays: [], // Can be extended later
+      monthDays: [],
     };
 
     const submitData: CreateTaskScheduleData & { supervisorId: string } = {
-      ...data,
+      ...(formData as any),
       recurrenceConfig,
     };
 
@@ -145,42 +236,40 @@ export function TaskScheduleForm({
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
-        {/* Basic Information Card */}
+      <form onSubmit={handleSubmit} className="space-y-6">
         <Card className="bg-white rounded-[8px] p-6 border">
-          <BasicInfoSection register={register} errors={errors} />
+          <BasicInfoSection formData={formData} errors={errors} updateField={updateField} />
         </Card>
 
-        {/* SOP & Task Configuration Card */}
         <Card className="bg-white rounded-[8px] p-6 border">
-          <SOPTaskSection setValue={setValue} errors={errors} />
+          <SOPTaskSection
+            formData={formData}
+            updateField={updateField}
+            errors={errors}
+            onAutoFill={handleAutoFill}
+          />
         </Card>
 
-        {/* Work Area Configuration Card */}
         <Card className="bg-white rounded-[8px] p-6 border">
           <WorkAreaSection
-            register={register}
-            setValue={setValue}
-            watch={watch}
+            formData={formData}
+            updateField={updateField}
             errors={errors}
           />
         </Card>
 
-        {/* Assignment Configuration Card */}
         <Card className="bg-white rounded-[8px] p-6 border">
           <AssignmentSection
-            register={register}
-            setValue={setValue}
-            watch={watch}
+            formData={formData}
+            updateField={updateField}
             errors={errors}
           />
         </Card>
 
-        {/* Recurrence Configuration Card */}
         <Card className="bg-white rounded-[8px] p-6 border">
           <RecurrenceSection
-            setValue={setValue}
-            watch={watch}
+            formData={formData}
+            updateField={updateField}
             errors={errors}
             times={times}
             setTimes={setTimes}
@@ -200,17 +289,14 @@ export function TaskScheduleForm({
           />
         </Card>
 
-        {/* Contract Period Card */}
         <Card className="bg-white rounded-[8px] p-6 border">
-          <ContractPeriodSection register={register} errors={errors} />
+          <ContractPeriodSection formData={formData} errors={errors} updateField={updateField} />
         </Card>
 
-        {/* Status Card */}
         <Card className="bg-white rounded-[8px] p-6 border">
-          <StatusSection setValue={setValue} watch={watch} />
+          <StatusSection formData={formData} updateField={updateField} />
         </Card>
 
-        {/* Submit Buttons */}
         <div className="flex items-center justify-end gap-4 pt-6">
           <Button type="button" variant="outline" asChild>
             <Link href="/manager/task-schedule">Hủy</Link>
@@ -218,7 +304,7 @@ export function TaskScheduleForm({
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="bg-[#1a80a2] hover:bg-[#308cab] text-white min-w-[120px]"
+            className="bg-primary hover:bg-[#308cab] text-white min-w-[120px]"
           >
             {isSubmitting ? (
               <>

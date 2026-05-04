@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +30,7 @@ export default function SLADetailPage() {
 
   const deleteSOPMutation = useDeleteSLA(() => {
     setSlaDeleted(true);
-    router.push("/dashboard/sla-trigger");
+    router.push("/manager/sla-trigger");
   });
 
   const handleDelete = async () => {
@@ -60,18 +59,18 @@ export default function SLADetailPage() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-[#1a80a2]" />
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
           <span className="ml-2 text-[#70808f]">Đang tải SLA...</span>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   if (error || !sla) {
     return (
-      <DashboardLayout>
+      <>
         <div className="text-center py-12">
           <p className="text-red-500 mb-4">
             {error?.message?.includes("404")
@@ -80,17 +79,17 @@ export default function SLADetailPage() {
           </p>
           <Button
             variant="outline"
-            onClick={() => router.push("/dashboard/sla-trigger")}
+            onClick={() => router.push("/manager/sla-trigger")}
             className="border-[#e5e5e5]"
           >
             Quay lại danh sách
           </Button>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
   return (
-    <DashboardLayout>
+    <>
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -224,7 +223,7 @@ export default function SLADetailPage() {
                         </div>
                         <div className="flex items-center space-x-2">
                           <Users className="h-4 w-4 text-gray-400" />
-                          <span className="font-semibold text-[#1a80a2]">
+                          <span className="font-semibold text-primary">
                             {shift.requiredWorker} người
                           </span>
                         </div>
@@ -290,7 +289,7 @@ export default function SLADetailPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-[#1a80a2]">
+                  <p className="text-3xl font-bold text-primary">
                     {shifts.length}
                   </p>
                   <p className="text-sm text-gray-600">Ca làm việc</p>
@@ -358,6 +357,6 @@ export default function SLADetailPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

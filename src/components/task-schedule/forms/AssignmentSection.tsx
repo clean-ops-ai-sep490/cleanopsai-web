@@ -1,12 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  UseFormRegister,
-  UseFormSetValue,
-  FieldErrors,
-  UseFormWatch,
-} from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -22,23 +16,21 @@ import { getSLAShiftsBySLA } from "@/lib/sla-api";
 import { useQuery } from "@tanstack/react-query";
 
 interface AssignmentSectionProps {
-  register: UseFormRegister<any>;
-  setValue: UseFormSetValue<any>;
-  watch: UseFormWatch<any>;
-  errors: FieldErrors<any>;
+  formData: any;
+  errors: Record<string, string>;
+  updateField: (field: string, value: any) => void;
 }
 
 export function AssignmentSection({
-  register,
-  setValue,
-  watch,
+  formData,
   errors,
+  updateField,
 }: AssignmentSectionProps) {
-  // Watch form values to get context
-  const sopId = watch("sopId");
-  const slaId = watch("slaId");
-  const slaShiftId = watch("slaShiftId");
-  const locationAddress = watch("locationAddress"); // Lấy address từ form thay vì API call
+  // Use form values from props
+  const sopId = formData.sopId;
+  const slaId = formData.slaId;
+  const slaShiftId = formData.slaShiftId;
+  const locationAddress = formData.locationAddress;
 
   // Fetch supervisors from API
   const { data: supervisorsData, isLoading: supervisorsLoading } =
@@ -67,7 +59,7 @@ export function AssignmentSection({
     sopId,
     slaShiftStartTime: selectedShift?.startTime,
     slaShiftEndTime: selectedShift?.endTime,
-    locationAddress: locationAddress, // Sử dụng address từ form
+    locationAddress: locationAddress,
     enabled: true,
   });
 
@@ -75,8 +67,8 @@ export function AssignmentSection({
   const handleWorkerSelect = (workerId: string) => {
     const selectedWorker = selectWorker(workerId);
     if (selectedWorker) {
-      setValue("assigneeId", workerId);
-      setValue("assigneeName", selectedWorker.fullName);
+      updateField("assigneeId", workerId);
+      updateField("assigneeName", selectedWorker.fullName);
     }
   };
 
@@ -94,7 +86,10 @@ export function AssignmentSection({
             {/* Worker Selection Dropdown */}
             <div className="space-y-2">
               <Label>Người thực hiện *</Label>
-              <Select onValueChange={handleWorkerSelect}>
+              <Select 
+                value={formData.assigneeId}
+                onValueChange={handleWorkerSelect}
+              >
                 <SelectTrigger className="bg-white border-[#e5e5e5]">
                   <SelectValue
                     placeholder={
@@ -125,17 +120,8 @@ export function AssignmentSection({
                 </SelectContent>
               </Select>
 
-              {/* Hidden fields for form submission */}
-              <input type="hidden" {...register("assigneeId")} />
-
               {errors.assigneeId && (
-                <p className="text-sm text-red-500">Vui lòng chọn nhân viên</p>
-              )}
-              {errors.assigneeName && (
-                <p className="text-sm text-red-500">
-                  {(errors.assigneeName as any)?.message ||
-                    "Trường này là bắt buộc"}
-                </p>
+                <p className="text-sm text-red-500">{errors.assigneeId}</p>
               )}
             </div>
 
@@ -156,7 +142,7 @@ export function AssignmentSection({
 
             {workersError && (
               <div className="text-sm text-red-500 p-3 border border-red-200 rounded bg-red-50">
-                Lỗi khi tải danh sách nhân viên: {workersError.message}
+                Lỗi khi tải danh sách nhân viên: {(workersError as any).message}
               </div>
             )}
           </div>
@@ -164,7 +150,10 @@ export function AssignmentSection({
           {/* Supervisor Selection */}
           <div className="space-y-2">
             <Label>Người giám sát *</Label>
-            <Select onValueChange={(value) => setValue("supervisorId", value)}>
+            <Select 
+              value={formData.supervisorId}
+              onValueChange={(value) => updateField("supervisorId", value)}
+            >
               <SelectTrigger className="bg-white border-[#e5e5e5]">
                 <SelectValue
                   placeholder={
@@ -184,10 +173,7 @@ export function AssignmentSection({
               </SelectContent>
             </Select>
             {errors.supervisorId && (
-              <p className="text-sm text-red-500">
-                {(errors.supervisorId as any)?.message ||
-                  "Trường này là bắt buộc"}
-              </p>
+              <p className="text-sm text-red-500">{errors.supervisorId}</p>
             )}
           </div>
         </div>

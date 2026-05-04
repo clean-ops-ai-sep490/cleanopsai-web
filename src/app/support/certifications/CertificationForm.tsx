@@ -75,12 +75,7 @@ export default function CertificationForm({
       setSuccess(false);
 
       await onSubmit(form);
-
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        onCancel();
-      }, 1200);
+      onCancel();
     } catch (err) {
       console.error(err);
       setErrors({ submit: "Lưu chứng chỉ thất bại. Vui lòng thử lại." });

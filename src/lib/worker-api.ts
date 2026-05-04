@@ -1,18 +1,23 @@
 import { api } from "./api";
-import { PaginatedResponse } from "./api-response-parser";
+import { PaginatedResponse, parsePaginatedResponse } from "./api-response-parser";
 
 // Worker types
 export interface Worker {
   id: string;
   userId: string;
   fullName: string;
-  email: string;
-  phoneNumber: string;
-  dateOfBirth: string;
-  address: string;
-  hireDate: string;
-  status: "Active" | "Inactive" | "OnLeave";
-  displayAddress?: string; // Computed field from API filter response
+  email?: string;
+  phoneNumber?: string;
+  dateOfBirth?: string;
+  address?: string;
+  hireDate?: string;
+  status?: "Active" | "Inactive" | "OnLeave";
+  displayAddress?: string | null;
+  avatarUrl?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  totalSkills?: number;
+  totalCertifications?: number;
 }
 
 // Extended worker type for filter responses with computed fields
@@ -59,7 +64,10 @@ export async function filterWorkers(
     queryParams.append("pageSize", params.pageSize.toString());
 
   const url = `/Workers/filter${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
-  return api.get<PaginatedResponse<Worker>>(url);
+  const response = await api.get<Worker[] | PaginatedResponse<Worker>>(url);
+
+  // API may return flat array or paginated object — normalize
+  return parsePaginatedResponse<Worker>(response);
 }
 
 /**

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSOP } from "./useWorkflowBuilder";
-import { useFilteredWorkers  } from "./useWorkers";
+import { useSOP } from "./useSOPs";
+import { useFilteredWorkers } from "./useWorkers";
 import { getSkillById } from "@/lib/skill-api";
 import { getCertificationById } from "@/lib/certification-api";
 import type { Skill, Certification } from "@/types/skill";

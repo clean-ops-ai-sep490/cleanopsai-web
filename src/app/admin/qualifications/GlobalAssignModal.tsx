@@ -128,7 +128,7 @@ const certOptions = useMemo(() => {
         <div>
           <label className="text-sm font-medium mb-1 block">1. Chọn Nhân viên (Worker)</label>
           <select
-            className="w-full border rounded-md px-3 py-2 text-sm focus:ring-[#1a80a2] focus:border-[#1a80a2]"
+            className="w-full border rounded-md px-3 py-2 text-sm focus:ring-primary focus:border-primary"
             value={selectedWorkerId}
             onChange={(e) => setSelectedWorkerId(e.target.value)}
             disabled={isSubmitting}
@@ -223,7 +223,7 @@ const certOptions = useMemo(() => {
         {/* Footer Actions */}
         <div className="flex justify-end gap-2 pt-2 border-t">
           <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Hủy</Button>
-          <Button type="submit" className="bg-[#1a80a2] hover:bg-[#156884]" disabled={isSubmitting}>
+          <Button type="submit" className="bg-primary hover:bg-[#156884]" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
             Xác nhận Cấp
           </Button>
