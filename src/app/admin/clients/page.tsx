@@ -51,7 +51,7 @@ export default function ClientsPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Khách hàng ({data?.totalElements ?? 0})
+              Danh sách ({data?.totalElements ?? 0})
             </CardTitle>
           </CardHeader>
 

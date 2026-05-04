@@ -121,7 +121,7 @@ export default function WorkareaCheckinPointsPage() {
     <div className="min-h-screen p-6 bg-gray-50">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Quản lý điểm checkin</h1>
+          <h1 className="text-2xl font-bold">Quản lý điểm Check-in</h1>
 
           <Button
             onClick={() => {
@@ -130,13 +130,13 @@ export default function WorkareaCheckinPointsPage() {
             }}
           >
             <Plus className="w-4 h-4 mr-2" />
-            Thêm Check-in Point
+            Thêm điểm Check-in
           </Button>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Check-in Points ({items.length})</CardTitle>
+            <CardTitle>Danh sách ({items.length})</CardTitle>
           </CardHeader>
 
           <CardContent>
@@ -224,7 +224,7 @@ export default function WorkareaCheckinPointsPage() {
       <StandardDialog
         open={open}
         onOpenChange={setOpen}
-        title={editing ? "Cập nhật Check-in Point" : "Tạo Check-in Point"}
+        title={editing ? "Cập nhật điểm Check-in" : "Tạo điểm Check-in"}
       >
         <WorkareaCheckinPointForm
           initialData={editing}

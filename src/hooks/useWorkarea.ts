@@ -37,7 +37,7 @@ export function useWorkArea() {
     if (totalPages > 1) {
       const rest = await Promise.all(
         Array.from({ length: totalPages - 1 }, (_, i) =>
-          getWorkAreasPaginatedNew(i + 2, 50)
+          getWorkAreasPaginatedNew(i + 2, 100)
         )
       );
       rest.forEach((r) => {
@@ -65,7 +65,7 @@ export function useWorkArea() {
       try {
         const res = await getWorkAreasPaginatedNew(
           params.pageNumber ?? 1,
-          params.pageSize ?? 10,
+          params.pageSize ?? 100,
           {
             search: params.search,
             zoneId: params.zoneId,
@@ -159,6 +159,7 @@ export function useWorkArea() {
       setLoading(false);
     }
   }, []);
+  
 
   return {
     // state

@@ -120,7 +120,7 @@ export default function UsersPage() {
         {/* HEADER */}
         <div className="flex gap-3 mb-6 items-center">
           <Input
-            placeholder="Tìm user..."
+            placeholder="Tìm người dùng..."
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
           />
@@ -130,7 +130,7 @@ export default function UsersPage() {
             value={role}
             onChange={(e) => setRole(e.target.value)}
           >
-            <option value="">Tất cả role</option>
+            <option value="">Tất cả chức vụ</option>
             <option value="Admin">Admin</option>
             <option value="Supporter">Supporter</option>
             <option value="Worker">Worker</option>
@@ -144,7 +144,7 @@ export default function UsersPage() {
             }}
           >
             <Plus className="w-4 h-4 mr-2" />
-            Thêm user
+            Thêm người dùng
           </Button>
         </div>
 
@@ -152,7 +152,7 @@ export default function UsersPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Users ({data?.totalElements ?? 0})
+              Danh sách ({data?.totalElements ?? 0})
             </CardTitle>
           </CardHeader>
 
@@ -162,7 +162,7 @@ export default function UsersPage() {
                 <TableRow>
                   <TableHead>Email</TableHead>
                   <TableHead>Họ tên</TableHead>
-                  <TableHead>Role</TableHead>
+                  <TableHead>Chức vụ</TableHead>
                   <TableHead className="text-right">
                     Hành động
                   </TableHead>

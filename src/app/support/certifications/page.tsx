@@ -163,7 +163,7 @@ export default function CertificationsPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Danh sách chứng chỉ ({data?.totalElements ?? 0})
+              Danh sách ({data?.totalElements ?? 0})
             </CardTitle>
           </CardHeader>
 

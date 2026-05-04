@@ -26,7 +26,7 @@ export interface UsePaginatedQueryOptions<T> {
 export function usePaginatedQuery<T>({
   queryKey,
   queryFn,
-  initialPageSize = 10,
+  initialPageSize = 100,
   filters = {},
   queryOptions = {},
 }: UsePaginatedQueryOptions<T>) {

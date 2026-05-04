@@ -112,7 +112,7 @@ export default function StepsPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Danh sách bước ({data?.totalElements ?? 0})
+              Danh sách ({data?.totalElements ?? 0})
             </CardTitle>
           </CardHeader>
 
@@ -140,7 +140,7 @@ export default function StepsPage() {
                         <TableCell>{item.name}</TableCell>
                         <TableCell>{item.description}</TableCell>
 
-                        <TableCell className="text-right">
+                        <TableCell className="text-right flex justify-end gap-2">
                           <Button
                             variant="ghost"
                             onClick={() => {

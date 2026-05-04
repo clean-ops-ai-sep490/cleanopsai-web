@@ -88,7 +88,7 @@ export default function ContractsPage() {
         {/* TABLE */}
         <Card>
           <CardHeader>
-            <CardTitle>Hợp đồng ({data?.totalCount ?? 0})</CardTitle>
+            <CardTitle>Danh sách ({data?.totalCount ?? 0})</CardTitle>
           </CardHeader>
 
           <CardContent>

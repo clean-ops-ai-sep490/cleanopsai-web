@@ -147,7 +147,7 @@ export default function SkillsPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Danh sách kỹ năng ({data?.totalElements ?? data?.length ?? 0})
+              Danh sách ({data?.totalElements ?? data?.length ?? 0})
             </CardTitle>
           </CardHeader>
 

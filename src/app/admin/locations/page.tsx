@@ -101,7 +101,7 @@ export default function LocationsPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Vị trí ({data?.totalCount ?? 0})
+              Danh sách ({data?.totalCount ?? 0})
             </CardTitle>
           </CardHeader>
 

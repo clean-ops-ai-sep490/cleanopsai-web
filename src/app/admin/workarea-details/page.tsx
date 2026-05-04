@@ -1,35 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow,
 } from "@/components/ui/table";
-
-import { Plus, Edit2, Trash2, Eye } from "lucide-react";
+import { Plus, Edit2, Trash2 } from "lucide-react";
 
 import {
-  useWorkAreas,
-  useCreateWorkArea,
-  useUpdateWorkArea,
-  useDeleteWorkArea,
-} from "@/hooks/useWorkAreas";
+  useWorkAreaDetails,
+  useCreateWorkAreaDetail,
+  useUpdateWorkAreaDetail,
+  useDeleteWorkAreaDetail,
+} from "@/hooks/useWorkAreaDetails";
 
-import { useWorkAreaDetailsByWorkAreaId } from "@/hooks/useWorkAreaDetails";
 import { usePagination } from "@/hooks/usePagination";
-
 import { StandardDialog } from "@/components/ui/standard-dialog";
-import WorkAreaForm from "./WorkareaForm";
+import WorkAreaDetailForm from "./WorkareaDetailForm";
 import { toast } from "sonner";
 
-export default function WorkAreasPage() {
+export default function WorkAreaDetailsPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
-
-  const [selectedWorkAreaId, setSelectedWorkAreaId] = useState<string | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
 
   // ================= PAGINATION =================
   const {
@@ -42,23 +36,17 @@ export default function WorkAreasPage() {
   });
 
   // ================= DATA =================
-  const { data } = useWorkAreas({
+  const { data } = useWorkAreaDetails({
     pageNumber: paginationParams.pageNumber,
     pageSize: paginationParams.pageSize,
   });
 
-  const createMutation = useCreateWorkArea();
-  const updateMutation = useUpdateWorkArea();
-  const deleteMutation = useDeleteWorkArea();
-
-  const { data: details, isLoading } =
-    useWorkAreaDetailsByWorkAreaId(selectedWorkAreaId ?? undefined, {
-      pageNumber: 1,
-      pageSize: 10,
-    });
+  const createMutation = useCreateWorkAreaDetail();
+  const updateMutation = useUpdateWorkAreaDetail();
+  const deleteMutation = useDeleteWorkAreaDetail();
 
   const totalPages = Math.ceil(
-    (data?.totalCount ?? 0) / (paginationParams?.pageSize ?? 10)
+    (data?.totalElements ?? 0) / (paginationParams?.pageSize ?? 10)
   );
 
   // ================= HANDLERS =================
@@ -83,7 +71,7 @@ export default function WorkAreasPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Xóa khu vực làm việc?")) return;
+    if (!confirm("Xóa chi tiết khu vực làm việc?")) return;
 
     try {
       await deleteMutation.mutateAsync(id);
@@ -93,10 +81,11 @@ export default function WorkAreasPage() {
     }
   };
 
-  const handleViewDetail = (id: string) => {
-    setSelectedWorkAreaId(id);
-    setDetailOpen(true);
-  };
+  const handleEditClick = (d: any) => {
+  console.log("editing item:", d);
+  setEditing(d);
+  setOpen(true);
+};
 
   // ================= UI =================
   return (
@@ -106,7 +95,7 @@ export default function WorkAreasPage() {
         {/* HEADER */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">
-            Khu Vực Làm Việc
+            Chi Tiết Khu Vực Làm Việc
           </h1>
 
           <Button
@@ -116,7 +105,7 @@ export default function WorkAreasPage() {
             }}
           >
             <Plus className="w-4 h-4 mr-2" />
-            Thêm khu vực làm việc
+            Thêm khu vực chi tiết
           </Button>
         </div>
 
@@ -124,7 +113,7 @@ export default function WorkAreasPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Danh sách ({data?.totalCount ?? 0})
+              Danh sách ({data?.totalElements ?? 0})
             </CardTitle>
           </CardHeader>
 
@@ -133,34 +122,25 @@ export default function WorkAreasPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Tên</TableHead>
-                  <TableHead>Khu vực</TableHead>
-                  <TableHead className="text-right">
-                    Hành động
-                  </TableHead>
+                  <TableHead>Diện tích</TableHead>
+                  <TableHead>Tổng diện tích</TableHead>
+                  <TableHead>Khu vực làm việc</TableHead>
+                  <TableHead className="text-right">Hành động</TableHead>
                 </TableRow>
               </TableHeader>
 
               <TableBody>
-                {data?.items?.map((w: any) => (
-                  <TableRow key={w.id}>
-                    <TableCell>{w.name}</TableCell>
-                    <TableCell>{w.zoneName}</TableCell>
+                {data?.content?.map((d: any) => (
+                  <TableRow key={d.id}>
+                    <TableCell>{d.name}</TableCell>
+                    <TableCell>{d.area}</TableCell>
+                    <TableCell>{d.totalArea}</TableCell>
+                    <TableCell>{d.workAreaName}</TableCell>
 
                     <TableCell className="text-right flex justify-end gap-2">
-
                       <Button
                         variant="ghost"
-                        onClick={() => handleViewDetail(w.id)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          setEditing(w);
-                          setOpen(true);
-                        }}
+                        onClick={() => handleEditClick(d)}
                       >
                         <Edit2 className="w-4 h-4" />
                       </Button>
@@ -168,11 +148,10 @@ export default function WorkAreasPage() {
                       <Button
                         variant="ghost"
                         className="text-red-500"
-                        onClick={() => handleDelete(w.id)}
+                        onClick={() => handleDelete(d.id)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
-
                     </TableCell>
                   </TableRow>
                 ))}
@@ -207,38 +186,14 @@ export default function WorkAreasPage() {
       <StandardDialog
         open={open}
         onOpenChange={setOpen}
-        title={editing ? "Cập nhật khu vực làm việc" : "Thêm khu vực làm việc"}
+        title={editing ? "Cập nhật khu vực chi tiết" : "Thêm khu vực chi tiết"}
       >
-        <WorkAreaForm
+        <WorkAreaDetailForm
           initialData={editing}
           onSubmit={handleSubmit}
           onCancel={() => setOpen(false)}
         />
       </StandardDialog>
-
-      {/* DETAIL DIALOG */}
-      <StandardDialog
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-        title="Chi tiết khu vực làm việc"
-      >
-        {isLoading ? (
-          <p>Đang tải...</p>
-        ) : details?.items?.length ? (
-          <div className="space-y-3">
-            {details.items.map((d: any) => (
-              <div key={d.id} className="border-b pb-2">
-                <p><b>Tên:</b> {d.name}</p>
-                <p><b>Diện tích:</b> {d.area}</p>
-                <p><b>Tổng diện tích:</b> {d.totalArea}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p>Không có dữ liệu</p>
-        )}
-      </StandardDialog>
-
     </div>
   );
 }

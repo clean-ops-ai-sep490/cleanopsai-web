@@ -169,7 +169,7 @@ export default function SupportEquipmentsPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Danh sách thiết bị ({data?.totalElements ?? 0})
+              Danh sách ({data?.totalElements ?? 0})
             </CardTitle>
           </CardHeader>
 

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { BadgeCheck, Building2, FileText, Layers, LayersPlus, MapPin, Users, Workflow } from "lucide-react";
+import { BadgeCheck, Building2, FileText, Layers, LayersPlus, LucideLayers3, MapPin, User2, Users, Workflow } from "lucide-react";
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -16,8 +16,9 @@ export function AdminSidebar() {
     { name: "Vị trí", href: "/admin/locations", icon: MapPin },
     { name: "Khu vực", href: "/admin/zones", icon: Layers },
     { name: "Khu vực làm việc", href: "/admin/workareas", icon: LayersPlus },
+    {name: "Chi tiết khu vực làm việc", href: "/admin/workarea-details", icon: LayersPlus },
     { name: "Hợp đồng", href: "/admin/contracts", icon: FileText },
-    { name: "Khách hàng", href: "/admin/clients", icon: Building2 },
+    { name: "Khách hàng", href: "/admin/clients", icon: User2 },
   ];
 
   return (

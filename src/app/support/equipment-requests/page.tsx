@@ -169,7 +169,7 @@ export default function SupportEquipmentRequestsPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Danh sách request ({data?.totalCount ?? 0})
+              Danh sách ({data?.totalCount ?? 0})
             </CardTitle>
           </CardHeader>
 
