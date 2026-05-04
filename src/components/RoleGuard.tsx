@@ -104,7 +104,7 @@ export default function RoleGuard({
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Checking permissions...</p>
+        <p className="text-gray-500">Đang kiểm tra quyền truy cập...</p>
       </div>
     );
   }
