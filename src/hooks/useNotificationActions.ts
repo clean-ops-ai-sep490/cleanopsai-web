@@ -20,7 +20,7 @@ export function useNotificationActions() {
       }
 
       // Navigate to notification detail page
-      router.push(`/dashboard/notifications/${notification.id}`);
+      router.push(`/manager/notifications/${notification.id}`);
     } catch (error) {
       console.error("Failed to handle notification click:", error);
       notificationToasts.openNotificationError();
@@ -38,7 +38,7 @@ export function useNotificationActions() {
 
   // Navigate to all notifications page
   const navigateToAllNotifications = () => {
-    router.push("/dashboard/notifications");
+    router.push("/manager/notifications");
   };
 
   return {

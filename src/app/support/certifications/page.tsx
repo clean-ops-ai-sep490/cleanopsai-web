@@ -2,55 +2,38 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { FilterBar } from "@/components/ui/filter-bar";
+import { SectionCard } from "@/components/ui/section-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, Search, Award } from "lucide-react";
-
-import {
-  useCertifications,
-  useDeleteCertification,
-  useCreateCertification,
-  useUpdateCertification,
-} from "@/hooks/useCertifications";
-
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ListPageSkeleton } from "@/components/ui/page-skeleton";
+import { Plus, Edit2, Trash2, Loader2, Award } from "lucide-react";
+import { useCertifications, useDeleteCertification, useCreateCertification, useUpdateCertification } from "@/hooks/useCertifications";
 import { getCertificationCategories } from "@/lib/certification-api";
-
 import { StandardDialog } from "@/components/ui/standard-dialog";
 import CertificationForm from "./CertificationForm";
 
 export default function CertificationsPage() {
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize] = useState(10);
-
   const [category, setCategory] = useState<string>("");
-
   const [categories, setCategories] = useState<string[]>([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
 
   const queryClient = useQueryClient();
-
-  // ================= API =================
-  const { data, isLoading } = useCertifications({
-    pageNumber,
-    pageSize,
-  });
-
+  const { data, isLoading, error, refetch } = useCertifications({ pageNumber, pageSize });
   const createMutation = useCreateCertification();
   const updateMutation = useUpdateCertification();
   const deleteMutation = useDeleteCertification();
 
-  // ================= LOAD CATEGORY =================
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -60,208 +43,84 @@ export default function CertificationsPage() {
         console.error("Load categories failed:", err);
       }
     };
-
     loadCategories();
   }, []);
 
-  // ================= FILTER BY CATEGORY =================
   const filtered = useMemo(() => {
     const items = data?.content ?? [];
-
     if (!category) return items;
-
-    return items.filter(
-      (cert: any) => cert.category === category
-    );
+    return items.filter((cert: any) => cert.category === category);
   }, [data, category]);
 
-  // ================= DELETE =================
-  const handleDelete = async (id: string) => {
-    if (!confirm("Bạn có chắc muốn xóa chứng chỉ này?")) return;
-
-    try {
-      const result = await deleteMutation.mutateAsync(id);
-
-      if (!result || result <= 0) {
-        alert("Xóa thất bại.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Lỗi khi xóa.");
-    }
-  };
-
-  // ================= CREATE / EDIT =================
-  const handleOpenCreate = () => {
-    setEditing(null);
-    setOpenDialog(true);
-  };
-
-  const handleOpenEdit = (item: any) => {
-    setEditing(item);
-    setOpenDialog(true);
-  };
-
   const handleSubmit = async (form: any) => {
-    if (editing) {
-      await updateMutation.mutateAsync({
-        id: editing.id,
-        data: form,
-      });
-    } else {
-      await createMutation.mutateAsync(form);
-    }
-
+    if (editing) await updateMutation.mutateAsync({ id: editing.id, data: form });
+    else await createMutation.mutateAsync(form);
     setOpenDialog(false);
+    setEditing(null);
+    queryClient.invalidateQueries({ queryKey: ["certifications"] });
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    await deleteMutation.mutateAsync(deleteTarget.id);
+    setDeleteTarget(null);
+    queryClient.invalidateQueries({ queryKey: ["certifications"] });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 pt-8 pb-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="space-y-6">
+      <PageHeader title="Quản lý chứng chỉ" description="Quản lý chứng chỉ theo danh mục với pattern thống nhất." action={<Button onClick={() => { setEditing(null); setOpenDialog(true); }}><Plus className="h-4 w-4" />Thêm chứng chỉ</Button>} />
 
-        {/* HEADER */}
-        <div className="mb-10 flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-accent to-accent/80 rounded-lg">
-            <Award className="h-6 w-6 text-accent-foreground" />
+      <FilterBar>
+        <Select value={category} onValueChange={(value) => { setCategory(value); setPageNumber(1); }}>
+          <SelectTrigger className="w-full md:w-64"><SelectValue placeholder="Tất cả danh mục" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Tất cả danh mục</SelectItem>
+            {categories.map((c: any) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </FilterBar>
+
+      {isLoading ? (
+        <ListPageSkeleton cards={3} rows={6} />
+      ) : error ? (
+        <ErrorState title="Không thể tải chứng chỉ" description="Vui lòng thử lại sau." onAction={() => refetch()} />
+      ) : filtered.length === 0 ? (
+        <EmptyState title="Chưa có chứng chỉ" description="Chứng chỉ sẽ hiển thị tại đây khi có dữ liệu." icon={<Award className="h-10 w-10" />} actionLabel="Thêm chứng chỉ" onAction={() => { setEditing(null); setOpenDialog(true); }} />
+      ) : (
+        <SectionCard title={`Danh sách chứng chỉ (${data?.totalElements ?? 0})`}>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tên</TableHead>
+                <TableHead>Danh mục</TableHead>
+                <TableHead>Tổ chức</TableHead>
+                <TableHead className="text-right">Thao tác</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((cert: any) => (
+                <TableRow key={cert.id}>
+                  <TableCell className="max-w-[280px] truncate font-semibold text-slate-950">{cert.name}</TableCell>
+                  <TableCell><StatusBadge status={cert.category || "Unknown"} /></TableCell>
+                  <TableCell className="max-w-[320px] truncate">{cert.issuingOrganization || "-"}</TableCell>
+                  <TableCell className="text-right"><div className="flex justify-end gap-1"><Button variant="ghost" size="icon-sm" onClick={() => { setEditing(cert); setOpenDialog(true); }}><Edit2 className="h-4 w-4" /></Button><Button variant="ghost" size="icon-sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setDeleteTarget(cert)}><Trash2 className="h-4 w-4" /></Button></div></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
+            <span>Trang {data?.pageNumber ?? 1} / {data?.totalPages ?? 1}</span>
+            <div className="flex gap-2"><Button variant="outline" disabled={!data?.hasPreviousPage} onClick={() => setPageNumber((p) => Math.max(1, p - 1))}>Trước</Button><Button variant="outline" disabled={!data?.hasNextPage} onClick={() => setPageNumber((p) => p + 1)}>Tiếp</Button></div>
           </div>
+        </SectionCard>
+      )}
 
-          <div>
-            <h1 className="text-4xl font-bold">Quản lý chứng chỉ</h1>
-            <p className="text-muted-foreground">
-              Quản lý chứng chỉ theo danh mục
-            </p>
-          </div>
-        </div>
-
-        {/* FILTER + BUTTON */}
-        <div className="mb-8 flex flex-col sm:flex-row gap-4 items-center">
-
-          {/* CATEGORY FILTER */}
-          <select
-            className="border rounded px-3 py-2 w-64"
-            value={category}
-            onChange={(e) => {
-              setCategory(e.target.value);
-              setPageNumber(1);
-            }}
-          >
-            <option value="">Tất cả danh mục</option>
-            {categories.map((c: any) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-
-          <Button onClick={handleOpenCreate}>
-            <Plus className="w-4 h-4 mr-2" />
-            Thêm chứng chỉ
-          </Button>
-        </div>
-
-        {/* TABLE */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Danh sách chứng chỉ ({data?.totalElements ?? 0})
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent>
-            {isLoading ? (
-              <div className="text-center py-10">Đang tải...</div>
-            ) : filtered.length === 0 ? (
-              <div className="text-center py-10 text-gray-500">
-                Không có dữ liệu
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tên</TableHead>
-                    <TableHead>Danh mục</TableHead>
-                    <TableHead>Tổ chức</TableHead>
-                    <TableHead className="text-right">Thao tác</TableHead>
-                  </TableRow>
-                </TableHeader>
-
-                <TableBody>
-                  {filtered.map((cert: any) => (
-                    <TableRow key={cert.id}>
-                      <TableCell className="font-semibold">
-                        {cert.name}
-                      </TableCell>
-
-                      <TableCell>
-                        <Badge>{cert.category}</Badge>
-                      </TableCell>
-
-                      <TableCell>
-                        {cert.issuingOrganization}
-                      </TableCell>
-
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          onClick={() => handleOpenEdit(cert)}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          className="text-red-500"
-                          onClick={() => handleDelete(cert.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-
-            {/* PAGINATION */}
-            <div className="flex justify-between mt-4">
-              <div className="text-sm text-gray-500">
-                Trang {data?.pageNumber ?? 1} / {data?.totalPages ?? 1}
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  disabled={!data?.hasPreviousPage}
-                  onClick={() =>
-                    setPageNumber((p) => Math.max(1, p - 1))
-                  }
-                >
-                  Trước
-                </Button>
-
-                <Button
-                  disabled={!data?.hasNextPage}
-                  onClick={() => setPageNumber((p) => p + 1)}
-                >
-                  Tiếp
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* DIALOG */}
-      <StandardDialog
-        open={openDialog}
-        onOpenChange={setOpenDialog}
-        title={editing ? "Cập nhật chứng chỉ" : "Thêm chứng chỉ"}
-      >
-        <CertificationForm
-          initialData={editing}
-          onSubmit={handleSubmit}
-          onCancel={() => setOpenDialog(false)}
-        />
+      <StandardDialog open={openDialog} onOpenChange={setOpenDialog} title={editing ? "Cập nhật chứng chỉ" : "Thêm chứng chỉ"}>
+        <CertificationForm initialData={editing} onSubmit={handleSubmit} onCancel={() => setOpenDialog(false)} />
       </StandardDialog>
+
+      <ConfirmDialog open={!!deleteTarget} title="Xóa chứng chỉ này?" description="Thao tác này không thể hoàn tác." confirmLabel="Xóa" onConfirm={handleDelete} onOpenChange={(open) => !open && setDeleteTarget(null)} />
     </div>
   );
 }
