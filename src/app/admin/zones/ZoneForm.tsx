@@ -53,12 +53,7 @@ export default function ZoneForm({ initialData, onSubmit, onCancel }: Props) {
     try {
       setLoading(true);
       await onSubmit(form);
-
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        onCancel();
-      }, 800);
+      onCancel();
     } catch {
       setErrors({ submit: "Lưu thất bại" });
     } finally {

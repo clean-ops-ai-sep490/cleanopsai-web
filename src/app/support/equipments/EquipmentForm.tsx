@@ -75,13 +75,7 @@ export default function EquipmentForm({
       setSuccess(false);
 
       await onSubmit(form);
-
-      setSuccess(true);
-
-      setTimeout(() => {
-        setSuccess(false);
-        onCancel();
-      }, 1500);
+      onCancel();
     } catch (err) {
       console.error(err);
       setErrors({ submit: "Lưu thiết bị thất bại. Vui lòng thử lại." });

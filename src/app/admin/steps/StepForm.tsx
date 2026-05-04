@@ -76,12 +76,7 @@ export default function StepForm({ initialData, onSubmit, onCancel }: Props) {
         ...form,
         configSchema: JSON.stringify(JSON.parse(form.configSchema)),
       });
-
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        onCancel();
-      }, 1000);
+      onCancel();
     } catch {
       setErrors({ submit: "Lưu thất bại, vui lòng thử lại" });
     } finally {
