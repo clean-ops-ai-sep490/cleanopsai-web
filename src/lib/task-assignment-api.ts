@@ -3,6 +3,7 @@ import type {
   TaskAssignment,
   TaskAssignmentResponse,
   TaskAssignmentFilters,
+  TaskAssignmentUpdatePayload,
 } from "@/types/task-assignment";
 
 export async function getTaskAssignments(
@@ -32,11 +33,25 @@ export async function getTaskAssignmentById(
   return api.get<TaskAssignment>(`/TaskAssignments/${id}`);
 }
 
+/**
+ * Full update of a task assignment (PUT)
+ * Used for reassigning tasks to different workers
+ */
+export async function updateTaskAssignment(
+  id: string,
+  data: TaskAssignmentUpdatePayload,
+): Promise<TaskAssignment> {
+  return api.put<TaskAssignment>(`/TaskAssignments/${id}`, data);
+}
+
+/**
+ * Update only the status of a task assignment (PATCH)
+ */
 export async function updateTaskAssignmentStatus(
   id: string,
   status: string,
 ): Promise<void> {
-  return api.patch(`/TaskAssignments/${id}/status`, { status });
+  return api.patch(`/TaskAssignments/${id}/status`, status);
 }
 
 export async function cancelTaskAssignment(id: string): Promise<void> {

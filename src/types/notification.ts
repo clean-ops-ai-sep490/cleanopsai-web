@@ -34,6 +34,7 @@ export interface NotificationListResponse {
 }
 
 export interface NotificationParams {
+  workerId?: string; // ID của user để lọc notifications
   isRead?: boolean;
   pageNumber?: number;
   pageSize?: number;
