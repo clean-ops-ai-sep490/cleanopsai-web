@@ -9,28 +9,25 @@ import {
   Zap,
   Workflow,
   Calendar,
-  Users,
-  FileText,
-  Building2,
-  Settings,
 } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
+import { motion, AnimatePresence } from "framer-motion";
 
 const navigation = [
   {
     title: "TỔNG QUAN",
     items: [
       {
-        name: "Dashboard",
+        name: "Bảng điều khiển",
         href: "/manager",
         icon: LayoutDashboard,
-        roles: ["1"], // Admin, Manager
+        roles: ["1"],
       },
       {
         name: "Sự cố & Yêu cầu",
         href: "/manager/incidents",
         icon: AlertTriangle,
-        roles: ["1"], // Admin, Manager
+        roles: ["1"],
       },
     ],
   },
@@ -38,60 +35,31 @@ const navigation = [
     title: "CẤU HÌNH",
     items: [
       {
-        name: "SLA Trigger",
+        name: "Bộ kích hoạt SLA",
         href: "/manager/sla-trigger",
         icon: Zap,
-        roles: ["1"], // Admin, Manager
+        roles: ["1"],
       },
       {
-        name: "Workflow Builder",
+        name: "Quy trình làm việc",
         href: "/manager/workflow",
         icon: Workflow,
-        roles: ["1"], // Admin, Manager
+        roles: ["1"],
       },
       {
-        name: "Task Schedule",
+        name: "Lịch trình công việc",
         href: "/manager/task-schedule",
         icon: Calendar,
-        roles: ["1"], // Admin, Manager
+        roles: ["1"],
       },
     ],
   },
-  // {
-  //   title: "NHÂN SỰ",
-  //   items: [
-  //     {
-  //       name: "Tìm nhân sự",
-  //       href: "/manager/staff-search",
-  //       icon: Users,
-  //       roles: [ "1"], // Admin, Manager
-  //     },
-  //   ],
-  // },
-  // {
-  //   title: "KHÁC",
-  //   items: [
-  //     {
-  //       name: "Hợp đồng",
-  //       href: "/manager/contracts",
-  //       icon: FileText,
-  //       roles: [ "1"], // Admin, Manager
-  //     },
-  //     {
-  //       name: "Khách hàng",
-  //       href: "/manager/clients",
-  //       icon: Building2,
-  //       roles: [ "1"], // Admin, Manager
-  //     },
-  //   ],
-  // },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { role } = useRole();
 
-  // Filter navigation items based on user role
   const filteredNavigation = navigation
     .map((section) => ({
       ...section,
@@ -100,77 +68,76 @@ export function Sidebar() {
     .filter((section) => section.items.length > 0);
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-[240px] bg-[#f9fafb] border-r border-gray-200 flex flex-col">
-      {/* Logo */}
-      <div className="h-[106px] flex items-center px-6 border-b border-gray-200 flex-shrink-0">
+    <aside className="fixed left-0 top-0 z-20 flex h-screen w-[var(--app-sidebar-width)] flex-col border-r border-slate-200/70 bg-white/85 shadow-[8px_0_40px_rgba(15,23,42,0.06)] backdrop-blur-2xl">
+      <div className="flex h-[var(--app-header-height)] flex-shrink-0 items-center border-b border-slate-200/70 px-6">
         <div className="flex items-center gap-3">
-          <div className="w-[58px] h-[58px] bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-[20px]">C</span>
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-600 shadow-lg shadow-teal-500/20">
+            <span className="text-[18px] font-extrabold tracking-tight text-white">
+              C
+            </span>
           </div>
-          <span
-            className="text-[18px] font-semibold whitespace-nowrap"
-            style={{ color: "black" }}
-          >
-            leanOPS
-          </span>
+          <div className="leading-tight">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+              CleanOPS AI
+            </p>
+            <p className="text-[18px] font-semibold text-slate-950">
+              Operations
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Navigation - Scrollable */}
-      <nav className="flex-1 py-5 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <nav className="flex-1 overflow-y-auto py-5 scrollbar-thin">
         {filteredNavigation.map((section) => (
-          <div key={section.title} className="mb-2">
-            <h2
-              className="text-[14px] font-semibold mb-4 px-[18px] tracking-normal"
-              style={{ color: "#8d8d8d" }}
-            >
+          <div key={section.title} className="mb-6">
+            <h2 className="px-6 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400/80">
               {section.title}
             </h2>
-            <ul
-              className="space-y-2"
-              style={{ listStyle: "none", paddingLeft: 0 }}
-            >
+            <ul className="mt-3 space-y-1.5">
               {section.items.map((item) => {
-                // More precise active check
                 const isActive =
                   pathname === item.href ||
-                  (pathname.startsWith(item.href + "/") &&
-                    item.href !== "/manager");
+                  (pathname.startsWith(item.href + "/") && item.href !== "/manager");
                 const IconComponent = item.icon;
 
                 return (
-                  <li key={item.name} style={{ listStyle: "none" }}>
+                  <li key={item.name} className="list-none">
                     <Link
                       href={item.href}
                       className={cn(
-                        "group flex items-center py-3 px-[18px] text-[16px] font-medium transition-colors relative no-underline",
+                        "group relative flex items-center px-6 py-3.5 text-[15px] font-medium transition-colors duration-200 no-underline",
                         isActive
-                          ? "bg-[#1a80a2] text-white rounded-tr-[10px]"
-                          : "text-black hover:text-[#1a80a2]",
+                          ? "text-primary"
+                          : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
                       )}
-                      style={{
-                        textDecoration: "none",
-                      }}
                     >
+                      <AnimatePresence>
+                        {isActive && (
+                          <motion.div
+                            initial={{ scaleX: 0, originX: 1, opacity: 0 }}
+                            animate={{ scaleX: 1, opacity: 1 }}
+                            exit={{ scaleX: 0, originX: 1, opacity: 0 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            className="absolute inset-0 bg-primary-soft"
+                          />
+                        )}
+                      </AnimatePresence>
+
                       <IconComponent
                         className={cn(
-                          "w-5 h-5 flex-shrink-0 transition-colors",
-                          isActive
-                            ? "text-white"
-                            : "text-black group-hover:text-[#1a80a2]",
+                          "relative z-10 mr-4 h-5 w-5 transition-colors duration-200",
+                          isActive ? "text-primary" : "text-slate-400 group-hover:text-slate-600",
                         )}
-                        style={{ marginRight: "10px" }}
                       />
-                      <span
-                        className={cn(
-                          "transition-colors",
-                          isActive
-                            ? "text-white"
-                            : "text-black group-hover:text-[#1a80a2]",
-                        )}
-                      >
-                        {item.name}
-                      </span>
+                      <span className="relative z-10 flex-1">{item.name}</span>
+                      
+                      {isActive && (
+                        <motion.div
+                          layoutId="manager-active-border"
+                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                          className="absolute right-0 top-0 bottom-0 w-1 bg-primary z-20"
+                        />
+                      )}
                     </Link>
                   </li>
                 );
