@@ -1,351 +1,105 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { SectionCard } from "@/components/ui/section-card";
+import { ErrorState } from "@/components/ui/error-state";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DetailPageSkeleton } from "@/components/ui/page-skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  ArrowLeft,
-  Edit,
-  Clock,
-  MapPin,
-  User,
-  Calendar,
-  FileText,
-  Settings,
-  Loader2,
-} from "lucide-react";
-import {
-  useTaskSchedule,
-  useActivateTaskSchedule,
-  useDeactivateTaskSchedule,
-} from "@/hooks/useTaskSchedules";
+import { ArrowLeft, Edit, Clock, MapPin, User, Calendar, FileText, Settings, Loader2 } from "lucide-react";
+import { useTaskSchedule, useActivateTaskSchedule, useDeactivateTaskSchedule } from "@/hooks/useTaskSchedules";
 
 export default function TaskScheduleDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const { data: schedule, isLoading, error } = useTaskSchedule(id);
   const activateMutation = useActivateTaskSchedule();
   const deactivateMutation = useDeactivateTaskSchedule();
 
-  const handleToggleStatus = () => {
+  const handleToggleStatus = async () => {
     if (!schedule) return;
-
-    if (schedule.isActive) {
-      deactivateMutation.mutate(schedule.id);
-    } else {
-      activateMutation.mutate(schedule.id);
-    }
+    if (schedule.isActive) await deactivateMutation.mutateAsync(schedule.id);
+    else await activateMutation.mutateAsync(schedule.id);
+    setConfirmOpen(false);
   };
 
-  if (isLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-[#1a80a2]" />
-          <span className="ml-2 text-[#70808f]">
-            Đang tải thông tin lịch trình...
-          </span>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (error || !schedule) {
-    return (
-      <DashboardLayout>
-        <div className="text-center py-12">
-          <p className="text-red-500 mb-4">
-            Không thể tải thông tin lịch trình
-          </p>
-          <Link href="/dashboard/task-schedule">
-            <Button variant="outline" className="border-[#e5e5e5]">
-              Quay lại danh sách
-            </Button>
-          </Link>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const actionLabel = schedule?.isActive ? "Tạm dừng" : "Kích hoạt";
 
   return (
-    <DashboardLayout>
-      {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard/task-schedule">
-            <Button variant="ghost" size="sm" className="p-2">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-[22px] font-medium text-black mb-1">
-              {schedule.name}
-            </h1>
-            <p className="text-sm text-[#70808f]">
-              Chi tiết lịch trình công việc
-            </p>
+    <>
+      <div className="space-y-6">
+        <PageHeader
+          title={schedule?.name || "Chi tiết lịch trình"}
+          description="Xem chi tiết lịch trình và cấu hình lặp lại."
+          breadcrumbs={<Button variant="ghost" size="sm" onClick={() => router.push("/manager/task-schedule")}><ArrowLeft className="h-4 w-4" />Quay lại</Button>}
+          action={schedule ? <div className="flex gap-2"><Button variant="outline" onClick={() => setConfirmOpen(true)} disabled={activateMutation.isPending || deactivateMutation.isPending}>{actionLabel}</Button><Button asChild><Link href={`/manager/task-schedule/${id}/edit`}><Edit className="h-4 w-4" />Chỉnh sửa</Link></Button></div> : undefined}
+        />
+
+        {isLoading ? (
+          <DetailPageSkeleton />
+        ) : error || !schedule ? (
+          <ErrorState title="Không thể tải lịch trình" description="Lịch trình có thể đã bị xóa hoặc bạn không có quyền truy cập." onAction={() => router.push("/manager/task-schedule")} />
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="space-y-6 lg:col-span-2">
+              <SectionCard title="Thông tin cơ bản">
+                <div className="space-y-4 text-sm">
+                  {schedule.description ? <div><p className="text-slate-500">Mô tả</p><p className="text-slate-700">{schedule.description}</p></div> : null}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div><p className="text-slate-500">Thời gian thực hiện</p><p className="text-slate-950">{schedule.durationMinutes} phút</p></div>
+                    <div><p className="text-slate-500">Loại lặp lại</p><p className="text-slate-950">{schedule.recurrenceType}</p></div>
+                  </div>
+                </div>
+              </SectionCard>
+
+              <SectionCard title="Thông tin phân công">
+                <div className="space-y-4 text-sm">
+                  <div><p className="text-slate-500">Người thực hiện</p><p className="text-slate-950">{schedule.assigneeName}</p></div>
+                  <div><p className="text-slate-500">Địa điểm</p><p className="text-slate-950">{schedule.displayLocation}</p></div>
+                </div>
+              </SectionCard>
+
+              {schedule.recurrenceConfig ? (
+                <SectionCard title="Cấu hình lặp lại">
+                  <div className="space-y-4 text-sm">
+                    {schedule.recurrenceConfig.times?.length ? <div><p className="text-slate-500">Thời gian trong ngày</p><div className="mt-2 flex flex-wrap gap-2">{schedule.recurrenceConfig.times.map((time, index) => <Badge key={index} variant="outline">{time}</Badge>)}</div></div> : null}
+                    {schedule.recurrenceConfig.daysOfWeek?.length ? <div><p className="text-slate-500">Ngày trong tuần</p><div className="mt-2 flex flex-wrap gap-2">{schedule.recurrenceConfig.daysOfWeek.map((day, index) => <Badge key={index} variant="outline">{day}</Badge>)}</div></div> : null}
+                    {schedule.recurrenceConfig.daysOfMonth?.length ? <div><p className="text-slate-500">Ngày trong tháng</p><div className="mt-2 flex flex-wrap gap-2">{schedule.recurrenceConfig.daysOfMonth.map((day, index) => <Badge key={index} variant="outline">Ngày {day}</Badge>)}</div></div> : null}
+                  </div>
+                </SectionCard>
+              ) : null}
+            </div>
+
+            <div className="space-y-6">
+              <SectionCard title="Thời gian hợp đồng">
+                <div className="space-y-3 text-sm">
+                  <div><p className="text-slate-500">Ngày bắt đầu</p><p className="text-slate-950">{new Date(schedule.contractStartDate).toLocaleDateString("vi-VN")}</p></div>
+                  <Separator />
+                  <div><p className="text-slate-500">Ngày kết thúc</p><p className="text-slate-950">{new Date(schedule.contractEndDate).toLocaleDateString("vi-VN")}</p></div>
+                </div>
+              </SectionCard>
+
+              <SectionCard title="Thông tin hệ thống">
+                <div className="space-y-3 text-sm">
+                  <div><p className="text-slate-500">SOP ID</p><p className="break-all font-mono text-xs text-slate-700">{schedule.sopId}</p></div>
+                  <div><p className="text-slate-500">Work Area ID</p><p className="break-all font-mono text-xs text-slate-700">{schedule.workAreaId}</p></div>
+                  <div><p className="text-slate-500">Assignee ID</p><p className="break-all font-mono text-xs text-slate-700">{schedule.assigneeId}</p></div>
+                </div>
+              </SectionCard>
+            </div>
           </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Badge
-            variant={schedule.isActive ? "default" : "secondary"}
-            className={
-              schedule.isActive
-                ? "bg-green-100 text-green-700"
-                : "bg-gray-100 text-gray-600"
-            }
-          >
-            {schedule.isActive ? "Hoạt động" : "Tạm dừng"}
-          </Badge>
-
-          <Button
-            variant="outline"
-            onClick={handleToggleStatus}
-            disabled={
-              activateMutation.isPending || deactivateMutation.isPending
-            }
-            className="border-[#e5e5e5]"
-          >
-            {schedule.isActive ? "Tạm dừng" : "Kích hoạt"}
-          </Button>
-
-          <Link href={`/dashboard/task-schedule/${id}/edit`}>
-            <Button className="bg-[#1a80a2] hover:bg-[#308cab] text-white h-[40px] rounded-[5px] px-4 flex items-center gap-2">
-              <Edit className="w-4 h-4" />
-              Chỉnh sửa
-            </Button>
-          </Link>
-        </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Information */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Basic Info */}
-          <Card className="bg-white rounded-[8px] p-6 border">
-            <h2 className="text-lg font-semibold text-black mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              Thông tin cơ bản
-            </h2>
-
-            <div className="space-y-4">
-              {schedule.description && (
-                <div>
-                  <label className="text-sm font-medium text-[#70808f]">
-                    Mô tả
-                  </label>
-                  <p className="text-black mt-1">{schedule.description}</p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-[#70808f]">
-                    Thời gian thực hiện
-                  </label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Clock className="w-4 h-4 text-[#70808f]" />
-                    <span className="text-black">
-                      {schedule.durationMinutes} phút
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-[#70808f]">
-                    Loại lặp lại
-                  </label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Calendar className="w-4 h-4 text-[#70808f]" />
-                    <span className="text-black">
-                      {schedule.recurrenceType}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* Assignment Info */}
-          <Card className="bg-white rounded-[8px] p-6 border">
-            <h2 className="text-lg font-semibold text-black mb-4 flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Thông tin phân công
-            </h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-[#70808f]">
-                  Người thực hiện
-                </label>
-                <p className="text-black mt-1">{schedule.assigneeName}</p>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-[#70808f]">
-                  Địa điểm
-                </label>
-                <div className="flex items-center gap-2 mt-1">
-                  <MapPin className="w-4 h-4 text-[#70808f]" />
-                  <span className="text-black">{schedule.displayLocation}</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* Recurrence Configuration */}
-          {schedule.recurrenceConfig && (
-            <Card className="bg-white rounded-[8px] p-6 border">
-              <h2 className="text-lg font-semibold text-black mb-4 flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                Cấu hình lặp lại
-              </h2>
-
-              <div className="space-y-4">
-                {schedule.recurrenceConfig.times &&
-                  schedule.recurrenceConfig.times.length > 0 && (
-                    <div>
-                      <label className="text-sm font-medium text-[#70808f]">
-                        Thời gian trong ngày
-                      </label>
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        {schedule.recurrenceConfig.times.map((time, index) => (
-                          <Badge
-                            key={index}
-                            variant="outline"
-                            className="text-xs"
-                          >
-                            {time}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                {schedule.recurrenceConfig.daysOfWeek &&
-                  schedule.recurrenceConfig.daysOfWeek.length > 0 && (
-                    <div>
-                      <label className="text-sm font-medium text-[#70808f]">
-                        Ngày trong tuần
-                      </label>
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        {schedule.recurrenceConfig.daysOfWeek.map(
-                          (day, index) => (
-                            <Badge
-                              key={index}
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              {day}
-                            </Badge>
-                          ),
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                {schedule.recurrenceConfig.daysOfMonth &&
-                  schedule.recurrenceConfig.daysOfMonth.length > 0 && (
-                    <div>
-                      <label className="text-sm font-medium text-[#70808f]">
-                        Ngày trong tháng
-                      </label>
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        {schedule.recurrenceConfig.daysOfMonth.map(
-                          (day, index) => (
-                            <Badge
-                              key={index}
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              Ngày {day}
-                            </Badge>
-                          ),
-                        )}
-                      </div>
-                    </div>
-                  )}
-              </div>
-            </Card>
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Contract Period */}
-          <Card className="bg-white rounded-[8px] p-6 border">
-            <h3 className="text-base font-semibold text-black mb-4">
-              Thời gian hợp đồng
-            </h3>
-
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-[#70808f]">
-                  Ngày bắt đầu
-                </label>
-                <p className="text-black mt-1">
-                  {new Date(schedule.contractStartDate).toLocaleDateString(
-                    "vi-VN",
-                  )}
-                </p>
-              </div>
-
-              <Separator />
-
-              <div>
-                <label className="text-sm font-medium text-[#70808f]">
-                  Ngày kết thúc
-                </label>
-                <p className="text-black mt-1">
-                  {new Date(schedule.contractEndDate).toLocaleDateString(
-                    "vi-VN",
-                  )}
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          {/* System Info */}
-          <Card className="bg-white rounded-[8px] p-6 border">
-            <h3 className="text-base font-semibold text-black mb-4">
-              Thông tin hệ thống
-            </h3>
-
-            <div className="space-y-3 text-sm">
-              <div>
-                <label className="text-[#70808f]">SOP ID</label>
-                <p className="text-black font-mono text-xs break-all">
-                  {schedule.sopId}
-                </p>
-              </div>
-
-              <Separator />
-
-              <div>
-                <label className="text-[#70808f]">Work Area ID</label>
-                <p className="text-black font-mono text-xs break-all">
-                  {schedule.workAreaId}
-                </p>
-              </div>
-
-              <Separator />
-
-              <div>
-                <label className="text-[#70808f]">Assignee ID</label>
-                <p className="text-black font-mono text-xs break-all">
-                  {schedule.assigneeId}
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-    </DashboardLayout>
+      <ConfirmDialog open={confirmOpen} title={actionLabel} description="Đây là thao tác nhạy cảm và sẽ ảnh hưởng trạng thái lịch trình." confirmLabel={actionLabel} onConfirm={handleToggleStatus} onOpenChange={setConfirmOpen} isLoading={activateMutation.isPending || deactivateMutation.isPending} />
+    </>
   );
 }

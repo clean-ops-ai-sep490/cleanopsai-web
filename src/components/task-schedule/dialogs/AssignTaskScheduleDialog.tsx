@@ -141,7 +141,7 @@ export function AssignTaskScheduleDialog({
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting || !fromDate || !toDate}
-            className="bg-[#1a80a2] hover:bg-[#1a80a2]/90"
+            className="bg-primary hover:bg-primary/90"
           >
             {isSubmitting ? (
               <>

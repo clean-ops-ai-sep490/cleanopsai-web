@@ -1,16 +1,23 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { TaskScheduleEditContainer } from "@/components/task-schedule/TaskScheduleEditContainer";
+import { TaskScheduleForm } from "@/components/task-schedule/TaskScheduleForm";
+import { DetailPageSkeleton } from "@/components/ui/page-skeleton";
 
 export default function EditTaskSchedulePage() {
   const params = useParams();
   const id = params.id as string;
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 0);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
-    <DashboardLayout>
-      <TaskScheduleEditContainer id={id} />
-    </DashboardLayout>
+    <>
+      {ready ? <TaskScheduleForm taskScheduleId={id} /> : <DetailPageSkeleton />}
+    </>
   );
 }
