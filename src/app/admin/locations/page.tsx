@@ -59,7 +59,6 @@ export default function LocationsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Quản lý vị trí" description="Danh sách vị trí theo pattern bảng chuẩn." action={<Button onClick={() => { setEditing(null); setOpen(true); }}><Plus className="h-4 w-4" />Thêm vị trí</Button>} />
-
       {isLoading ? (
         <ListPageSkeleton cards={3} rows={6} />
       ) : error ? (

@@ -39,7 +39,6 @@ export default function ContractsPage() {
           </Select>
         </div>
       </SectionCard>
-
       {isLoading ? (
         <ListPageSkeleton cards={3} rows={6} />
       ) : error ? (

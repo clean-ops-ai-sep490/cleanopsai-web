@@ -25,7 +25,6 @@ export default function ClientsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Quản lý khách hàng" description="Danh sách khách hàng theo dạng bảng gọn, dễ đọc." />
-
       {isLoading ? (
         <ListPageSkeleton cards={3} rows={6} />
       ) : error ? (

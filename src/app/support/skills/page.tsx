@@ -109,7 +109,6 @@ export default function SkillsPage() {
           {!isFilterByCategory && !Array.isArray(data) ? <div className="mt-4 flex items-center justify-between text-sm text-slate-500"><span>Trang {data?.pageNumber} / {data?.totalPages}</span><div className="flex gap-2"><Button variant="outline" disabled={!data?.hasPreviousPage} onClick={() => setPageNumber((p) => Math.max(1, p - 1))}>Trước</Button><Button variant="outline" disabled={!data?.hasNextPage} onClick={() => setPageNumber((p) => p + 1)}>Sau</Button></div></div> : null}
         </SectionCard>
       )}
-
       <StandardDialog open={open} onOpenChange={setOpen} title={editing ? "Cập nhật kỹ năng" : "Thêm kỹ năng"}>
         <SkillForm initialData={editing} onSubmit={handleSubmit} onCancel={() => setOpen(false)} />
       </StandardDialog>

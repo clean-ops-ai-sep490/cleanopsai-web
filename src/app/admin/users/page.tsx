@@ -99,12 +99,12 @@ export default function UsersPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Quản lý người dùng" description="Danh sách user, role và trạng thái đăng nhập." action={<Button onClick={() => { setEditing(null); setOpen(true); }}><Plus className="h-4 w-4" />Thêm user</Button>} />
-
       <SectionCard>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
               <Users className="h-6 w-6" />
+
             </div>
             <div>
               <p className="text-sm font-medium text-slate-500">Tổng user</p>

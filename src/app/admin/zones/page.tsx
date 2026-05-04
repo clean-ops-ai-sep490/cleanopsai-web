@@ -149,7 +149,7 @@ export default function ZonesPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Khu vực ({data?.totalCount ?? 0})
+              Danh sách ({data?.totalCount ?? 0})
             </CardTitle>
           </CardHeader>
 

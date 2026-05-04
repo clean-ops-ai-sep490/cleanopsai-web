@@ -91,7 +91,7 @@ export default function WorkareaCheckinForm({
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          placeholder="Tên check-in point"
+          placeholder="Tên điểm Check-in"
           value={form.name}
           onChange={(e) =>
             setForm({ ...form, name: e.target.value })
@@ -118,7 +118,7 @@ export default function WorkareaCheckinForm({
           }
           disabled={!!initialData}
         >
-          <option value="">Chọn Workarea</option>
+          <option value="">Chọn khu vực làm việc</option>
           {workareas?.map((w) => (
             <option key={w.id} value={w.id.toString()}>
               {w.name}

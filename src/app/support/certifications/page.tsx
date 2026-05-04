@@ -118,6 +118,7 @@ export default function CertificationsPage() {
 
       <StandardDialog open={openDialog} onOpenChange={setOpenDialog} title={editing ? "Cập nhật chứng chỉ" : "Thêm chứng chỉ"}>
         <CertificationForm initialData={editing} onSubmit={handleSubmit} onCancel={() => setOpenDialog(false)} />
+
       </StandardDialog>
 
       <ConfirmDialog open={!!deleteTarget} title="Xóa chứng chỉ này?" description="Thao tác này không thể hoàn tác." confirmLabel="Xóa" onConfirm={handleDelete} onOpenChange={(open) => !open && setDeleteTarget(null)} />

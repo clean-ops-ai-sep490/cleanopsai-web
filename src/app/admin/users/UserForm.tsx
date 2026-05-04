@@ -86,7 +86,6 @@ export default function UserForm({ initialData, onSubmit, onCancel }: Props) {
         </Select>
         {errors.role ? <p className="text-xs text-rose-600">{errors.role}</p> : null}
       </div>
-
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel}>Hủy</Button>
         <Button type="submit" disabled={loading}>{loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Đang lưu...</> : "Lưu"}</Button>
