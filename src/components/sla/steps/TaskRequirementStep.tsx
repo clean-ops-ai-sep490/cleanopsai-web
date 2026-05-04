@@ -113,7 +113,7 @@ export function TaskRequirementStep({
                     interval: parseInt(e.target.value) || 1,
                   })
                 }
-                className="w-32 mt-2 bg-white border-[#e5e5e5] focus:ring-2 focus:ring-[#1a80a2] focus:border-transparent"
+                className="w-32 mt-2 bg-white border-[#e5e5e5] focus:ring-2 focus:ring-primary focus:border-transparent"
                 placeholder="1"
               />
             </div>
@@ -137,7 +137,7 @@ export function TaskRequirementStep({
                     interval: parseInt(e.target.value) || 1,
                   })
                 }
-                className="w-32 mt-2 bg-white border-[#e5e5e5] focus:ring-2 focus:ring-[#1a80a2] focus:border-transparent"
+                className="w-32 mt-2 bg-white border-[#e5e5e5] focus:ring-2 focus:ring-primary focus:border-transparent"
                 placeholder="1"
               />
             </div>
@@ -165,7 +165,7 @@ export function TaskRequirementStep({
                       }}
                       className={`px-3 py-4 rounded-lg font-medium transition-all text-center ${
                         isSelected
-                          ? "bg-[#1a80a2] text-white hover:bg-[#1a80a2]/90"
+                          ? "bg-primary text-white hover:bg-primary/90"
                           : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
                       }`}
                     >
@@ -198,7 +198,7 @@ export function TaskRequirementStep({
                     interval: parseInt(e.target.value) || 1,
                   })
                 }
-                className="w-32 mt-2 bg-white border-[#e5e5e5] focus:ring-2 focus:ring-[#1a80a2] focus:border-transparent"
+                className="w-32 mt-2 bg-white border-[#e5e5e5] focus:ring-2 focus:ring-primary focus:border-transparent"
                 placeholder="1"
               />
             </div>
@@ -227,7 +227,7 @@ export function TaskRequirementStep({
                         }}
                         className={`aspect-square rounded-lg font-medium transition-all ${
                           isSelected
-                            ? "bg-[#1a80a2] text-white hover:bg-[#1a80a2]/90"
+                            ? "bg-primary text-white hover:bg-primary/90"
                             : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
                         }`}
                       >
@@ -258,7 +258,7 @@ export function TaskRequirementStep({
                     interval: parseInt(e.target.value) || 1,
                   })
                 }
-                className="w-32 mt-2 bg-white border-[#e5e5e5] focus:ring-2 focus:ring-[#1a80a2] focus:border-transparent"
+                className="w-32 mt-2 bg-white border-[#e5e5e5] focus:ring-2 focus:ring-primary focus:border-transparent"
                 placeholder="1"
               />
             </div>
@@ -277,7 +277,7 @@ export function TaskRequirementStep({
                   });
                 }}
               >
-                <SelectTrigger className="bg-white border-[#e5e5e5] focus:ring-2 focus:ring-[#1a80a2] focus:border-transparent">
+                <SelectTrigger className="bg-white border-[#e5e5e5] focus:ring-2 focus:ring-primary focus:border-transparent">
                   <SelectValue placeholder="Chọn tháng" />
                 </SelectTrigger>
                 <SelectContent>
@@ -316,7 +316,7 @@ export function TaskRequirementStep({
                       }}
                       className={`aspect-square rounded-lg font-medium transition-all ${
                         isSelected
-                          ? "bg-[#1a80a2] text-white hover:bg-[#1a80a2]/90"
+                          ? "bg-primary text-white hover:bg-primary/90"
                           : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
                       }`}
                     >
@@ -339,11 +339,11 @@ export function TaskRequirementStep({
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-8 rounded-xl border border-blue-100">
         <div className="flex items-center justify-center mb-4">
-          <div className="p-3 bg-[#1a80a2] rounded-full">
+          <div className="p-3 bg-primary rounded-full">
             <Calendar className="h-8 w-8 text-white" />
           </div>
         </div>
-        <h3 className="text-center text-xl font-semibold text-[#1a80a2] mb-2">
+        <h3 className="text-center text-xl font-semibold text-primary mb-2">
           Cấu hình công việc
         </h3>
         <p className="text-center text-gray-600">
@@ -359,7 +359,7 @@ export function TaskRequirementStep({
           </h2>
           <Button
             onClick={addTask}
-            className="bg-[#1a80a2] hover:bg-[#1a80a2]/90"
+            className="bg-primary hover:bg-primary/90"
           >
             <Plus className="h-4 w-4 mr-2" />
             Thêm công việc
@@ -379,7 +379,7 @@ export function TaskRequirementStep({
             </p>
             {/* <Button
               onClick={addTask}
-              className="bg-[#1a80a2] hover:bg-[#1a80a2]/90 px-6 py-3"
+              className="bg-primary hover:bg-primary/90 px-6 py-3"
             >
               <Plus className="h-5 w-5 mr-2" />
               Thêm công việc đầu tiên
@@ -390,12 +390,12 @@ export function TaskRequirementStep({
             {taskRequirements.map((task, index) => (
               <Card
                 key={index}
-                className="border-2 border-gray-100 hover:border-[#1a80a2]/20 transition-colors"
+                className="border-2 border-gray-100 hover:border-primary/20 transition-colors"
               >
                 <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100/50">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-semibold text-gray-900 flex items-center">
-                      <div className="w-8 h-8 bg-[#1a80a2] text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">
+                      <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">
                         {index + 1}
                       </div>
                       Công việc {index + 1}
@@ -445,7 +445,7 @@ export function TaskRequirementStep({
                         handleRecurrenceTypeChange(index, value)
                       }
                     >
-                      <SelectTrigger className="mt-2 bg-white border-[#e5e5e5] focus:ring-2 focus:ring-[#1a80a2] focus:border-transparent">
+                      <SelectTrigger className="mt-2 bg-white border-[#e5e5e5] focus:ring-2 focus:ring-primary focus:border-transparent">
                         <SelectValue placeholder="Chọn loại lặp lại" />
                       </SelectTrigger>
                       <SelectContent>
