@@ -2,6 +2,9 @@
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { NotificationItem } from "./NotificationItem";
+import { LoadingState } from "@/components/ui/loading-state";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Bell } from "lucide-react";
 import type { NotificationRecipientDto } from "@/types/notification";
 
 interface NotificationListProps {
@@ -19,14 +22,20 @@ export function NotificationList({
 }: NotificationListProps) {
   if (isLoading) {
     return (
-      <div className="p-4 text-center text-sm text-gray-500">Đang tải...</div>
+      <div className="p-3">
+        <LoadingState label="Đang tải thông báo..." />
+      </div>
     );
   }
 
   if (notifications.length === 0) {
     return (
-      <div className="p-4 text-center text-sm text-gray-500">
-        Không có thông báo nào
+      <div className="p-3">
+        <EmptyState
+          title="Không có thông báo"
+          description="Bạn sẽ thấy các cập nhật mới tại đây khi có thông báo mới."
+          icon={<Bell className="h-10 w-10" />}
+        />
       </div>
     );
   }

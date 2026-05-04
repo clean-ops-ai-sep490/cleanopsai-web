@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { SectionCard } from "@/components/ui/section-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Clock, User, Tag } from "lucide-react";
+import { ArrowLeft, Clock, User, Tag, Bell } from "lucide-react";
 import { notificationApi } from "@/lib/notification-api";
 import { formatTimeAgo } from "@/lib/utils/date-utils";
 import type { NotificationRecipientDto } from "@/types/notification";
@@ -14,193 +17,75 @@ import { notificationToasts } from "@/lib/utils/toast-utils";
 export default function NotificationDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [notification, setNotification] =
-    useState<NotificationRecipientDto | null>(null);
+  const [notification, setNotification] = useState<NotificationRecipientDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
+  const [error, setError] = useState(false);
   const notificationId = params.id as string;
 
   useEffect(() => {
-    const loadNotificationDetail = async () => {
+    const load = async () => {
       try {
         setIsLoading(true);
-
-        // Get notification detail
-        const detail =
-          await notificationApi.getNotificationDetail(notificationId);
+        const detail = await notificationApi.getNotificationDetail(notificationId);
         setNotification(detail);
-
-        // Mark as read if not already read
         if (!detail.isRead) {
           await notificationApi.markAsRead(notificationId);
-          setNotification((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  isRead: true,
-                  isReadAt: new Date().toISOString(),
-                }
-              : null,
-          );
+          setNotification((prev) => (prev ? { ...prev, isRead: true, isReadAt: new Date().toISOString() } : null));
         }
-      } catch (error) {
-        console.error("Failed to load notification detail:", error);
+      } catch (err) {
+        console.error("Failed to load notification detail:", err);
         notificationToasts.loadNotificationDetailError();
-        router.push("/manager/notifications");
+        setError(true);
       } finally {
         setIsLoading(false);
       }
     };
-
-    if (notificationId) {
-      loadNotificationDetail();
-    }
-  }, [notificationId, router]);
-
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <Card className="p-8 text-center">
-          <p className="text-gray-500">Đang tải chi tiết thông báo...</p>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!notification) {
-    return (
-      <div className="p-6">
-        <Card className="p-8 text-center">
-          <p className="text-gray-500">Không tìm thấy thông báo</p>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => router.push("/manager/notifications")}
-          >
-            Quay lại danh sách thông báo
-          </Button>
-        </Card>
-      </div>
-    );
-  }
+    if (notificationId) load();
+  }, [notificationId]);
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/manager/notifications")}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Quay lại
-        </Button>
-        <h1 className="text-2xl font-bold text-gray-900">Chi tiết thông báo</h1>
-      </div>
+    <>
+      <div className="space-y-6">
+        <PageHeader title="Chi tiết thông báo" description="Xem nội dung, trạng thái và thời điểm đọc thông báo." breadcrumbs={<Button variant="ghost" size="sm" onClick={() => router.push("/manager/notifications")}><ArrowLeft className="h-4 w-4" />Quay lại</Button>} />
 
-      {/* Notification Detail Card */}
-      <Card className="p-6">
-        {/* Status Badge */}
-        <div className="flex items-center justify-between mb-4">
-          <Badge
-            variant={notification.isRead ? "secondary" : "default"}
-            className="mb-2"
-          >
-            {notification.isRead ? "Đã đọc" : "Chưa đọc"}
-          </Badge>
-
-          {notification.isReadAt && (
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Clock className="h-4 w-4" />
-              Đã đọc lúc:{" "}
-              {new Date(notification.isReadAt).toLocaleString("vi-VN")}
-            </div>
-          )}
-        </div>
-
-        {/* Title */}
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          {notification.title}
-        </h2>
-
-        {/* Metadata */}
-        <div className="flex flex-wrap items-center gap-4 mb-6 text-sm text-gray-600">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            <span>
-              Tạo lúc: {new Date(notification.created).toLocaleString("vi-VN")}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Tag className="h-4 w-4" />
-            <Badge variant="outline">{notification.priority}</Badge>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            <span>Sender: {notification.senderId}</span>
-          </div>
-        </div>
-
-        {/* Message Content */}
-        <div className="prose max-w-none">
-          <div className="bg-gray-50 rounded-lg p-4 border">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">
-              Nội dung thông báo:
-            </h3>
-            <div className="text-gray-900 whitespace-pre-wrap">
-              {notification.body}
-            </div>
-          </div>
-        </div>
-
-        {/* Additional Info */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="font-medium text-gray-700">ID thông báo:</span>
-              <span className="ml-2 text-gray-600 font-mono">
-                {notification.id}
-              </span>
-            </div>
-            <div>
-              <span className="font-medium text-gray-700">ID nội dung:</span>
-              <span className="ml-2 text-gray-600 font-mono">
-                {notification.notificationId}
-              </span>
-            </div>
-            <div>
-              <span className="font-medium text-gray-700">Thời gian tạo:</span>
-              <span className="ml-2 text-gray-600">
-                {formatTimeAgo(notification.created)}
-              </span>
-            </div>
-            {notification.isReadAt && (
-              <div>
-                <span className="font-medium text-gray-700">
-                  Thời gian đọc:
-                </span>
-                <span className="ml-2 text-gray-600">
-                  {formatTimeAgo(notification.isReadAt)}
-                </span>
+        {isLoading ? (
+          <SectionCard><div className="py-12 text-center text-slate-500">Đang tải chi tiết thông báo...</div></SectionCard>
+        ) : error || !notification ? (
+          <ErrorState title="Không thể tải thông báo" description="Thông báo có thể không tồn tại hoặc bạn không có quyền truy cập." onAction={() => router.push("/manager/notifications")} />
+        ) : (
+          <div className="space-y-6">
+            <SectionCard>
+              <div className="flex items-center justify-between gap-4">
+                <Badge variant={notification.isRead ? "secondary" : "default"}>{notification.isRead ? "Đã đọc" : "Chưa đọc"}</Badge>
+                {notification.isReadAt ? <div className="flex items-center gap-2 text-sm text-slate-500"><Clock className="h-4 w-4" />Đã đọc lúc: {new Date(notification.isReadAt).toLocaleString("vi-VN")}</div> : null}
               </div>
-            )}
-          </div>
-        </div>
-      </Card>
+              <h2 className="mt-4 text-xl font-semibold text-slate-950">{notification.title}</h2>
+              <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                <span className="flex items-center gap-2"><Clock className="h-4 w-4" />Tạo lúc: {new Date(notification.created).toLocaleString("vi-VN")}</span>
+                <span className="flex items-center gap-2"><Tag className="h-4 w-4" /><Badge variant="outline">{notification.priority}</Badge></span>
+                <span className="flex items-center gap-2"><User className="h-4 w-4" />Sender: {notification.senderId}</span>
+              </div>
+            </SectionCard>
 
-      {/* Actions */}
-      <div className="flex justify-center">
-        <Button
-          variant="outline"
-          onClick={() => router.push("/manager/notifications")}
-        >
-          Quay lại danh sách thông báo
-        </Button>
+            <SectionCard title="Nội dung thông báo">
+              <div className="whitespace-pre-wrap rounded-[var(--radius-md)] border border-slate-200 bg-slate-50 p-4 text-slate-700">{notification.body}</div>
+            </SectionCard>
+
+            <SectionCard title="Thông tin hệ thống">
+              <div className="grid gap-4 text-sm md:grid-cols-2">
+                <div><p className="text-slate-500">ID thông báo</p><p className="font-mono text-xs text-slate-700">{notification.id}</p></div>
+                <div><p className="text-slate-500">ID nội dung</p><p className="font-mono text-xs text-slate-700">{notification.notificationId}</p></div>
+                <div><p className="text-slate-500">Thời gian tạo</p><p className="text-slate-700">{formatTimeAgo(notification.created)}</p></div>
+                {notification.isReadAt ? <div><p className="text-slate-500">Thời gian đọc</p><p className="text-slate-700">{formatTimeAgo(notification.isReadAt)}</p></div> : null}
+              </div>
+            </SectionCard>
+          </div>
+        )}
+
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={() => router.push("/manager/notifications")}>Quay lại danh sách thông báo</Button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

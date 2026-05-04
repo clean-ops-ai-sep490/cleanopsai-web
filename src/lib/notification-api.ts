@@ -13,8 +13,12 @@ export const notificationApi = {
   ): Promise<NotificationListResponse> => {
     const searchParams = new URLSearchParams();
 
+    // Add params in backend's required order: isRead, workerId, pageNumber, pageSize
     if (params.isRead !== undefined) {
       searchParams.append("isRead", params.isRead.toString());
+    }
+    if (params.workerId) {
+      searchParams.append("workerId", params.workerId);
     }
     if (params.pageNumber) {
       searchParams.append("pageNumber", params.pageNumber.toString());
