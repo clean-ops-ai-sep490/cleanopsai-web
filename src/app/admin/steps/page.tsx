@@ -15,7 +15,7 @@ import {
 import { Plus, Edit2, Trash2 } from "lucide-react";
 
 import {
-  useSearchSteps,
+  useSteps,
   useCreateStep,
   useUpdateStep,
   useDeleteStep,
@@ -24,6 +24,7 @@ import {
 import { usePagination } from "@/hooks/usePagination";
 
 import { StandardDialog } from "@/components/ui/standard-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import StepForm from "./StepForm";
 import { toast } from "sonner";
 
@@ -31,6 +32,7 @@ export default function StepsPage() {
   const [keyword, setKeyword] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
 
   // ✅ pagination hook
   const {
@@ -50,11 +52,11 @@ export default function StepsPage() {
   }, [keyword]);
 
   // API
-  const { data, isLoading } = useSearchSteps(
-    keyword,
-    paginationParams.pageNumber,
-    paginationParams.pageSize
-  );
+  const { data, isLoading } = useSteps({
+    search: keyword || undefined,
+    pageNumber: paginationParams.pageNumber,
+    pageSize: paginationParams.pageSize
+  });
 
   const createMutation = useCreateStep();
   const updateMutation = useUpdateStep();
@@ -82,9 +84,13 @@ export default function StepsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Bạn có chắc muốn xóa bước này không?")) return;
-    await deleteMutation.mutateAsync(id);
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteMutation.mutateAsync(deleteTarget.id);
+    } finally {
+      setDeleteTarget(null);
+    }
   };
 
   const totalPages = data?.totalPages ?? 1;
@@ -154,7 +160,7 @@ export default function StepsPage() {
                           <Button
                             variant="ghost"
                             className="text-red-500"
-                            onClick={() => handleDelete(item.id)}
+                            onClick={() => setDeleteTarget(item)}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -202,6 +208,15 @@ export default function StepsPage() {
           onCancel={() => setOpen(false)}
         />
       </StandardDialog>
+
+      <ConfirmDialog 
+        open={!!deleteTarget} 
+        title="Xóa bước này?" 
+        description="Bạn có chắc muốn xóa bước này không?" 
+        confirmLabel="Xóa" 
+        onConfirm={handleDelete} 
+        onOpenChange={(open) => !open && setDeleteTarget(null)} 
+      />
     </div>
   );
 }

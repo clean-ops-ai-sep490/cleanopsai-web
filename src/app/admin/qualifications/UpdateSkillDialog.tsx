@@ -43,7 +43,7 @@ export default function UpdateSkillDialog({ data, onClose }: Props) {
           <select
             name="skillLevel"
             defaultValue={data?.skillLevel}
-            className="w-full border rounded-md px-3 py-2 text-sm focus:ring-[#1a80a2] focus:border-[#1a80a2]"
+            className="w-full border rounded-md px-3 py-2 text-sm focus:ring-primary focus:border-primary"
             disabled={isPending}
           >
             <option value={1}>Cơ bản (1)</option>
@@ -54,7 +54,7 @@ export default function UpdateSkillDialog({ data, onClose }: Props) {
 
         <div className="flex justify-end gap-2 pt-4 border-t mt-6">
           <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>Hủy</Button>
-          <Button type="submit" disabled={isPending} className="bg-[#1a80a2] hover:bg-[#156884]">
+          <Button type="submit" disabled={isPending} className="bg-primary hover:bg-[#156884]">
             {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />} 
             Lưu thay đổi
           </Button>
