@@ -10,7 +10,7 @@ import {
   Workflow,
   Calendar,
 } from "lucide-react";
-import { useRole } from "@/hooks/useRole";
+import { useRole, UserRole } from "@/hooks/useRole";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navigation = [
@@ -21,13 +21,13 @@ const navigation = [
         name: "Bảng điều khiển",
         href: "/manager",
         icon: LayoutDashboard,
-        roles: ["1"],
+        roles: [UserRole.Manager],
       },
       {
         name: "Sự cố & Yêu cầu",
         href: "/manager/incidents",
         icon: AlertTriangle,
-        roles: ["1"],
+        roles: [UserRole.Manager],
       },
     ],
   },
@@ -38,19 +38,19 @@ const navigation = [
         name: "Bộ kích hoạt SLA",
         href: "/manager/sla-trigger",
         icon: Zap,
-        roles: ["1"],
+        roles: [UserRole.Manager],
       },
       {
         name: "Quy trình làm việc",
         href: "/manager/workflow",
         icon: Workflow,
-        roles: ["1"],
+        roles: [UserRole.Manager],
       },
       {
         name: "Lịch trình công việc",
         href: "/manager/task-schedule",
         icon: Calendar,
-        roles: ["1"],
+        roles: [UserRole.Manager],
       },
     ],
   },

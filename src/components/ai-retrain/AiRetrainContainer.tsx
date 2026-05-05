@@ -412,7 +412,7 @@ function AnnotationQueue() {
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Link
-                        href={`/manager/ai-retrain/annotations/${candidate.candidateId}`}
+                        href={`/supervisor/ai-retrain/annotations/${candidate.candidateId}`}
                       >
                         <Button size="sm" variant="outline">
                           <Eye className="mr-2 h-4 w-4" />
@@ -422,7 +422,7 @@ function AnnotationQueue() {
                       {canEditAnnotations &&
                         candidate.candidateStatus !== "APPROVED" && (
                           <Link
-                            href={`/manager/ai-retrain/annotations/${candidate.candidateId}?mode=edit`}
+                            href={`/supervisor/ai-retrain/annotations/${candidate.candidateId}?mode=edit`}
                           >
                             <Button size="sm">
                               <Edit2 className="mr-2 h-4 w-4" />
