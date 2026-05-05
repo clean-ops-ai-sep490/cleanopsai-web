@@ -63,7 +63,7 @@ export function Sidebar() {
   const filteredNavigation = navigation
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => item.roles.includes(role || "")),
+      items: section.items.filter((item) => role && item.roles.includes(role as UserRole)),
     }))
     .filter((section) => section.items.length > 0);
 
