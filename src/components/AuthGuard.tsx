@@ -3,6 +3,8 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
+import { FullPageLoading } from "@/components/ui/loading-spinner";
+
 
 export default function AuthGuard({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -15,12 +17,9 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
   }, [isAuthenticated, isLoading, router]);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Đang tải dữ liệu...</p>
-      </div>
-    );
+    return <FullPageLoading label="Đang tải dữ liệu..." />;
   }
+
 
   if (!isAuthenticated) {
     return null;

@@ -65,6 +65,8 @@ interface RoleGuardProps {
   fallbackPath?: string;
 }
 
+import { FullPageLoading } from "@/components/ui/loading-spinner";
+
 export default function RoleGuard({
   children,
   allowedRoles,
@@ -102,12 +104,9 @@ export default function RoleGuard({
   }, [user, isLoading, allowedRoles, fallbackPath, router]);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Đang kiểm tra quyền truy cập...</p>
-      </div>
-    );
+    return <FullPageLoading label="Đang kiểm tra quyền truy cập..." />;
   }
+
 
   const normalizedRole = normalizeRole(user?.role);
   if (!user || !normalizedRole || !allowedRoles.includes(normalizedRole)) {
