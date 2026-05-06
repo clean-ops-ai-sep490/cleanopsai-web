@@ -10,9 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Clock } from "lucide-react";
+import { Clock, Plus, X, AlertCircle } from "lucide-react";
 
-// Import constants
 import {
   RECURRENCE_TYPES,
   WEEKDAY_OPTIONS,
@@ -50,7 +49,6 @@ export function RecurrenceSection({
   times,
   setTimes,
   selectedDaysOfWeek,
-  setSelectedDaysOfWeek,
   daysOfMonth,
   setDaysOfMonth,
   newTime,
@@ -58,8 +56,8 @@ export function RecurrenceSection({
   toggleDayOfWeek,
 }: RecurrenceSectionProps) {
   const recurrenceType = formData.recurrenceType;
+  const isInherited = !!formData.slaTaskId;
 
-  // Helper functions for new UI
   const addTimeSlot = () => {
     const newSlot = newTime || DEFAULT_TIME_SLOT;
     if (!times.includes(newSlot)) {
@@ -79,10 +77,12 @@ export function RecurrenceSection({
   };
 
   const toggleWeekday = (weekdayId: string) => {
+    if (isInherited) return;
     toggleDayOfWeek(weekdayId);
   };
 
   const toggleDay = (day: number) => {
+    if (isInherited) return;
     if (daysOfMonth.includes(day)) {
       setDaysOfMonth(daysOfMonth.filter((d) => d !== day));
     } else {
@@ -92,145 +92,163 @@ export function RecurrenceSection({
 
   return (
     <div className="space-y-6">
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-black">Cấu hình lặp lại</h2>
-          <div className="flex items-center gap-2 text-sm text-primary">
-            <Clock className="w-4 h-4" />
-            <span>Cấu hình sẽ tự động điền từ SLA Task</span>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          {/* Loại lặp lại */}
-          <div className="space-y-2">
-            <Label>
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="font-semibold">
               Loại lặp lại <span className="text-red-500">*</span>
             </Label>
-            <Select
-              onValueChange={(value) => updateField("recurrenceType", value)}
-              value={recurrenceType || "Daily"}
-            >
-              <SelectTrigger className="bg-white border-[#e5e5e5] focus:ring-2 focus:ring-primary focus:border-transparent">
-                <SelectValue placeholder="Chọn loại lặp lại" />
-              </SelectTrigger>
-              <SelectContent>
-                {RECURRENCE_TYPES.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.recurrenceType && (
-              <p className="text-sm text-red-500">
-                {errors.recurrenceType}
-              </p>
+            {isInherited && (
+              <div className="flex items-center gap-1 text-[10px] uppercase font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                {/* <Clock className="w-3 h-3" />
+                Kế thừa từ SLA */}
+              </div>
             )}
           </div>
-
-          {/* Thời gian trong ngày */}
-          <div>
-            <Label className="block text-sm font-medium text-gray-700 mb-3">
-              Thời gian trong ngày
-            </Label>
-            <div className="space-y-3">
-              {times.map((time, index) => (
-                <div
-                  key={`${time}-${index}`}
-                  className="flex items-center gap-3"
-                >
-                  <div className="flex-1 max-w-xs">
-                    <TimePicker
-                      value={time}
-                      onChange={(newTimeValue) => updateTimeSlot(time, newTimeValue)}
-                      placeholder="Chọn thời gian"
-                      format="24"
-                      className="w-full"
-                    />
-                  </div>
-                </div>
+          <Select
+            onValueChange={(value) => updateField("recurrenceType", value)}
+            value={recurrenceType || "Daily"}
+            disabled={isInherited}
+          >
+            <SelectTrigger className="bg-white border-[#e5e5e5] disabled:opacity-80 disabled:bg-gray-50">
+              <SelectValue placeholder="Chọn loại lặp lại" />
+            </SelectTrigger>
+            <SelectContent>
+              {RECURRENCE_TYPES.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  {type.label}
+                </SelectItem>
               ))}
-            </div>
-          </div>
+            </SelectContent>
+          </Select>
+          {errors.recurrenceType && (
+            <p className="text-xs text-red-500">{errors.recurrenceType}</p>
+          )}
+        </div>
 
-          {/* Weekly selector */}
-          {recurrenceType === "Weekly" && (
-            <div>
-              <Label className="block text-sm font-medium text-gray-700 mb-3">
-                Chọn các ngày trong tuần
-              </Label>
-              <div className="grid grid-cols-7 gap-2">
-                {WEEKDAY_OPTIONS.map((weekday) => {
-                  const isSelected = selectedDaysOfWeek.includes(weekday.id);
+        <div className="space-y-3">
+          <Label className="font-semibold">Thời điểm bắt đầu task (Times)</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {times.map((time, index) => (
+              <div
+                key={`${time}-${index}`}
+                className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100 group transition-all hover:border-primary/30"
+              >
+                <div className="flex-1">
+                  <TimePicker
+                    value={time}
+                    onChange={(newVal) => updateTimeSlot(time, newVal)}
+                    format="24"
+                    className="border-none bg-transparent h-8 shadow-none focus-visible:ring-0"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeTimeSlot(time)}
+                  className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  disabled={times.length <= 1}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="border-dashed border-2 h-[46px] text-gray-500 hover:text-primary hover:border-primary"
+              onClick={addTimeSlot}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Thêm khung giờ
+            </Button>
+          </div>
+          <p className="text-xs text-gray-500">
+            Mỗi mốc giờ là thời điểm task bắt đầu; hệ thống sẽ kiểm tra theo
+            thời lượng thực hiện (duration).
+          </p>
+          {errors.times && <p className="text-xs text-red-500">{errors.times}</p>}
+        </div>
+
+        {recurrenceType === "Weekly" && (
+          <div className="space-y-3">
+            <Label className="font-semibold text-gray-700">Các ngày trong tuần</Label>
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+              {WEEKDAY_OPTIONS.map((weekday) => {
+                const isSelected = selectedDaysOfWeek.includes(weekday.id);
+                return (
+                  <button
+                    key={weekday.id}
+                    type="button"
+                    onClick={() => toggleWeekday(weekday.id)}
+                    disabled={isInherited}
+                    className={`px-2 py-3 rounded-lg font-medium transition-all text-center border ${
+                      isSelected
+                        ? "bg-primary text-white border-primary"
+                        : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                    } ${isInherited && isSelected ? "opacity-90 ring-2 ring-primary/20" : ""} ${isInherited && !isSelected ? "opacity-40" : ""}`}
+                  >
+                    <div className="text-[10px] mb-0.5 opacity-80 uppercase tracking-tighter">
+                      {weekday.shortLabel}
+                    </div>
+                    <div className="text-xs">{weekday.label}</div>
+                  </button>
+                );
+              })}
+            </div>
+            {errors.daysOfWeek && (
+              <p className="text-xs text-red-500">{errors.daysOfWeek}</p>
+            )}
+          </div>
+        )}
+
+        {recurrenceType === "Monthly" && (
+          <div className="space-y-3">
+            <Label className="font-semibold text-gray-700">Các ngày trong tháng</Label>
+            <div className="grid grid-cols-7 gap-1.5">
+              {Array.from({ length: MAX_DAYS_IN_MONTH }, (_, i) => i + 1).map(
+                (day) => {
+                  const isSelected = daysOfMonth.includes(day);
                   return (
                     <button
-                      key={weekday.id}
+                      key={day}
                       type="button"
-                      onClick={() => toggleWeekday(weekday.id)}
-                      className={`px-3 py-4 rounded-lg font-medium transition-all text-center ${
+                      onClick={() => toggleDay(day)}
+                      disabled={isInherited}
+                      className={`aspect-square text-xs rounded-md font-medium transition-all border ${
                         isSelected
-                          ? "bg-primary text-white hover:bg-primary/90"
-                          : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
-                      }`}
+                          ? "bg-primary text-white border-primary"
+                          : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                      } ${isInherited && isSelected ? "opacity-90 ring-1 ring-primary/20" : ""} ${isInherited && !isSelected ? "opacity-40" : ""}`}
                     >
-                      <div className="text-xs mb-1 opacity-80">
-                        {weekday.shortLabel}
-                      </div>
-                      <div className="text-sm">{weekday.label}</div>
+                      {day}
                     </button>
                   );
-                })}
-              </div>
+                },
+              )}
             </div>
-          )}
+            {errors.daysOfMonth && (
+              <p className="text-xs text-red-500">{errors.daysOfMonth}</p>
+            )}
+          </div>
+        )}
 
-          {/* Monthly selector */}
-          {recurrenceType === "Monthly" && (
-            <div>
-              <Label className="block text-sm font-medium text-gray-700 mb-3">
-                Chọn các ngày trong tháng
-              </Label>
-              <div className="grid grid-cols-7 gap-2">
-                {Array.from({ length: MAX_DAYS_IN_MONTH }, (_, i) => i + 1).map(
-                  (day) => {
-                    const isSelected = daysOfMonth.includes(day);
-                    return (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() => toggleDay(day)}
-                        className={`aspect-square rounded-lg font-medium transition-all ${
-                          isSelected
-                            ? "bg-primary text-white hover:bg-primary/90"
-                            : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
-                        }`}
-                      >
-                        {day}
-                      </button>
-                    );
-                  },
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Yearly selector */}
-          {recurrenceType === "Yearly" && (
-            <div className="space-y-4">
-              <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-2">
+        {recurrenceType === "Yearly" && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-gray-500 uppercase">
                   Chọn tháng
                 </Label>
                 <Select
                   onValueChange={(value) => {
                     updateField("selectedMonth", parseInt(value));
-                    // Clear selected days when month changes
                     setDaysOfMonth([]);
                   }}
                   value={(formData.selectedMonth || 1).toString()}
+                  disabled={isInherited}
                 >
-                  <SelectTrigger className="bg-white border-[#e5e5e5] focus:ring-2 focus:ring-primary focus:border-transparent">
+                  <SelectTrigger className="bg-white border-[#e5e5e5] disabled:opacity-80">
                     <SelectValue placeholder="Chọn tháng" />
                   </SelectTrigger>
                   <SelectContent>
@@ -242,36 +260,48 @@ export function RecurrenceSection({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
 
-              <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-3">
-                  Chọn ngày
-                </Label>
-                <div className="grid grid-cols-7 gap-2">
-                  {getDaysArrayForMonth(formData.selectedMonth || 1).map(
-                    (day) => {
-                      const isSelected = daysOfMonth.includes(day);
-                      return (
-                        <button
-                          key={day}
-                          type="button"
-                          onClick={() => toggleDay(day)}
-                          className={`aspect-square rounded-lg font-medium transition-all ${
-                            isSelected
-                              ? "bg-primary text-white hover:bg-primary/90"
-                              : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
-                          }`}
-                        >
-                          {day}
-                        </button>
-                      );
-                    },
-                  )}
-                </div>
+            <div className="space-y-3">
+              <Label className="text-xs font-bold text-gray-500 uppercase">
+                Chọn ngày
+              </Label>
+              <div className="grid grid-cols-7 gap-1.5">
+                {getDaysArrayForMonth(formData.selectedMonth || 1).map((day) => {
+                  const isSelected = daysOfMonth.includes(day);
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => toggleDay(day)}
+                      disabled={isInherited}
+                      className={`aspect-square text-xs rounded-md font-medium transition-all border ${
+                        isSelected
+                          ? "bg-primary text-white border-primary"
+                          : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                      } ${isInherited && isSelected ? "opacity-90 ring-1 ring-primary/20" : ""} ${isInherited && !isSelected ? "opacity-40" : ""}`}
+                    >
+                      {day}
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          )}
-        </div>
+            {errors.monthDays && (
+              <p className="text-xs text-red-500">{errors.monthDays}</p>
+            )}
+          </div>
+        )}
+
+        {isInherited && (
+          <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-100 mt-4">
+            <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-amber-700 leading-relaxed">
+              Bạn đang sử dụng cấu hình lặp lại cố định từ SLA. Chỉ có thể thay đổi
+              mốc thời gian bắt đầu task trong ngày.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

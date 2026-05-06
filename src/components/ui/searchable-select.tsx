@@ -37,6 +37,7 @@ interface SearchableSelectProps<T extends SearchableSelectItem> {
     searchQuery?: string,
     filters?: Record<string, any>,
   ) => Promise<PaginatedResponse<T>>;
+  getItemById?: (id: string) => Promise<T>;
   displayFormatter?: (item: T) => string;
   filters?: Record<string, any>;
   pageSize?: number;
@@ -54,6 +55,7 @@ export function SearchableSelect<T extends SearchableSelectItem>({
   loadItems,
   queryKey,
   queryFn,
+  getItemById,
   displayFormatter,
   filters = {},
   pageSize = 20,
@@ -144,6 +146,24 @@ export function SearchableSelect<T extends SearchableSelectItem>({
       }
     }
   }, [value, displayItems]);
+
+  // Fetch single item by ID if it's not in the current list
+  React.useEffect(() => {
+    const isItemInList = displayItems.find((item) => item.id === value);
+    if (value && !isItemInList && !cachedSelectedItem && getItemById) {
+      const fetchItem = async () => {
+        try {
+          const item = await getItemById(value);
+          if (item) {
+            setCachedSelectedItem(item);
+          }
+        } catch (error) {
+          console.error("Failed to fetch selected item details:", error);
+        }
+      };
+      fetchItem();
+    }
+  }, [value, displayItems, cachedSelectedItem, getItemById]);
 
   // Clear cached item when value is cleared
   React.useEffect(() => {
@@ -285,10 +305,10 @@ export function SearchableSelect<T extends SearchableSelectItem>({
       {Array.from({ length: 3 }).map((_, index) => (
         <div
           key={index}
-          className="flex items-center px-2 py-1.5 rounded-md animate-pulse"
+          className="flex items-center px-2 py-1.5 rounded-[var(--app-radius-sm)] animate-pulse"
         >
-          <div className="w-4 h-4 bg-gray-200 rounded mr-2"></div>
-          <div className="h-4 bg-gray-200 rounded flex-1"></div>
+          <div className="w-4 h-4 bg-gray-200 rounded-[var(--app-radius-sm)] mr-2"></div>
+          <div className="h-4 bg-gray-200 rounded-[var(--app-radius-sm)] flex-1"></div>
         </div>
       ))}
     </div>
@@ -311,7 +331,7 @@ export function SearchableSelect<T extends SearchableSelectItem>({
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
-          className={cn("w-full justify-between h-8 px-3 py-1", className)}
+          className={cn("w-full justify-between h-auto min-h-8 px-3 py-1.5", className)}
           onKeyDown={handleKeyDown}
         >
           <span className="truncate">{displayText}</span>
@@ -338,7 +358,7 @@ export function SearchableSelect<T extends SearchableSelectItem>({
               value={currentSearchQuery}
               onChange={(e) => setCurrentSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="flex h-11 w-full rounded-md bg-white py-3 text-sm text-black outline-none placeholder:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-11 w-full rounded-[var(--app-radius-sm)] bg-white py-3 text-sm text-black outline-none placeholder:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
 
@@ -367,7 +387,7 @@ export function SearchableSelect<T extends SearchableSelectItem>({
                     <div
                       key={item.id}
                       className={cn(
-                        "relative flex cursor-default select-none items-center rounded-md px-2 py-1.5 text-sm outline-none transition-colors duration-200",
+                        "relative flex cursor-default select-none items-center rounded-[var(--app-radius-sm)] px-2 py-1.5 text-sm outline-none transition-colors duration-200",
                         // Keyboard selection styling
                         selectedIndex === index
                           ? "bg-primary-soft text-primary"

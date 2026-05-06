@@ -25,10 +25,10 @@ export const PREDEFINED_SHIFTS: WorkShift[] = [
   //   startTime: "22:00",
   //   endTime: "06:00",
   // },
-  {
-    id: "custom",
-    name: "Ca tùy chỉnh",
-    startTime: "",
-    endTime: "",
-  },
+  // {
+  //   id: "custom",
+  //   name: "Ca tùy chỉnh",
+  //   startTime: "",
+  //   endTime: "",
+  // },
 ];

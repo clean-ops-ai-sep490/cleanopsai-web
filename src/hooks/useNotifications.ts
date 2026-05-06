@@ -91,9 +91,14 @@ export function useNotifications(options?: UseNotificationsOptions) {
 
   // Mutation for marking as read
   const markAsReadMutation = useMutation({
-    mutationFn: (notificationId: string) =>
-      notificationApi.markAsRead(notificationId),
-    onMutate: async (notificationId) => {
+    mutationFn: ({
+      notificationId,
+      workerId,
+    }: {
+      notificationId: string;
+      workerId: string;
+    }) => notificationApi.markAsRead(notificationId, workerId),
+    onMutate: async ({ notificationId }) => {
       const queryKey = NOTIFICATION_KEYS.list(baseParams);
 
       // Cancel outgoing refetches
@@ -110,7 +115,7 @@ export function useNotifications(options?: UseNotificationsOptions) {
           pages: old.pages.map((page: any) => ({
             ...page,
             content: page.content.map((notif: NotificationRecipientDto) =>
-              notif.id === notificationId
+              notif.notificationId === notificationId
                 ? {
                     ...notif,
                     isRead: true,
@@ -208,8 +213,13 @@ export function useNotifications(options?: UseNotificationsOptions) {
 
   // Mark single notification as read
   const markAsRead = async (notificationId: string) => {
+    if (!user?.userId) return false;
+
     try {
-      await markAsReadMutation.mutateAsync(notificationId);
+      await markAsReadMutation.mutateAsync({
+        notificationId,
+        workerId: user.userId,
+      });
       return true;
     } catch (error) {
       return false;
@@ -226,18 +236,7 @@ export function useNotifications(options?: UseNotificationsOptions) {
     }
   };
 
-  // Get notification detail
-  const getNotificationDetail = async (notificationId: string) => {
-    try {
-      const detail =
-        await notificationApi.getNotificationDetail(notificationId);
-      return detail;
-    } catch (error) {
-      console.error("Failed to get notification detail:", error);
-      notificationToasts.loadNotificationDetailError();
-      return null;
-    }
-  };
+
 
   return {
     notifications,
@@ -250,6 +249,5 @@ export function useNotifications(options?: UseNotificationsOptions) {
     loadMore,
     markAsRead,
     markAllAsRead,
-    getNotificationDetail,
   };
 }

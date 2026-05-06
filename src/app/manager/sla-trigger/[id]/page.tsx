@@ -156,10 +156,7 @@ export default function SLADetailPage() {
                     <label className="text-sm font-medium text-gray-600">
                       Loại dịch vụ
                     </label>
-                    <Badge
-                      variant="outline"
-                      className="bg-blue-50 text-blue-700 border-blue-200"
-                    >
+                    <Badge variant="info">
                       {translateServiceType(sla.serviceType)}
                     </Badge>
                   </div>
@@ -266,10 +263,7 @@ export default function SLADetailPage() {
                             </p>
                           )}
                         </div>
-                        <Badge
-                          variant="outline"
-                          className="bg-green-50 text-green-700 border-green-200"
-                        >
+                        <Badge variant="success">
                           {getRecurrenceText(task.recurrenceType)}
                         </Badge>
                       </div>

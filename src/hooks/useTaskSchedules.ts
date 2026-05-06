@@ -12,8 +12,10 @@ import {
   deleteTaskSchedule,
   activateTaskSchedule,
   deactivateTaskSchedule,
+  getTaskSchedulesByWorkArea,
   TaskSchedulesPaginatedRequest,
 } from "@/lib/task-schedule-api";
+import { PaginatedRequest } from "@/types/common";
 import {
   TaskSchedule,
   CreateTaskScheduleData,
@@ -28,6 +30,8 @@ export const taskScheduleKeys = {
     [...taskScheduleKeys.lists(), params] as const,
   details: () => [...taskScheduleKeys.all, "detail"] as const,
   detail: (id: string) => [...taskScheduleKeys.details(), id] as const,
+  byWorkArea: (workAreaId: string, params: PaginatedRequest) =>
+    [...taskScheduleKeys.all, "byWorkArea", workAreaId, params] as const,
 };
 
 // Get paginated task schedules
@@ -157,5 +161,17 @@ export function useDeactivateTaskSchedule() {
     onError: (error: any) => {
       apiToasts.updateError("hủy kích hoạt lịch trình");
     },
+  });
+}
+
+// Get task schedules by work area
+export function useTaskSchedulesByWorkArea(
+  workAreaId: string,
+  params: PaginatedRequest = {},
+) {
+  return useQuery({
+    queryKey: taskScheduleKeys.byWorkArea(workAreaId, params),
+    queryFn: () => getTaskSchedulesByWorkArea(workAreaId, params),
+    enabled: !!workAreaId,
   });
 }

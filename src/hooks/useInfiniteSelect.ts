@@ -114,8 +114,11 @@ export function useInfiniteSelect<T>({
     placeholderData: (previousData) => previousData, // Keep previous data while loading
   });
 
-  // Flatten all pages into single array
-  const items = data?.pages.flatMap((page) => page.content) ?? [];
+  // Flatten all pages into single array and ensure uniqueness
+  const allItems = data?.pages.flatMap((page) => page.content) ?? [];
+  const items = Array.from(
+    new Map(allItems.map((item: any) => [item.id || item.value, item])).values(),
+  ) as T[];
 
   // Handle scroll to load more
   const handleScroll = useCallback(

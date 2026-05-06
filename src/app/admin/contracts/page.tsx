@@ -13,6 +13,7 @@ import { FileText } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { useClients } from "@/hooks/useClients";
 import { usePagination } from "@/hooks/usePagination";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 export default function ContractsPage() {
   const [clientId, setClientId] = useState<string | undefined>();
@@ -30,13 +31,41 @@ export default function ContractsPage() {
 
       <SectionCard>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <Select onValueChange={(value) => { setClientId(value === "all" ? undefined : value); pagination.goToFirstPage(); }}>
-            <SelectTrigger className="w-full md:w-[250px]"><SelectValue placeholder="Lọc theo khách hàng" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả</SelectItem>
-              {clientsData?.items?.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            value={clientId || "all"}
+            onValueChange={(value: string) => {
+              setClientId(value === "all" ? undefined : value);
+              pagination.goToFirstPage();
+            }}
+            placeholder="Lọc theo khách hàng"
+            useInfiniteLoading={true}
+            pageSize={10}
+            queryKey={["clients", "infinite"]}
+            queryFn={(page: number, pageSize: number, search?: string) =>
+              import("@/lib/client-api").then((m) =>
+                m.getClientsPaginatedNew(page, pageSize, { search }).then(res => ({
+                  ...res,
+                  content: res.content.map(item => ({
+                    ...item,
+                    id: String(item.id),
+                    name: item.name || ""
+                  }))
+                })),
+              )
+            }
+            getItemById={(id: string) =>
+              id === "all"
+                ? Promise.resolve({ id: "all", name: "Tất cả" })
+                : import("@/lib/client-api").then((m) => 
+                    m.getClientById(id).then(item => ({
+                      ...item,
+                      id: String(item.id),
+                      name: item.name || ""
+                    }))
+                  )
+            }
+            className="w-full md:w-[250px]"
+          />
         </div>
       </SectionCard>
       {isLoading ? (

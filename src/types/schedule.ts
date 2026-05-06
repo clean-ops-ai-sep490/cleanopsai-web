@@ -33,16 +33,33 @@ export interface TaskSchedule {
   contractStartDate: string; // date format "2026-04-10"
   contractEndDate: string; // date format "2026-04-10"
   isActive: boolean;
+  metadata?: TaskScheduleStep[];
+  lastGeneratedToDate?: string | null;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface TaskScheduleStep {
+  Id: string;
+  SopId: string;
+  StepId: string;
+  StepOrder: number;
+  ConfigDetail: string; // JSON string
+  Created: string;
+  CreatedBy: string;
+  IsDeleted: boolean;
+  LastModified: string;
+  LastModifiedBy: string | null;
+  Sop?: any;
+  Step?: any;
 }
 
 // Recurrence configuration
 export interface RecurrenceConfig {
   times: string[]; // Format: "HH:MM:SS" (24-hour format)
-  daysOfWeek: string[]; // e.g., ["Sunday"]
-  daysOfMonth: number[];
-  monthDays: MonthDay[];
+  daysOfWeek?: string[]; // Weekday names: Sunday..Saturday
+  daysOfMonth?: number[];
+  monthDays?: MonthDay[];
 }
 
 export interface MonthDay {

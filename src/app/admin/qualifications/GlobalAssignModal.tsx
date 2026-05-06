@@ -1,19 +1,17 @@
-"use client";
-
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import { StandardDialog } from "@/components/ui/standard-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
-import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
-import { useAuth } from "@/hooks/useAuth"; // Để lấy list workers
-import { useSkills } from "@/hooks/useSkills";
-import { useCreateWorkerSkill } from "@/hooks/useWorkerSkills";
+import { useCreateWorkerSkill, SkillLevelType } from "@/hooks/useWorkerSkills";
 import { useCreateWorkerCertification } from "@/hooks/useWorkerCertifications";
-import useCertifications from "@/hooks/useCertifications";
 import { toast } from "sonner";
-import { useWorkers } from "@/hooks/useWorkers";
+import { filterWorkers, getWorkerById } from "@/lib/worker-api";
+import { searchSkills, getSkillById } from "@/lib/skill-api";
+import { getCertifications, getCertificationById } from "@/lib/certification-api";
 
 type Props = {
   open: boolean;
@@ -26,159 +24,141 @@ export default function GlobalAssignModal({ open, onClose }: Props) {
   const [assignType, setAssignType] = useState<"skill" | "cert">("skill");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Lists Data
-  const { data: workersData } = useWorkers();
-// Sửa lại
-  const workersList = workersData?.content ?? workersData ?? [];
-  console.log("workersData:", workersData);
-  const { data: skillsData } = useSkills({ pageSize: 100 });
-  const { data: certsData } = useCertifications({ pageSize: 100 });
-
   // Mutations
   const { mutateAsync: assignSkill } = useCreateWorkerSkill();
   const { mutateAsync: assignCert } = useCreateWorkerCertification();
 
   // States for Skill
   const [skillId, setSkillId] = useState("");
-  // GlobalAssignModal - state khởi tạo
-const [skillLevel, setSkillLevel] = useState<string>("Beginner");
+  const [skillLevel, setSkillLevel] = useState<string>("Beginner");
 
   // States for Certs
   const [certId, setCertId] = useState("");
   const [issuedDate, setIssuedDate] = useState("");
   const [expiredAt, setExpiredAt] = useState("");
 
-  // Options Mapping
-  const skillOptions = useMemo(() => {
-  return (skillsData?.content || []).map((s: any) => ({ value: s.id, label: s.name }));
-}, [skillsData]);
-
-const certOptions = useMemo(() => {
-  return (certsData?.content || []).map((c: any) => ({ value: c.id, label: c.name }));
-}, [certsData]);
-
   // Handle Submit
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!selectedWorkerId) return toast.error("Vui lòng chọn nhân viên");
+    e.preventDefault();
+    if (!selectedWorkerId) return toast.error("Vui lòng chọn nhân viên");
 
-  try {
-    setIsSubmitting(true);
+    try {
+      setIsSubmitting(true);
 
-    if (assignType === "skill") {
-      if (!skillId) return toast.error("Vui lòng chọn kỹ năng");
+      if (assignType === "skill") {
+        if (!skillId) return toast.error("Vui lòng chọn kỹ năng");
 
-      const results = await Promise.allSettled(
-        [skillId].map((id) =>
-          assignSkill({ workerId: selectedWorkerId, skillId: id, skillLevel })
-        )
-      );
-
-      const failed = results.filter((r) => r.status === "rejected");
-      const succeeded = results.filter((r) => r.status === "fulfilled");
-
-      if (succeeded.length > 0 && failed.length === 0) {
-        toast.success(`Cấp thành công ${succeeded.length} kỹ năng 🎉`);
-      } else if (succeeded.length > 0 && failed.length > 0) {
-        toast.warning(`Cấp được ${succeeded.length} kỹ năng, ${failed.length} kỹ năng đã tồn tại hoặc lỗi.`);
+        await assignSkill({ 
+          workerId: selectedWorkerId, 
+          skillId, 
+          skillLevel: skillLevel as SkillLevelType 
+        });
+        toast.success("Cấp thành công kỹ năng 🎉");
       } else {
-        toast.error("Tất cả kỹ năng đều thất bại, có thể đã tồn tại từ trước.");
-        return; // Không đóng modal
+        if (!certId || !issuedDate)
+          return toast.error("Vui lòng chọn chứng chỉ và ngày cấp");
+
+        await assignCert({
+          workerId: selectedWorkerId,
+          certificationId: certId,
+          issuedDate: new Date(issuedDate).toISOString(),
+          expiredAt: expiredAt ? new Date(expiredAt).toISOString() : null,
+        });
+        toast.success("Cấp thành công chứng chỉ 🎉");
       }
 
-    } else {
-      if (!certId || !issuedDate)
-        return toast.error("Vui lòng chọn chứng chỉ và ngày cấp");
-
-      const results = await Promise.allSettled(
-        [certId].map((id) =>
-          assignCert({
-            workerId: selectedWorkerId,
-            certificationId: id,
-            issuedDate: new Date(issuedDate).toISOString(),
-            expiredAt: expiredAt ? new Date(expiredAt).toISOString() : null,
-          })
-        )
-      );
-
-      const failed = results.filter((r) => r.status === "rejected");
-      const succeeded = results.filter((r) => r.status === "fulfilled");
-
-      if (succeeded.length > 0 && failed.length === 0) {
-        toast.success(`Cấp thành công ${succeeded.length} chứng chỉ 🎉`);
-      } else if (succeeded.length > 0 && failed.length > 0) {
-        toast.warning(`Cấp được ${succeeded.length} chứng chỉ, ${failed.length} chứng chỉ đã tồn tại hoặc lỗi.`);
-      } else {
-        toast.error("Tất cả chứng chỉ đều thất bại, có thể đã tồn tại từ trước.");
-        return;
-      }
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.message || "Có lỗi xảy ra, có thể đã tồn tại từ trước.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    onClose();
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   return (
     <StandardDialog open={open} onOpenChange={onClose} title="Cấp Năng Lực Cho Nhân Viên">
       <form onSubmit={handleSubmit} className="space-y-5 pt-2">
         
         {/* 1. Chọn Nhân Viên */}
-        <div>
-          <label className="text-sm font-medium mb-1 block">1. Chọn Nhân viên (Worker)</label>
-          <select
-            className="w-full border rounded-md px-3 py-2 text-sm focus:ring-primary focus:border-primary"
+        <div className="space-y-1">
+          <Label>1. Chọn Nhân viên (Worker) *</Label>
+          <SearchableSelect
             value={selectedWorkerId}
-            onChange={(e) => setSelectedWorkerId(e.target.value)}
+            onValueChange={setSelectedWorkerId}
+            placeholder="Chọn nhân viên"
+            useInfiniteLoading={true}
+            pageSize={10}
+            queryKey={["workers", "infinite"]}
+            queryFn={(page, pageSize, search) =>
+              filterWorkers({ pageNumber: page, pageSize, address: search }).then(res => ({
+                ...res,
+                content: res.content.map(item => ({
+                  ...item,
+                  id: item.id,
+                  name: item.fullName
+                }))
+              }))
+            }
+            getItemById={(id) => 
+              getWorkerById(id).then(w => ({ id: w.id, name: w.fullName }))
+            }
             disabled={isSubmitting}
-            required
-          >
-            <option value="">Chọn nhân viên</option>
-            {workersList.map((w) => (
-              <option key={w.id} value={w.id}>{w.fullName}</option>
-            ))}
-          </select>
+          />
         </div>
 
         {/* 2. Chọn Loại Cấp */}
-        <div>
-          <label className="text-sm font-medium mb-2 block">2. Bạn muốn cấp gì?</label>
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="assignType" value="skill" checked={assignType === "skill"} onChange={() => setAssignType("skill")} />
-              <span className="text-sm">Kỹ năng</span>
+        <div className="space-y-2">
+          <Label>2. Bạn muốn cấp gì?</Label>
+          <div className="flex gap-6">
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input 
+                type="radio" 
+                name="assignType" 
+                value="skill" 
+                checked={assignType === "skill"} 
+                onChange={() => setAssignType("skill")} 
+                className="w-4 h-4 text-primary"
+              />
+              <span className="text-sm font-medium group-hover:text-primary transition-colors">Kỹ năng</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="assignType" value="cert" checked={assignType === "cert"} onChange={() => setAssignType("cert")} />
-              <span className="text-sm">Chứng chỉ</span>
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input 
+                type="radio" 
+                name="assignType" 
+                value="cert" 
+                checked={assignType === "cert"} 
+                onChange={() => setAssignType("cert")} 
+                className="w-4 h-4 text-primary"
+              />
+              <span className="text-sm font-medium group-hover:text-primary transition-colors">Chứng chỉ</span>
             </label>
           </div>
         </div>
 
         {/* 3. ĐIỀU KIỆN HIỂN THỊ DỰA THEO TYPE */}
-        <div className="p-4 bg-gray-50 border rounded-lg space-y-4">
+        <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-4">
           {assignType === "skill" ? (
             <>
-              <div>
-      <label className="text-sm font-medium mb-1 block">Chọn Kỹ năng</label>
-      <select
-        className="w-full border rounded-md px-3 py-2 text-sm"
-        value={skillId}
-        onChange={(e) => setSkillId(e.target.value)}
-        disabled={isSubmitting}
-        required
-      >
-        <option value="">Chọn kỹ năng</option>
-        {skillOptions.map((s) => (
-          <option key={s.value} value={s.value}>{s.label}</option>
-        ))}
-      </select>
-    </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Cấp độ (Skill Level)</label>
+              <div className="space-y-1">
+                <Label>Chọn Kỹ năng *</Label>
+                <SearchableSelect
+                  value={skillId}
+                  onValueChange={setSkillId}
+                  placeholder="Chọn kỹ năng"
+                  useInfiniteLoading={true}
+                  pageSize={10}
+                  queryKey={["skills", "infinite"]}
+                  queryFn={(page, pageSize, search) =>
+                    searchSkills(search || "", page, pageSize)
+                  }
+                  getItemById={getSkillById}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Cấp độ (Skill Level) *</Label>
                 <select
-                  className="w-full border rounded-md px-3 py-2 text-sm"
+                  className="w-full h-10 border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                   value={skillLevel}
                   onChange={(e) => setSkillLevel(e.target.value)}
                   disabled={isSubmitting}
@@ -191,29 +171,43 @@ const certOptions = useMemo(() => {
             </>
           ) : (
             <>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Chọn Chứng chỉ</label>
-                <select
-                  className="w-full border rounded-md px-3 py-2 text-sm"
+              <div className="space-y-1">
+                <Label>Chọn Chứng chỉ *</Label>
+                <SearchableSelect
                   value={certId}
-                  onChange={(e) => setCertId(e.target.value)}
+                  onValueChange={setCertId}
+                  placeholder="Chọn chứng chỉ"
+                  useInfiniteLoading={true}
+                  pageSize={10}
+                  queryKey={["certifications", "infinite"]}
+                  queryFn={(page, pageSize, search) =>
+                    getCertifications({ pageNumber: page, pageSize, search })
+                  }
+                  getItemById={getCertificationById}
                   disabled={isSubmitting}
-                  required
-                >
-                <option value="">Chọn chứng chỉ</option>
-                  {certOptions.map((c) => (
-                    <option key={c.value} value={c.value}>{c.label}</option>
-                  ))}
-                </select>
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Ngày cấp *</label>
-                  <Input type="date" value={issuedDate} onChange={(e) => setIssuedDate(e.target.value)} disabled={isSubmitting} required={assignType === "cert"} />
+                <div className="space-y-1">
+                  <Label>Ngày cấp *</Label>
+                  <Input 
+                    type="date" 
+                    value={issuedDate} 
+                    onChange={(e) => setIssuedDate(e.target.value)} 
+                    disabled={isSubmitting} 
+                    required={assignType === "cert"} 
+                    className="rounded-lg"
+                  />
                 </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Ngày hết hạn</label>
-                  <Input type="date" value={expiredAt} onChange={(e) => setExpiredAt(e.target.value)} disabled={isSubmitting} />
+                <div className="space-y-1">
+                  <Label>Ngày hết hạn</Label>
+                  <Input 
+                    type="date" 
+                    value={expiredAt} 
+                    onChange={(e) => setExpiredAt(e.target.value)} 
+                    disabled={isSubmitting} 
+                    className="rounded-lg"
+                  />
                 </div>
               </div>
             </>
@@ -221,9 +215,11 @@ const certOptions = useMemo(() => {
         </div>
 
         {/* Footer Actions */}
-        <div className="flex justify-end gap-2 pt-2 border-t">
-          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Hủy</Button>
-          <Button type="submit" className="bg-primary hover:bg-[#156884]" disabled={isSubmitting}>
+        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting} className="rounded-lg px-6">
+            Hủy
+          </Button>
+          <Button type="submit" className="bg-primary hover:bg-[#156884] rounded-lg px-6" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
             Xác nhận Cấp
           </Button>

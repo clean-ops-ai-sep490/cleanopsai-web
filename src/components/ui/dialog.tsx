@@ -50,7 +50,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed left-1/2 top-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-[20px] border border-slate-200 bg-white p-5 text-sm shadow-[0_24px_80px_rgba(15,23,42,0.16)] outline-none sm:max-w-[520px] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+          "fixed left-1/2 top-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-[var(--app-radius-sm)] border border-slate-200 bg-white p-5 text-sm shadow-[0_24px_80px_rgba(15,23,42,0.16)] outline-none sm:max-w-[520px] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
           className,
         )}
         {...props}
@@ -82,7 +82,7 @@ function DialogFooter({
   return (
     <div
       data-slot="dialog-footer"
-      className={cn("-mx-5 -mb-5 flex flex-col-reverse gap-2 rounded-b-[20px] border-t border-slate-200 bg-slate-50/70 p-5 sm:flex-row sm:justify-end", className)}
+      className={cn("-mx-5 -mb-5 flex flex-col-reverse gap-2 rounded-b-[var(--app-radius-sm)] border-t border-slate-200 bg-slate-50/70 p-5 sm:flex-row sm:justify-end", className)}
       {...props}
     >
       {children}

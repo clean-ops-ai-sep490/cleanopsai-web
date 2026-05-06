@@ -85,6 +85,7 @@ export function PPECheckConfig({
                   value: ppe.actionKey,
                   label: ppe.name,
                   description: `${ppe.actionKey} - ${ppe.description}`,
+                  imageUrl: ppe.imageUrl ? ppe.imageUrl.split("?")[0] : undefined,
                 })),
                 pageNumber: page,
                 pageSize,

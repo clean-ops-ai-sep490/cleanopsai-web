@@ -20,21 +20,18 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
   const [loading, setLoading] = useState(true);
 
   const {
-    contracts,
-    environmentTypes,
-    zones,
-    workAreas,
     locationName,
     isLoading,
     handleInputChange,
     formatWorkAreaDisplay,
+    clientId,
   } = useSLAFormData(data, onChange);
 
   useEffect(() => {
     setLoading(false);
   }, []);
 
-  if (loading || isLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -96,15 +93,53 @@ export function BasicInfoStep({ data, onChange }: BasicInfoStepProps) {
 
           <div className="space-y-2">
             <Label htmlFor="locationId">Địa điểm</Label>
-            <Input
-              id="locationId"
-              value={locationName}
-              placeholder={
-                data.contractId && !locationName
-                  ? "Đang tải địa điểm..."
-                  : "Được chọn từ hợp đồng"
-              }
-              readOnly
+            <SearchableSelect
+              value={data.locationId}
+              onValueChange={(value) => handleInputChange("locationId", value)}
+              placeholder="Chọn địa điểm"
+              searchPlaceholder="Tìm kiếm địa điểm..."
+              emptyMessage="Không tìm thấy địa điểm nào."
+              queryKey={["locations", "client", clientId]}
+              queryFn={async (page, pageSize, searchQuery) => {
+                if (!clientId) return {
+                  content: [],
+                  pageNumber: page,
+                  pageSize,
+                  totalElements: 0,
+                  totalPages: 0,
+                  hasNextPage: false,
+                  hasPreviousPage: false,
+                };
+
+                const response = await import("@/lib/location-api").then((m) =>
+                  m.getLocationsByClientId(clientId, {
+                    pageNumber: page,
+                    pageSize,
+                  }),
+                );
+
+                // Auto-fill if only one location exists
+                if (response.items.length === 1 && !data.locationId) {
+                  setTimeout(() => handleInputChange("locationId", response.items[0].id!), 0);
+                }
+
+                return {
+                  content: response.items.map((item) => ({
+                    ...item,
+                    id: item.id!,
+                  })),
+                  pageNumber: page,
+                  pageSize,
+                  totalElements: response.totalCount,
+                  totalPages: Math.ceil(response.totalCount / pageSize),
+                  hasNextPage: page * pageSize < response.totalCount,
+                  hasPreviousPage: page > 1,
+                };
+              }}
+              filters={{ clientId }}
+              useInfiniteLoading={true}
+              pageSize={10}
+              disabled={!data.contractId}
             />
           </div>
 

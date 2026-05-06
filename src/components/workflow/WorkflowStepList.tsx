@@ -149,9 +149,9 @@ export function WorkflowStepList({
           <ListItemsConfig
             step={step}
             onUpdateStepConfigDetail={onUpdateStepConfigDetail}
-            title="Danh sách công việc"
-            itemPlaceholder="Nhập công việc..."
-            addButtonText="Thêm công việc"
+            title="Danh sách bước"
+            itemPlaceholder="Nhập bước..."
+            addButtonText="Thêm bước"
           />
         );
       case "list":
@@ -211,9 +211,9 @@ export function WorkflowStepList({
           return (
             <div key={step.id} className="space-y-2">
               {/* Step Header Card */}
-              <div className="bg-white border border-gray-200 rounded-lg">
+              <div className="bg-white border border-gray-200 rounded-lg min-w-0">
                 <div
-                  className="flex items-center gap-4 p-4 cursor-pointer hover:bg-gray-50"
+                  className="flex items-center gap-4 p-4 cursor-pointer hover:bg-gray-50 min-w-0"
                   onMouseEnter={() => setHoveredStep(step.id)}
                   onMouseLeave={() => setHoveredStep(null)}
                   draggable
