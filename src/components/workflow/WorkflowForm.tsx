@@ -23,6 +23,7 @@ import {
   getCertificationCategories,
   getCertificationsByCategory,
 } from "@/lib/certification-api";
+import { translateServiceType } from "@/lib/utils/translate";
 import type { EnvironmentType } from "@/types/sop";
 import type { Skill, Certification } from "@/types/skill";
 
@@ -78,120 +79,8 @@ export function WorkflowForm({ formData, onChange }: WorkflowFormProps) {
   const [loadingSkills, setLoadingSkills] = useState(false);
   const [loadingCertifications, setLoadingCertifications] = useState(false);
 
-  // Load environment types on mount
-  useEffect(() => {
-    if (environmentTypesLoaded.current) return;
-
-    const loadEnvironmentTypes = async () => {
-      environmentTypesLoaded.current = true;
-      setLoadingEnvironments(true);
-      try {
-        const response = await getEnvironmentTypes();
-        setEnvironmentTypes(response.content);
-      } catch (error) {
-        console.error("Failed to load environment types:", error);
-        environmentTypesLoaded.current = false; // Reset on error
-      } finally {
-        setLoadingEnvironments(false);
-      }
-    };
-
-    loadEnvironmentTypes();
-  }, []);
-
-  // Load skill categories on mount
-  useEffect(() => {
-    if (skillCategoriesLoaded.current) return;
-
-    const loadSkillCategories = async () => {
-      skillCategoriesLoaded.current = true;
-      setLoadingSkillCategories(true);
-      try {
-        const categories = await getSkillCategories();
-        const categoryObjects = categories
-          .filter((cat) => cat && cat.trim() !== "")
-          .map((cat) => ({ id: cat, name: cat }));
-        setSkillCategories(categoryObjects);
-      } catch (error) {
-        console.error("Failed to load skill categories:", error);
-        skillCategoriesLoaded.current = false; // Reset on error
-      } finally {
-        setLoadingSkillCategories(false);
-      }
-    };
-
-    loadSkillCategories();
-  }, []);
-
-  // Load certification categories on mount
-  useEffect(() => {
-    if (certificationCategoriesLoaded.current) return;
-
-    const loadCertificationCategories = async () => {
-      certificationCategoriesLoaded.current = true;
-      setLoadingCertificationCategories(true);
-      try {
-        const categories = await getCertificationCategories();
-        const categoryObjects = categories
-          .filter((cat) => cat && cat.trim() !== "")
-          .map((cat) => ({ id: cat, name: cat }));
-        setCertificationCategories(categoryObjects);
-      } catch (error) {
-        console.error("Failed to load certification categories:", error);
-        certificationCategoriesLoaded.current = false; // Reset on error
-      } finally {
-        setLoadingCertificationCategories(false);
-      }
-    };
-
-    loadCertificationCategories();
-  }, []);
-
-  // Load skills when skill category changes
-  useEffect(() => {
-    if (selectedSkillCategory) {
-      const loadSkills = async () => {
-        setLoadingSkills(true);
-        try {
-          const skills = await getSkillsByCategoryId(selectedSkillCategory);
-          setAvailableSkills(skills);
-        } catch (error) {
-          console.error("Failed to load skills:", error);
-        } finally {
-          setLoadingSkills(false);
-        }
-      };
-
-      loadSkills();
-    } else {
-      setAvailableSkills([]);
-      handleChange("requiredSkillIds", []);
-    }
-  }, [selectedSkillCategory]);
-
-  // Load certifications when certification category changes
-  useEffect(() => {
-    if (selectedCertificationCategory) {
-      const loadCertifications = async () => {
-        setLoadingCertifications(true);
-        try {
-          const certifications = await getCertificationsByCategory(
-            selectedCertificationCategory,
-          );
-          setAvailableCertifications(certifications);
-        } catch (error) {
-          console.error("Failed to load certifications:", error);
-        } finally {
-          setLoadingCertifications(false);
-        }
-      };
-
-      loadCertifications();
-    } else {
-      setAvailableCertifications([]);
-      handleChange("requiredCertificationIds", []);
-    }
-  }, [selectedCertificationCategory]);
+  // No longer needed: environmentTypes, skillCategories, certificationCategories state and effects
+  // We will let SearchableSelect handle the data fetching
 
   const handleChange = (field: keyof SOPFormData, value: string | string[]) => {
     onChange({ ...formData, [field]: value });
@@ -231,12 +120,20 @@ export function WorkflowForm({ formData, onChange }: WorkflowFormProps) {
           <Label className="text-sm font-medium text-black mb-2 block">
             Loại dịch vụ
           </Label>
-          <Input
-            className="bg-[#f5f5f5] border-[#e5e5e5] h-[30px]"
+          <Select
             value={formData.serviceType}
-            onChange={(e) => handleChange("serviceType", e.target.value)}
-            placeholder="Ví dụ: Vệ sinh"
-          />
+            onValueChange={(value) => handleChange("serviceType", value)}
+          >
+            <SelectTrigger className="bg-[#f5f5f5] border-[#e5e5e5] h-[30px] text-sm">
+              <SelectValue placeholder="Chọn loại dịch vụ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Cleaning">Vệ sinh</SelectItem>
+              <SelectItem value="Maintenance">Bảo trì</SelectItem>
+              <SelectItem value="Repair">Sửa chữa</SelectItem>
+              <SelectItem value="Inspection">Kiểm tra</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <Label className="text-sm font-medium text-black mb-2 block">
@@ -292,30 +189,35 @@ export function WorkflowForm({ formData, onChange }: WorkflowFormProps) {
           <Label className="text-sm font-medium text-black mb-2 block">
             Danh mục kỹ năng
           </Label>
-          <Select
+          <SearchableSelect
             value={selectedSkillCategory}
-            onValueChange={setSelectedSkillCategory}
-            disabled={loadingSkillCategories}
-          >
-            <SelectTrigger className="bg-[#f5f5f5] border-[#e5e5e5] h-[30px]">
-              <SelectValue
-                placeholder={
-                  loadingSkillCategories
-                    ? "Đang tải..."
-                    : "Chọn danh mục kỹ năng"
+            onValueChange={async (value) => {
+              setSelectedSkillCategory(value);
+              if (value) {
+                setLoadingSkills(true);
+                try {
+                  const skills = await getSkillsByCategoryId(value);
+                  setAvailableSkills(skills);
+                } finally {
+                  setLoadingSkills(false);
                 }
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {skillCategories
-                .filter((cat) => cat && cat.id && cat.name)
-                .map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
+              } else {
+                setAvailableSkills([]);
+              }
+            }}
+            placeholder="Chọn danh mục kỹ năng"
+            loadItems={async () => {
+              const categories = await getSkillCategories();
+              return {
+                items: categories
+                  .filter((cat) => cat && cat.trim() !== "")
+                  .map((cat) => ({ id: cat, name: cat })),
+                totalCount: categories.length,
+              };
+            }}
+            getItemById={async (id) => ({ id, name: id } as any)}
+            className="bg-[#f5f5f5] border-[#e5e5e5] h-[30px]"
+          />
         </div>
         <div>
           <Label className="text-sm font-medium text-black mb-2 block">
@@ -340,30 +242,35 @@ export function WorkflowForm({ formData, onChange }: WorkflowFormProps) {
           <Label className="text-sm font-medium text-black mb-2 block">
             Danh mục chứng chỉ
           </Label>
-          <Select
+          <SearchableSelect
             value={selectedCertificationCategory}
-            onValueChange={setSelectedCertificationCategory}
-            disabled={loadingCertificationCategories}
-          >
-            <SelectTrigger className="bg-[#f5f5f5] border-[#e5e5e5] h-[30px]">
-              <SelectValue
-                placeholder={
-                  loadingCertificationCategories
-                    ? "Đang tải..."
-                    : "Chọn danh mục chứng chỉ"
+            onValueChange={async (value) => {
+              setSelectedCertificationCategory(value);
+              if (value) {
+                setLoadingCertifications(true);
+                try {
+                  const certs = await getCertificationsByCategory(value);
+                  setAvailableCertifications(certs);
+                } finally {
+                  setLoadingCertifications(false);
                 }
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {certificationCategories
-                .filter((cat) => cat && cat.id && cat.name)
-                .map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
+              } else {
+                setAvailableCertifications([]);
+              }
+            }}
+            placeholder="Chọn danh mục chứng chỉ"
+            loadItems={async () => {
+              const categories = await getCertificationCategories();
+              return {
+                items: categories
+                  .filter((cat) => cat && cat.trim() !== "")
+                  .map((cat) => ({ id: cat, name: cat })),
+                totalCount: categories.length,
+              };
+            }}
+            getItemById={async (id) => ({ id, name: id } as any)}
+            className="bg-[#f5f5f5] border-[#e5e5e5] h-[30px]"
+          />
         </div>
         <div>
           <Label className="text-sm font-medium text-black mb-2 block">
