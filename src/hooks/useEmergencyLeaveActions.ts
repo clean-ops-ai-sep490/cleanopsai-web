@@ -30,6 +30,8 @@ export interface TaskDecision {
   taskId: string;
   action: TaskAction;
   selectedWorker: Worker | null;
+  scheduledStartAt?: string;
+  durationMinutes?: number;
 }
 
 // Result of executing an action on a task
@@ -80,17 +82,39 @@ export function useEmergencyLeaveActions() {
           pageSize: 100,
         });
 
-        const tasks = response.content || [];
+        const allTasks = response.content || [];
+
+        // Client-side filtering: Only include tasks that strictly overlap with the leave period
+        const leaveStart = new Date(request.leaveDateFrom).getTime();
+        const leaveEnd = new Date(request.leaveDateTo).getTime();
+
+        const filteredTasks = allTasks.filter((task) => {
+          const taskStart = new Date(task.scheduledStartAt).getTime();
+          const taskEnd = new Date(task.scheduledEndAt).getTime();
+          return taskStart < leaveEnd && taskEnd > leaveStart;
+        });
+
+        // Sort tasks: InProgress first, then by Start time
+        const tasks = filteredTasks.sort((a, b) => {
+          if (a.status === "InProgress" && b.status !== "InProgress") return -1;
+          if (a.status !== "InProgress" && b.status === "InProgress") return 1;
+          return (
+            new Date(a.scheduledStartAt).getTime() -
+            new Date(b.scheduledStartAt).getTime()
+          );
+        });
+
         setAffectedTasks(tasks);
 
-        // Auto-suggest actions based on status
+        // Decisions are now manual, no auto-Block
         const autoDecisions: Record<string, TaskDecision> = {};
         for (const task of tasks) {
           autoDecisions[task.id] = {
             taskId: task.id,
-            action:
-              task.status === "Block" ? "REASSIGN_START" : null,
+            action: null,
             selectedWorker: null,
+            scheduledStartAt: task.scheduledStartAt,
+            durationMinutes: task.durationMinutes,
           };
         }
         setDecisions(autoDecisions);
@@ -183,6 +207,23 @@ export function useEmergencyLeaveActions() {
   );
 
   /**
+   * Update specific fields in a task decision
+   */
+  const updateTaskDecision = useCallback(
+    (taskId: string, updates: Partial<TaskDecision>) => {
+      setDecisions((prev) => ({
+        ...prev,
+        [taskId]: {
+          ...prev[taskId],
+          ...updates,
+          taskId,
+        },
+      }));
+    },
+    [],
+  );
+
+  /**
    * Execute reassign + status update for a single task
    */
   const executeTaskAction = useCallback(
@@ -203,11 +244,11 @@ export function useEmergencyLeaveActions() {
             };
           }
 
-          // Step 1: PUT - full update with new assignee
+          // Step 1: PUT - full update with new assignee and potentially new time
           const payload: TaskAssignmentUpdatePayload = {
             taskName: task.taskName || task.nameAdhocTask || "",
-            scheduledStartAt: task.scheduledStartAt,
-            durationMinutes: task.durationMinutes,
+            scheduledStartAt: decision.scheduledStartAt || task.scheduledStartAt,
+            durationMinutes: decision.durationMinutes ?? task.durationMinutes,
             assigneeId: selectedWorker.id,
             assigneeName: selectedWorker.fullName,
             displayLocation: task.displayLocation,
@@ -246,9 +287,11 @@ export function useEmergencyLeaveActions() {
       setResults([]);
 
       try {
-        // Validate all Block tasks have actions
-        const blockTasks = affectedTasks.filter((t) => t.status === "Block");
-        const missingActions = blockTasks.filter(
+        // Validate all active tasks have actions (InProgress or Block)
+        const activeTasks = affectedTasks.filter(
+          (t) => t.status !== "Completed" && t.status !== "Cancelled"
+        );
+        const missingActions = activeTasks.filter(
           (t) => !decisions[t.id]?.action,
         );
 
@@ -261,7 +304,7 @@ export function useEmergencyLeaveActions() {
         }
 
         // Validate reassign tasks have workers
-        const reassignTasks = blockTasks.filter(
+        const reassignTasks = activeTasks.filter(
           (t) =>
             decisions[t.id]?.action === "REASSIGN_START" ||
             decisions[t.id]?.action === "REASSIGN_LATER",
@@ -280,7 +323,7 @@ export function useEmergencyLeaveActions() {
 
         // Execute all task actions
         const actionResults: TaskActionResult[] = [];
-        for (const task of blockTasks) {
+        for (const task of activeTasks) {
           const decision = decisions[task.id];
           if (decision?.action) {
             const result = await executeTaskAction(task, decision);
@@ -331,12 +374,16 @@ export function useEmergencyLeaveActions() {
       setResults([]);
 
       try {
-        // PATCH all blocked tasks back to InProgress
-        const blockTasks = affectedTasks.filter((t) => t.status === "Block");
+        // PATCH all affected tasks back to InProgress or NotStarted depending on original
+        const activeTasks = affectedTasks.filter(
+          (t) => t.status !== "Completed" && t.status !== "Cancelled"
+        );
         const actionResults: TaskActionResult[] = [];
 
-        for (const task of blockTasks) {
+        for (const task of activeTasks) {
           try {
+            // If it was Block, it's safer to move to InProgress if we reject the leave
+            // If it was already InProgress, keep it.
             await updateTaskAssignmentStatus(task.id, "InProgress");
             actionResults.push({
               taskId: task.id,
@@ -410,7 +457,8 @@ export function useEmergencyLeaveActions() {
       setDecisions((prev) => {
         const updated = { ...prev };
         for (const task of affectedTasks) {
-          if (task.status === "Block") {
+          const isActive = task.status !== "Completed" && task.status !== "Cancelled";
+          if (isActive) {
             updated[task.id] = {
               ...updated[task.id],
               taskId: task.id,
@@ -460,6 +508,7 @@ export function useEmergencyLeaveActions() {
     rejectRequest,
     retryFailed,
     setBulkAction,
+    updateTaskDecision,
     reset,
   };
 }
