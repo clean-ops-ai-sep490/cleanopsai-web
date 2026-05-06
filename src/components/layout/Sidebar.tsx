@@ -9,6 +9,7 @@ import {
   Zap,
   Workflow,
   Calendar,
+  MapPin,
 } from "lucide-react";
 import { useRole, UserRole } from "@/hooks/useRole";
 import { motion, AnimatePresence } from "framer-motion";
@@ -52,6 +53,12 @@ const navigation = [
         icon: Calendar,
         roles: [UserRole.Manager],
       },
+      {
+        name: "Quản lý giám sát khu vực",
+        href: "/manager/work-area-supervisors",
+        icon: MapPin,
+        roles: [UserRole.Manager],
+      },
     ],
   },
 ];
@@ -63,7 +70,9 @@ export function Sidebar() {
   const filteredNavigation = navigation
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => role && item.roles.includes(role as UserRole)),
+      items: section.items.filter(
+        (item) => role && item.roles.includes(role as UserRole),
+      ),
     }))
     .filter((section) => section.items.length > 0);
 
@@ -97,7 +106,8 @@ export function Sidebar() {
               {section.items.map((item) => {
                 const isActive =
                   pathname === item.href ||
-                  (pathname.startsWith(item.href + "/") && item.href !== "/manager");
+                  (pathname.startsWith(item.href + "/") &&
+                    item.href !== "/manager");
                 const IconComponent = item.icon;
 
                 return (
@@ -117,7 +127,11 @@ export function Sidebar() {
                             initial={{ scaleX: 0, originX: 1, opacity: 0 }}
                             animate={{ scaleX: 1, opacity: 1 }}
                             exit={{ scaleX: 0, originX: 1, opacity: 0 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            transition={{
+                              type: "spring",
+                              stiffness: 300,
+                              damping: 30,
+                            }}
                             className="absolute inset-0 bg-primary-soft"
                           />
                         )}
@@ -126,15 +140,21 @@ export function Sidebar() {
                       <IconComponent
                         className={cn(
                           "relative z-10 mr-4 h-5 w-5 transition-colors duration-200",
-                          isActive ? "text-primary" : "text-slate-400 group-hover:text-slate-600",
+                          isActive
+                            ? "text-primary"
+                            : "text-slate-400 group-hover:text-slate-600",
                         )}
                       />
                       <span className="relative z-10 flex-1">{item.name}</span>
-                      
+
                       {isActive && (
                         <motion.div
                           layoutId="manager-active-border"
-                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
+                          }}
                           className="absolute right-0 top-0 bottom-0 w-1 bg-primary z-20"
                         />
                       )}

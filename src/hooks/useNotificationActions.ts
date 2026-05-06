@@ -1,26 +1,21 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useNotifications } from "./useNotifications";
 import type { NotificationRecipientDto } from "@/types/notification";
 import { notificationToasts } from "@/lib/utils/toast-utils";
 
 export function useNotificationActions() {
-  const router = useRouter();
-  const { markAsRead, getNotificationDetail } = useNotifications();
+  const { markAsRead } = useNotifications();
 
-  // Handle notification click - navigate to detail page
+  // Handle notification click - mark as read
   const handleNotificationClick = async (
     notification: NotificationRecipientDto,
   ) => {
     try {
       // Mark as read if not already read
       if (!notification.isRead) {
-        await markAsRead(notification.id);
+        await markAsRead(notification.notificationId);
       }
-
-      // Navigate to notification detail page
-      router.push(`/manager/notifications/${notification.id}`);
     } catch (error) {
       console.error("Failed to handle notification click:", error);
       notificationToasts.openNotificationError();
@@ -36,14 +31,8 @@ export function useNotificationActions() {
     await markAsRead(notificationId);
   };
 
-  // Navigate to all notifications page
-  const navigateToAllNotifications = () => {
-    router.push("/manager/notifications");
-  };
-
   return {
     handleNotificationClick,
     handleMarkAsRead,
-    navigateToAllNotifications,
   };
 }

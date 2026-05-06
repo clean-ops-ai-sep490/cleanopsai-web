@@ -44,8 +44,8 @@ export const notificationApi = {
   },
 
   // Mark notification as read
-  markAsRead: async (id: string): Promise<void> => {
-    await api.patch(`/NotificationRecipients/${id}/read`);
+  markAsRead: async (notificationId: string, workerId: string): Promise<void> => {
+    await api.patch(`/NotificationRecipients/${notificationId}/read?workerId=${workerId}`);
   },
 
   // Mark all notifications as read

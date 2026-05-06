@@ -25,7 +25,6 @@ export function NotificationDropdown() {
   const {
     handleNotificationClick,
     handleMarkAsRead,
-    navigateToAllNotifications,
   } = useNotificationActions();
 
   // Handle mark all as read
@@ -37,12 +36,6 @@ export function NotificationDropdown() {
   const handleNotificationClickWithClose = async (notification: any) => {
     setIsOpen(false);
     await handleNotificationClick(notification);
-  };
-
-  // Handle view all notifications
-  const handleViewAllClick = () => {
-    setIsOpen(false);
-    navigateToAllNotifications();
   };
 
   return (
@@ -78,17 +71,7 @@ export function NotificationDropdown() {
           onNotificationClick={handleNotificationClickWithClose}
         />
 
-        {notifications.length > 0 && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-center text-sm text-blue-600 cursor-pointer"
-              onClick={handleViewAllClick}
-            >
-              Xem tất cả thông báo
-            </DropdownMenuItem>
-          </>
-        )}
+
       </DropdownMenuContent>
     </DropdownMenu>
   );
