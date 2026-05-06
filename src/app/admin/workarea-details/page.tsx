@@ -122,8 +122,6 @@ export default function WorkAreaDetailsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Tên</TableHead>
-                  <TableHead>Diện tích</TableHead>
-                  <TableHead>Tổng diện tích</TableHead>
                   <TableHead>Khu vực làm việc</TableHead>
                   <TableHead className="text-right">Hành động</TableHead>
                 </TableRow>
@@ -133,8 +131,6 @@ export default function WorkAreaDetailsPage() {
                 {data?.content?.map((d: any) => (
                   <TableRow key={d.id}>
                     <TableCell>{d.name}</TableCell>
-                    <TableCell>{d.area}</TableCell>
-                    <TableCell>{d.totalArea}</TableCell>
                     <TableCell>{d.workAreaName}</TableCell>
 
                     <TableCell className="text-right flex justify-end gap-2">

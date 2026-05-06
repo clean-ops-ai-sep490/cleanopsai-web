@@ -17,9 +17,8 @@ import {
   useDeleteZone,
 } from "@/hooks/useZones";
 
-import { useAllLocations } from "@/hooks/useLocations";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { usePagination } from "@/hooks/usePagination";
-
 import { StandardDialog } from "@/components/ui/standard-dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import ZoneForm from "./ZoneForm";
@@ -30,10 +29,6 @@ export default function ZonesPage() {
   const [editing, setEditing] = useState<any | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
   const [locationId, setLocationId] = useState<string>("");
-
-  const { data: locations } = useAllLocations();
-
-  // ================= PAGINATION =================
   const {
     currentPage,
     setPage,
@@ -119,19 +114,36 @@ export default function ZonesPage() {
               Quản lý khu vực
             </h1>
 
-            <select
-              value={locationId}
-              onChange={(e) => setLocationId(e.target.value)}
-              className="border rounded-md px-3 py-2 text-sm"
-            >
-              <option value="">Tất cả vị trí</option>
-
-              {locations?.map((l: any) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
-              ))}
-            </select>
+            <SearchableSelect
+              value={locationId || ""}
+              onValueChange={(value) => setLocationId(value)}
+              placeholder="Lọc theo vị trí"
+              useInfiniteLoading={true}
+              pageSize={10}
+              queryKey={["locations", "infinite"]}
+              queryFn={(page, pageSize, search) =>
+                import("@/lib/location-api").then((m) =>
+                  m.getLocationsPaginatedNew(page, pageSize, { search }).then(res => ({
+                    ...res,
+                    content: res.content.map(item => ({
+                      ...item,
+                      id: item.id || "",
+                      name: item.name || ""
+                    }))
+                  })),
+                )
+              }
+              getItemById={(id) =>
+                import("@/lib/location-api").then((m) => 
+                  m.getLocationById(id).then(item => ({
+                    ...item,
+                    id: item.id || "",
+                    name: item.name || ""
+                  }))
+                )
+              }
+              className="w-full md:w-[250px]"
+            />
           </div>
 
           <Button

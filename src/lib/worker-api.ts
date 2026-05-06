@@ -1,5 +1,8 @@
 import { api } from "./api";
-import { PaginatedResponse, parsePaginatedResponse } from "./api-response-parser";
+import {
+  PaginatedResponse,
+  parsePaginatedResponse,
+} from "./api-response-parser";
 
 // Worker types
 export interface Worker {
@@ -83,5 +86,10 @@ export async function getAllWorkers(): Promise<PaginatedResponse<Worker>> {
  * GET /api/Workers/{id}
  */
 export async function getWorkerById(id: string): Promise<Worker> {
-  return api.get<Worker>(`/Workers/${id}`);
+  const res = await api.get<Worker | Worker[]>(`/Workers/${id}`);
+  if (Array.isArray(res)) {
+    // Nếu API trả về mảng, lấy phần tử đầu tiên
+    return res[0];
+  }
+  return res;
 }

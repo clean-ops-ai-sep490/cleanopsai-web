@@ -1,11 +1,11 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import type { WorkAreaFormData } from "@/types/contract";
-import { useAllZones } from "@/hooks/useZones";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { getZonesPaginatedNew, getZoneById } from "@/lib/zone-api";
 
 type Props = {
   initialData?: any | null;
@@ -26,8 +26,6 @@ export default function WorkAreaForm({
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
-
-  const { data: zones } = useAllZones();
 
   useEffect(() => {
     if (initialData) {
@@ -80,33 +78,49 @@ export default function WorkAreaForm({
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          placeholder="Tên work area"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-        />
-        {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
+        <div className="space-y-1">
+          <Label>Tên work area *</Label>
+          <Input
+            placeholder="Tên work area"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+          {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
+        </div>
 
-        <select
-          value={form.zoneId}
-          onChange={(e) =>
-            setForm({ ...form, zoneId: e.target.value })
-          }
-          className="w-full border rounded-md px-3 py-2 text-sm"
-        >
-          <option value="">Chọn khu vực</option>
-          {zones?.map((z: any) => (
-            <option key={z.id} value={z.id}>
-              {z.name}
-            </option>
-          ))}
-        </select>
+        <div className="space-y-1">
+          <Label>Khu vực (Zone) *</Label>
+          <SearchableSelect
+            value={form.zoneId}
+            onValueChange={(value) => setForm({ ...form, zoneId: value })}
+            placeholder="Chọn khu vực"
+            useInfiniteLoading={true}
+            pageSize={10}
+            queryKey={["zones", "infinite"]}
+            queryFn={(page, pageSize, search) =>
+              getZonesPaginatedNew(page, pageSize, { search }).then(res => ({
+                ...res,
+                content: res.content.map(item => ({
+                  ...item,
+                  id: String(item.id || ""),
+                  name: item.name || ""
+                }))
+              }))
+            }
+            getItemById={(id) => 
+              getZoneById(id).then(item => ({
+                ...item,
+                id: String(item.id || ""),
+                name: item.name || ""
+              }))
+            }
+          />
+          {errors.zoneId && (
+            <p className="text-red-500 text-xs">{errors.zoneId}</p>
+          )}
+        </div>
 
-        {errors.zoneId && (
-          <p className="text-red-500 text-xs">{errors.zoneId}</p>
-        )}
-
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="outline" onClick={onCancel}>
             Hủy
           </Button>

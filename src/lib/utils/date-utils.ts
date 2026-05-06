@@ -1,19 +1,41 @@
-// Date utility functions
-export const formatTimeAgo = (dateString: string): string => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInMinutes = Math.floor(
-    (now.getTime() - date.getTime()) / (1000 * 60),
-  );
+/**
+ * Date utility functions
+ */
 
-  if (diffInMinutes < 1) return "Vừa xong";
-  if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
+export function formatDate(dateString: string): string {
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  } catch (error) {
+    return "N/A";
+  }
+}
 
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) return `${diffInHours} giờ trước`;
+export function formatDateTime(dateString: string): string {
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch (error) {
+    return "N/A";
+  }
+}
 
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 7) return `${diffInDays} ngày trước`;
-
-  return date.toLocaleDateString("vi-VN");
-};
+export function formatTime(timeString: string): string {
+  try {
+    // Handle both "HH:mm:ss" and "HH:mm" formats
+    const [hours, minutes] = timeString.split(":");
+    return `${hours}:${minutes}`;
+  } catch (error) {
+    return timeString;
+  }
+}

@@ -44,7 +44,6 @@ export function WorkAreaFormContent({
     setNewWorkArea({
       name: "",
       zoneId: newWorkArea.zoneId, // Keep zone ID
-      area: 0,
       description: "",
       tasks: [],
     });
@@ -59,7 +58,7 @@ export function WorkAreaFormContent({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <div className="space-y-2">
           <Label htmlFor="workAreaName">Tên khu vực làm việc *</Label>
           <Input
@@ -70,23 +69,6 @@ export function WorkAreaFormContent({
               setNewWorkArea({ ...newWorkArea, name: e.target.value })
             }
             required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="workAreaSize">Diện tích (m²) *</Label>
-          <Input
-            id="workAreaSize"
-            type="number"
-            placeholder="Nhập diện tích"
-            value={newWorkArea.area || ""}
-            onChange={(e) =>
-              setNewWorkArea({
-                ...newWorkArea,
-                area: parseFloat(e.target.value) || 0,
-              })
-            }
-            required
-            min="0"
           />
         </div>
       </div>
