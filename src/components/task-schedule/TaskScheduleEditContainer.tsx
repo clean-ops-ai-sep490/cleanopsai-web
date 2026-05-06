@@ -28,7 +28,7 @@ export function TaskScheduleEditContainer({
     setIsSubmitting(true);
     try {
       await updateMutation.mutateAsync({ id, data });
-      router.push(`/manager/task-schedule/${id}`);
+      router.push(`/manager/task-schedule`);
     } catch (error) {
       console.error("Error updating task schedule:", error);
     } finally {
@@ -64,7 +64,7 @@ export function TaskScheduleEditContainer({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href={`/manager/task-schedule/${id}`}>
+        <Link href={`/manager/task-schedule`}>
           <Button variant="ghost" size="sm" className="p-2">
             <ArrowLeft className="w-4 h-4" />
           </Button>

@@ -10,6 +10,7 @@ import {
   UpdateTaskScheduleData,
 } from "@/types/schedule";
 import { PaginatedResponse } from "./api-response-parser";
+import { PaginatedRequest, PaginatedResult } from "@/types/common";
 
 // Request interfaces
 export interface TaskSchedulesPaginatedRequest {
@@ -160,6 +161,26 @@ export async function createTaskScheduleWithAssignment(
     return taskSchedule;
   } catch (error) {
     console.error("Failed to create task schedule with assignment:", error);
+    throw error;
+  }
+}
+
+export async function getTaskSchedulesByWorkArea(
+  workAreaId: string,
+  params: PaginatedRequest = {},
+): Promise<PaginatedResult<any>> {
+  const queryParams = new URLSearchParams({
+    pageNumber: (params.pageNumber || 1).toString(),
+    pageSize: (params.pageSize || 10).toString(),
+  });
+
+  try {
+    const response = await api.get<PaginatedResult<any>>(
+      `/TaskSchedules/by-workarea/${workAreaId}?${queryParams.toString()}`,
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to load task schedules by work area:", error);
     throw error;
   }
 }

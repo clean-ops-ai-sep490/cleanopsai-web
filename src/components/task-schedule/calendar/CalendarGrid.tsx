@@ -9,7 +9,7 @@ import { useTaskAssignments } from "@/hooks/useTaskAssignments";
 import type { TaskAssignment } from "@/types/task-assignment";
 import { TaskAssignmentStatus } from "@/types/task";
 import { getDayRange } from "@/lib/utils";
-import { Loader2, MapPin, Clock } from "lucide-react";
+import { Loader2, MapPin, Clock, User as UserIcon } from "lucide-react";
 
 interface CalendarGridProps {
   currentDate: Date;
@@ -29,13 +29,11 @@ export function CalendarGrid({
   searchQuery,
   selectedFilter,
 }: CalendarGridProps) {
-  // Get date range for the selected date (00:00:00 to 23:59:59)
   const { fromDate, toDate } = getDayRange(currentDate);
 
-  // Fetch task assignments for the selected date
   const { data, isLoading, error } = useTaskAssignments({
-    fromDate, // e.g., "2026-04-29T00:00:00.000Z"
-    toDate, // e.g., "2026-04-29T23:59:59.999Z"
+    fromDate,
+    toDate,
     pageNumber: 1,
     pageSize: 500,
     ...(selectedFilter !== "all" && {
@@ -43,7 +41,6 @@ export function CalendarGrid({
     }),
   });
 
-  // Group tasks by worker
   const workerGroups: WorkerGroup[] = [];
   if (data?.content) {
     const groupMap = new Map<string, WorkerGroup>();
@@ -63,33 +60,27 @@ export function CalendarGrid({
     workerGroups.push(...Array.from(groupMap.values()));
   }
 
-  // Time slots from 6 AM to 22 PM (10 PM) - 17 slots
   const timeSlots = Array.from({ length: 17 }, (_, i) => i + 6);
 
-  // Calculate task position and width based on time
   const getTaskPosition = (task: TaskAssignment) => {
-    const taskStart = parseISO(task.scheduledStartAt);
-    const taskEnd = parseISO(task.scheduledEndAt);
+    const taskStart = parseISO(task.scheduledStartAt.replace("Z", ""));
+    const taskEnd = parseISO(task.scheduledEndAt.replace("Z", ""));
 
     const startHour = taskStart.getHours();
     const startMinute = taskStart.getMinutes();
     const endHour = taskEnd.getHours();
     const endMinute = taskEnd.getMinutes();
 
-    // Calculate position from 6:00
     const startOffset = startHour - 6 + startMinute / 60;
     const endOffset = endHour - 6 + endMinute / 60;
-    const duration = Math.max(0.5, endOffset - startOffset); // Minimum 30 minutes
+    const duration = Math.max(0.5, endOffset - startOffset);
 
-    // Each hour slot is 1/17 of the width
     const leftPercent = Math.max(0, (startOffset / 17) * 100);
     const widthPercent = Math.min(100 - leftPercent, (duration / 17) * 100);
 
     return {
       left: `${leftPercent}%`,
       width: `${widthPercent}%`,
-      startTime: format(taskStart, "HH:mm"),
-      endTime: format(taskEnd, "HH:mm"),
     };
   };
 
@@ -102,29 +93,37 @@ export function CalendarGrid({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
-        <span className="text-gray-600">Đang tải dữ liệu...</span>
+      <div className="flex flex-col items-center justify-center h-96 gap-4">
+        <div className="relative">
+          <Loader2 className="w-10 h-10 animate-spin text-primary opacity-20" />
+          <Loader2 className="w-10 h-10 animate-spin text-primary absolute inset-0 [animation-delay:0.2s]" />
+        </div>
+        <span className="text-slate-400 font-medium text-sm">Đang đồng bộ dữ liệu lịch làm việc...</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-red-600">Không thể tải dữ liệu lịch làm việc</p>
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center p-8 bg-rose-50 rounded-2xl border border-rose-100">
+          <p className="text-rose-600 font-semibold">Không thể kết nối máy chủ</p>
+          <p className="text-rose-400 text-sm mt-1">Vui lòng kiểm tra lại kết nối mạng.</p>
+        </div>
       </div>
     );
   }
 
   if (workerGroups.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <Clock className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-500 text-lg font-medium">Không có task nào</p>
-          <p className="text-gray-400 text-sm">
-            {format(currentDate, "dd/MM/yyyy", { locale: vi })}
+          <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+            <Clock className="w-10 h-10 text-slate-300" />
+          </div>
+          <p className="text-slate-900 text-lg font-bold">Trống lịch trình</p>
+          <p className="text-slate-400 text-sm mt-1">
+            Không có công việc nào được phân công trong ngày {format(currentDate, "dd/MM/yyyy", { locale: vi })}
           </p>
         </div>
       </div>
@@ -132,46 +131,25 @@ export function CalendarGrid({
   }
 
   const isToday = isSameDay(currentDate, new Date());
-  const currentHour = new Date().getHours();
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
 
   return (
-    <div className="flex flex-col bg-white">
-      {/* Date Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 py-4">
-        <div className="text-center">
-          <div className="text-sm text-gray-600 uppercase tracking-wide">
-            {format(currentDate, "EEEE", { locale: vi })}
-          </div>
-          <div
-            className={`text-2xl font-bold mt-1 ${
-              isToday ? "text-primary" : "text-gray-900"
-            }`}
-          >
-            {format(currentDate, "dd/MM/yyyy")}
-          </div>
-          {isToday && (
-            <div className="text-xs text-primary font-medium mt-1">
-              HÔM NAY
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Timeline Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="grid" style={{ gridTemplateColumns: "280px 1fr" }}>
-          {/* Worker column header */}
-          <div className="p-4 border-r border-gray-200 bg-gray-50">
-            <div className="flex items-center gap-2">
-              <span className="text-orange-500">⚠</span>
-              <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                NHÂN VIÊN / ZONE
+    <div className="flex flex-col flex-1 h-full bg-white overflow-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="min-w-[1200px] min-h-full flex flex-col">
+        {/* Timeline Header */}
+        <div className="bg-slate-50/50 border-b border-slate-200 sticky top-0 z-20 backdrop-blur-sm">
+          <div className="grid grid-cols-[200px_1fr] md:grid-cols-[300px_1fr]">
+            <div className="p-4 border-r border-slate-200 flex items-center gap-2">
+              <div className="bg-primary/10 p-1.5 rounded-lg">
+                <UserIcon className="h-4 w-4 text-primary" />
+              </div>
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                Nhân sự / Khu vực
               </span>
             </div>
-          </div>
 
-          {/* Time slots header */}
-          <div className="bg-gray-50">
             <div
               className="grid"
               style={{
@@ -183,33 +161,26 @@ export function CalendarGrid({
                 return (
                   <div
                     key={hour}
-                    className={`p-3 text-center border-r border-gray-200 last:border-r-0 ${
-                      isCurrentHour ? "bg-red-50 text-red-700" : "text-gray-600"
+                    className={`p-3 text-center border-r border-slate-200/60 last:border-r-0 relative flex flex-col items-center justify-center ${
+                      isCurrentHour ? "bg-primary/[0.03]" : ""
                     }`}
                   >
                     <div
-                      className={`text-sm font-semibold ${
-                        isCurrentHour ? "text-red-700" : "text-gray-700"
+                      className={`text-[11px] font-bold tracking-wide ${
+                        isCurrentHour ? "text-primary bg-primary/10 px-2 py-0.5 rounded-full" : "text-slate-500"
                       }`}
                     >
                       {hour}:00
                     </div>
-                    {isCurrentHour && (
-                      <div className="text-xs text-red-600 font-medium mt-1">
-                        HIỆN TẠI
-                      </div>
-                    )}
                   </div>
                 );
               })}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Worker Rows */}
-      <div>
-        <div className="divide-y divide-gray-200">
+        {/* Worker Rows */}
+        <div className="divide-y divide-slate-100">
           {workerGroups.map((worker, index) => {
             const tasksForWorker = getTasksForWorker(worker);
             const completedTasks = worker.tasks.filter(
@@ -220,41 +191,32 @@ export function CalendarGrid({
             return (
               <div
                 key={worker.assigneeId}
-                className={`grid hover:bg-gray-50/50 transition-colors ${
-                  index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
-                }`}
-                style={{ gridTemplateColumns: "280px 1fr" }}
+                className="grid group transition-colors hover:bg-slate-50/50 grid-cols-[200px_1fr] md:grid-cols-[300px_1fr]"
               >
                 {/* Worker Info */}
-                <div className="p-4 border-r border-gray-200">
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-12 w-12 flex-shrink-0 ring-2 ring-white shadow-md">
-                      <AvatarFallback className="bg-gradient-to-br from-[#1a80a2] to-[#308cab] text-white text-sm font-bold">
+                <div className="p-5 border-r border-slate-200 bg-white group-hover:bg-transparent transition-colors">
+                  <div className="flex items-start gap-4">
+                    <Avatar className="h-12 w-12 flex-shrink-0 border-2 border-white shadow-sm ring-1 ring-slate-200">
+                      <AvatarFallback className="bg-slate-100 text-slate-600 text-sm font-bold">
                         {worker.assigneeName.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-sm text-gray-900 truncate">
+                      <div className="font-bold text-sm text-slate-900 truncate">
                         {worker.assigneeName}
                       </div>
-                      <div className="text-xs text-gray-500 truncate mt-1 flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
+                      <div className="text-[11px] text-slate-500 truncate mt-1 flex items-center gap-1.5 font-medium">
+                        <MapPin className="w-3.5 h-3.5 text-slate-300" />
                         {worker.location.split(",")[0]}
                       </div>
-                      <div className="flex gap-2 mt-2">
-                        <Badge
-                          variant="outline"
-                          className="text-xs px-2 py-1 border-primary text-primary bg-blue-50"
-                        >
-                          {totalTasks} công việc
-                        </Badge>
+                      <div className="flex flex-wrap gap-1.5 mt-3">
+                        <div className="flex items-center gap-1.5 bg-slate-100/80 px-2 py-0.5 rounded border border-slate-200/60">
+                          <span className="text-[10px] font-bold text-slate-600">{totalTasks} công việc</span>
+                        </div>
                         {completedTasks > 0 && (
-                          <Badge
-                            variant="outline"
-                            className="text-xs px-2 py-1 border-green-500 text-green-700 bg-green-50"
-                          >
-                            {completedTasks} hoàn thành
-                          </Badge>
+                          <div className="flex items-center gap-1.5 bg-emerald-50/80 px-2 py-0.5 rounded border border-emerald-100/60">
+                            <span className="text-[10px] font-bold text-emerald-700">{completedTasks} hoàn thành</span>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -262,7 +224,7 @@ export function CalendarGrid({
                 </div>
 
                 {/* Timeline */}
-                <div className="relative min-h-[100px] py-2">
+                <div className="relative min-h-[120px] py-4 bg-slate-50/20">
                   {/* Time grid background */}
                   <div
                     className="absolute inset-0 grid"
@@ -275,21 +237,25 @@ export function CalendarGrid({
                       return (
                         <div
                           key={hourIndex}
-                          className={`border-r border-gray-100 last:border-r-0 ${
-                            isCurrentHour ? "bg-red-50/30" : ""
+                          className={`border-r border-slate-200/30 last:border-r-0 relative ${
+                            isCurrentHour ? "bg-primary/5" : ""
                           }`}
                         >
-                          {/* Current time indicator */}
                           {isCurrentHour && (
-                            <div className="absolute top-0 left-0 w-full h-full bg-red-100/20 border-l-2 border-red-500"></div>
+                            <div 
+                              className="absolute top-0 bottom-0 w-[1.5px] bg-primary z-20 pointer-events-none" 
+                              style={{ left: `${(currentMinute / 60) * 100}%` }}
+                            >
+                              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 w-2 h-2 rounded-full bg-primary shadow-[0_0_0_3px_rgba(var(--primary),0.2)]"></div>
+                            </div>
                           )}
                         </div>
                       );
                     })}
                   </div>
 
-                  {/* Tasks */}
-                  <div className="relative h-full px-2">
+                  {/* Tasks Container */}
+                  <div className="relative h-full px-4">
                     {tasksForWorker.map(({ task, position }, taskIndex) => (
                       <div
                         key={task.id}
@@ -297,7 +263,7 @@ export function CalendarGrid({
                         style={{
                           left: position.left,
                           width: position.width,
-                          top: `${taskIndex * 32 + 8}px`,
+                          top: `${taskIndex * 36 + 4}px`,
                           zIndex: 10,
                         }}
                       >
