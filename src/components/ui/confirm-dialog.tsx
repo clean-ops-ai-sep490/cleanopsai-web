@@ -8,7 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+import { Button, type ButtonProps } from "@/components/ui/button";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -16,8 +16,9 @@ interface ConfirmDialogProps {
   title: string;
   description: string;
   confirmLabel?: string;
+  confirmVariant?: ButtonProps["variant"];
   cancelLabel?: string;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   isLoading?: boolean;
 }
 
@@ -27,6 +28,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel = "Xác nhận",
+  confirmVariant = "destructive",
   cancelLabel = "Hủy",
   onConfirm,
   isLoading = false,
@@ -49,7 +51,7 @@ export function ConfirmDialog({
           <Button
             onClick={onConfirm}
             loading={isLoading}
-            variant="destructive"
+            variant={confirmVariant}
             className="min-w-[100px]"
           >
             {confirmLabel}

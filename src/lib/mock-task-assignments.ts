@@ -56,17 +56,20 @@ export function generateMockTaskAssignments(
 
       const status = statuses[Math.floor(Math.random() * statuses.length)];
       const location = locations[workerIndex % locations.length];
+      const isAdhocTask = Math.random() > 0.7;
 
       tasks.push({
         id: `task-${workerIndex}-${i}`,
         taskScheduleId: `schedule-${workerIndex}-${i}`,
+        taskName: isAdhocTask ? "Vệ sinh khẩn cấp" : `Công việc ${i + 1}`,
         assigneeId: worker.id,
         originalAssigneeId: worker.id,
         status,
         scheduledStartAt: scheduledStartAt.toISOString(),
         scheduledEndAt: scheduledEndAt.toISOString(),
-        isAdhocTask: Math.random() > 0.7,
-        nameAdhocTask: Math.random() > 0.7 ? "Vệ sinh khẩn cấp" : null,
+        durationMinutes: duration * 60,
+        isAdhocTask,
+        nameAdhocTask: isAdhocTask ? "Vệ sinh khẩn cấp" : null,
         displayLocation: location,
         assigneeName: worker.name,
         originalAssigneeName: worker.name,

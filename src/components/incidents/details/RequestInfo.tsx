@@ -64,7 +64,7 @@ export function RequestInfo({ request }: RequestInfoProps) {
         <div className="space-y-2">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Lý do xin nghỉ</p>
           <p className="text-lg text-slate-600 leading-relaxed italic">
-            "{request.transcription}"
+            &quot;{request.transcription}&quot;
           </p>
         </div>
       )}

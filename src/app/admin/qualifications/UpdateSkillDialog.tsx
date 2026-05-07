@@ -3,7 +3,7 @@
 import { StandardDialog } from "@/components/ui/standard-dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2, Save } from "lucide-react";
-import { useUpdateWorkerSkill } from "@/hooks/useWorkerSkills";
+import { SkillLevelType, useUpdateWorkerSkill } from "@/hooks/useWorkerSkills";
 
 type Props = {
   data: any | null;
@@ -17,7 +17,7 @@ export default function UpdateSkillDialog({ data, onClose }: Props) {
     e.preventDefault();
     // Lấy value trực tiếp từ form data để khỏi phải tạo state rườm rà
     const formData = new FormData(e.target as HTMLFormElement);
-    const newLevel = Number(formData.get("skillLevel"));
+    const newLevel = formData.get("skillLevel") as SkillLevelType;
 
     try {
       await updateSkill({
@@ -46,9 +46,9 @@ export default function UpdateSkillDialog({ data, onClose }: Props) {
             className="w-full border rounded-md px-3 py-2 text-sm focus:ring-primary focus:border-primary"
             disabled={isPending}
           >
-            <option value={1}>Cơ bản (1)</option>
-            <option value={2}>Trung cấp (2)</option>
-            <option value={4}>Thành thạo (4)</option>
+            <option value="Beginner">Cơ bản</option>
+            <option value="Intermediate">Trung cấp</option>
+            <option value="Expert">Thành thạo</option>
           </select>
         </div>
 

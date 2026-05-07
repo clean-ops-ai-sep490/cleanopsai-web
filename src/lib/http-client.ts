@@ -9,7 +9,7 @@ interface HttpClientConfig {
 
 interface RequestOptions {
   headers?: Record<string, string>;
-  params?: Record<string, string>;
+  params?: Record<string, string | number | boolean | null | undefined>;
   signal?: AbortSignal;
 }
 
@@ -38,12 +38,17 @@ class HttpClient {
     this.onAuthFailure = config.onAuthFailure;
   }
 
-  private buildUrl(path: string, params?: Record<string, string>): string {
+  private buildUrl(
+    path: string,
+    params?: Record<string, string | number | boolean | null | undefined>,
+  ): string {
     const url = new URL(`${this.baseUrl}/${path.replace(/^\/+/, "")}`);
     if (params) {
-      Object.entries(params).forEach(([key, value]) =>
-        url.searchParams.set(key, value),
-      );
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          url.searchParams.set(key, String(value));
+        }
+      });
     }
     return url.toString();
   }

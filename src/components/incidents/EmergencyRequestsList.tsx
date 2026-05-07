@@ -104,7 +104,7 @@ export function EmergencyRequestsListPanel({
         <div className="flex flex-col gap-1 max-w-[320px]">
           {req.transcription ? (
             <p className="text-xs text-slate-500 line-clamp-1 italic">
-              "{req.transcription}"
+              &quot;{req.transcription}&quot;
             </p>
           ) : (
             <span className="text-[11px] text-slate-300 italic">Không có bản dịch</span>

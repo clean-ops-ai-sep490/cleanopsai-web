@@ -37,6 +37,7 @@ export interface TaskAssignmentResponse {
 
 export interface TaskAssignmentFilters {
   assigneeId?: string;
+  workAreaId?: string;
   fromDate?: string;
   toDate?: string;
   status?: string;
