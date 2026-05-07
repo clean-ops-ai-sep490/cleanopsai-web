@@ -30,6 +30,8 @@ export default function UpdateSkillDialog({ data, onClose }: Props) {
     }
   };
 
+  //push
+
   return (
     <StandardDialog open={!!data} onOpenChange={onClose} title="Cập nhật cấp độ kỹ năng">
       <form onSubmit={handleSubmit} className="space-y-4 pt-2">
