@@ -145,4 +145,5 @@ export interface TriggerScoringRetrainRequest {
   minApprovedAnnotations: number;
   maxSamplesPerBatch: number;
   includeRejectedTrainingSamples?: boolean;
+  useLastBatchTime?: boolean;
 }

@@ -311,7 +311,7 @@ function ReviewQueue() {
 
 function AnnotationQueue() {
   const { hasRole } = useRole();
-  const canEditAnnotations = hasRole([UserRole.Manager, UserRole.Admin]);
+  const canEditAnnotations = hasRole([UserRole.Supervisor, UserRole.Admin]);
   const [status, setStatus] = useState("all");
   const [environmentKey, setEnvironmentKey] = useState("");
   const filters = useMemo(
@@ -444,12 +444,16 @@ function AnnotationQueue() {
 
 function RetrainRuns() {
   const { hasRole } = useRole();
-  const canTrigger = hasRole([UserRole.Manager, UserRole.Admin]);
+  const canTrigger = hasRole([
+    UserRole.Supervisor,
+    UserRole.Manager,
+    UserRole.Admin,
+  ]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<TriggerScoringRetrainRequest>({
     lookbackDays: 7,
     minReviewedSamples: 25,
-    minApprovedAnnotations: 5,
+    minApprovedAnnotations: 100,
     maxSamplesPerBatch: 500,
     includeRejectedTrainingSamples: false,
   });
@@ -577,20 +581,8 @@ function RetrainRuns() {
                 }))
               }
             />
-            <label className="text-sm font-medium">Min reviewed samples</label>
-            <Input
-              type="number"
-              min={1}
-              value={form.minReviewedSamples}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  minReviewedSamples: Number(event.target.value),
-                }))
-              }
-            />
             <label className="text-sm font-medium">
-              Min approved annotations mới
+              Min approved annotations
             </label>
             <Input
               type="number"

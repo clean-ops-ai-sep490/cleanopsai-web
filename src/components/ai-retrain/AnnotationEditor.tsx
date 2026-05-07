@@ -281,7 +281,7 @@ export function AnnotationEditor() {
   const candidateId = params.candidateId;
   const { hasRole } = useRole();
   const editRequested = searchParams.get("mode") === "edit";
-  const canManage = hasRole([UserRole.Manager, UserRole.Admin]);
+  const canManage = hasRole([UserRole.Supervisor, UserRole.Admin]);
   const { data: candidate, isLoading } = useAnnotationCandidate(candidateId);
   const upsertMutation = useUpsertScoringAnnotation(candidateId);
   const approveMutation = useApproveAnnotationCandidate();
