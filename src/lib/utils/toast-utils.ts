@@ -91,7 +91,7 @@ export const toastUtils = {
             onClick: action.onClick,
           }
         : undefined,
-      cancel: cancel
+      cancel: cancel?.onClick
         ? {
             label: cancel.label,
             onClick: cancel.onClick,
