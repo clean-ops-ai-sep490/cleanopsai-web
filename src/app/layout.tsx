@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import QueryProvider from "@/components/QueryProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LoadingProvider } from "@/contexts/LoadingContext";
 import { Toaster } from "@/components/ui/sonner";
+import { Suspense } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,8 +21,12 @@ export default function RootLayout({
       <body>
         <QueryProvider>
           <AuthProvider>
-            {children}
-            <Toaster />
+            <Suspense fallback={null}>
+              <LoadingProvider>
+                {children}
+                <Toaster />
+              </LoadingProvider>
+            </Suspense>
           </AuthProvider>
         </QueryProvider>
       </body>

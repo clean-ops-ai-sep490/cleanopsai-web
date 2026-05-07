@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { useLoading } from "@/contexts/LoadingContext";
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -36,6 +37,8 @@ export function AdminSidebar() {
     { name: "Hợp đồng", href: "/admin/contracts", icon: FileText },
     { name: "Khách hàng", href: "/admin/clients", icon: User2 },
   ];
+
+  const { startLoading } = useLoading();
 
   return (
     <aside className="fixed left-0 top-0 z-20 flex h-screen w-[var(--app-sidebar-width)] flex-col border-r border-slate-200/70 bg-white/85 backdrop-blur-2xl">
@@ -63,8 +66,9 @@ export function AdminSidebar() {
               <li key={item.name} className="list-none">
                 <Link
                   href={item.href}
+                  onClick={() => !isActive && startLoading(`Đang chuyển tới ${item.name}...`)}
                   className={cn(
-                    "group relative flex items-center px-6 py-3.5 text-[15px] font-medium transition-colors duration-200 no-underline",
+                    "group relative flex items-center px-6 py-3.5 text-[15px] font-medium transition-colors duration-200 no-underline cursor-pointer",
                     isActive
                       ? "text-primary"
                       : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",

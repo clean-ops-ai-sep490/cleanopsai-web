@@ -68,33 +68,7 @@ export function useCreateTaskSchedule() {
   });
 }
 
-// Create task schedule with work area supervisor assignment mutation
-export function useCreateTaskScheduleWithAssignment() {
-  const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (
-      data: CreateTaskScheduleData & {
-        supervisorId: string;
-        workAreaDetailName?: string;
-        workAreaDetailArea?: number;
-      },
-    ) => {
-      const { createTaskScheduleWithAssignment } =
-        await import("@/lib/task-schedule-api");
-      return createTaskScheduleWithAssignment(data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: taskScheduleKeys.lists() });
-      // Also invalidate work area supervisor queries if they exist
-      queryClient.invalidateQueries({ queryKey: ["workAreaSupervisors"] });
-      apiToasts.createSuccess("lịch trình và phân công giám sát");
-    },
-    onError: (error: any) => {
-      apiToasts.createError("lịch trình");
-    },
-  });
-}
 
 // Update task schedule mutation
 export function useUpdateTaskSchedule() {

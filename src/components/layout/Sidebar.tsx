@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useRole, UserRole } from "@/hooks/useRole";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLoading } from "@/contexts/LoadingContext";
 
 const navigation = [
   {
@@ -67,6 +68,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const { role } = useRole();
 
+  const { startLoading } = useLoading();
   const filteredNavigation = navigation
     .map((section) => ({
       ...section,
@@ -114,8 +116,9 @@ export function Sidebar() {
                   <li key={item.name} className="list-none">
                     <Link
                       href={item.href}
+                      onClick={() => !isActive && startLoading(`Đang chuyển tới ${item.name}...`)}
                       className={cn(
-                        "group relative flex items-center px-6 py-3.5 text-[15px] font-medium transition-colors duration-200 no-underline",
+                        "group relative flex items-center px-6 py-3.5 text-[15px] font-medium transition-colors duration-200 no-underline cursor-pointer",
                         isActive
                           ? "text-primary"
                           : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",

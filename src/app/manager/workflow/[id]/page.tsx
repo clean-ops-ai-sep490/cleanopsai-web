@@ -13,15 +13,30 @@ import { Loader2, Edit, Trash2, ArrowLeft, Workflow as WorkflowIcon } from "luci
 import { useDeleteSOP, useSOP } from "@/hooks/useSOPs";
 import { translateServiceType } from "@/lib/utils/translate";
 import { useState } from "react";
+import { useLoading } from "@/contexts/LoadingContext";
 
 export default function WorkflowDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { startLoading } = useLoading();
   const sopId = params.id as string;
   const [deleteOpen, setDeleteOpen] = useState(false);
+  
+  const handleBack = () => {
+    startLoading("Đang quay lại danh sách...");
+    router.push("/manager/workflow");
+  };
+
+  const handleEdit = () => {
+    startLoading("Đang chuẩn bị trình chỉnh sửa...");
+    router.push(`/manager/workflow/${sopId}/edit`);
+  };
 
   const { data: sop, isLoading, error } = useSOP(sopId);
-  const deleteSOPMutation = useDeleteSOP(() => router.push("/manager/workflow"));
+  const deleteSOPMutation = useDeleteSOP(() => {
+    startLoading("Đang cập nhật danh sách...");
+    router.push("/manager/workflow");
+  });
 
   const handleDelete = async () => {
     await deleteSOPMutation.mutateAsync(sopId);
@@ -34,8 +49,8 @@ export default function WorkflowDetailPage() {
         <PageHeader
           title={sop?.name || "Chi tiết SOP"}
           description="Xem chi tiết quy trình và các bước thực hiện."
-          breadcrumbs={<Button variant="ghost" size="sm" onClick={() => router.push("/manager/workflow")}><ArrowLeft className="h-4 w-4" />Quay lại</Button>}
-          action={sop ? <div className="flex gap-2"><Button variant="outline" onClick={() => router.push(`/manager/workflow/${sopId}/edit`)}><Edit className="h-4 w-4" />Chỉnh sửa</Button><Button variant="destructive" onClick={() => setDeleteOpen(true)} disabled={deleteSOPMutation.isPending}><Trash2 className="h-4 w-4" />Xóa</Button></div> : undefined}
+          breadcrumbs={<Button variant="ghost" size="sm" onClick={handleBack}><ArrowLeft className="h-4 w-4" />Quay lại</Button>}
+          action={sop ? <div className="flex gap-2"><Button variant="outline" onClick={handleEdit}><Edit className="h-4 w-4" />Chỉnh sửa</Button><Button variant="destructive" onClick={() => setDeleteOpen(true)} disabled={deleteSOPMutation.isPending}><Trash2 className="h-4 w-4" />Xóa</Button></div> : undefined}
         />
 
         {isLoading ? (

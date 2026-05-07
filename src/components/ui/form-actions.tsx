@@ -27,10 +27,10 @@ export function FormActions({
     <div className="flex gap-2 pt-4">
       <Button
         type="submit"
-        disabled={isLoading}
+        loading={isLoading}
         className="flex-1 bg-primary hover:bg-primary/90"
       >
-        {isLoading ? "Đang xử lý..." : submitLabel}
+        {submitLabel}
       </Button>
       {showReset && onReset && (
         <Button

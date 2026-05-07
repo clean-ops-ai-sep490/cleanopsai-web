@@ -360,7 +360,7 @@ export function MultiSelect({
                     <div
                       key={option.value}
                       className={cn(
-                        "relative flex cursor-default select-none items-start rounded-[var(--app-radius-sm)] px-2 py-1.5 text-sm outline-none transition-colors duration-200",
+                        "relative flex cursor-pointer select-none items-start rounded-[var(--app-radius-sm)] px-2 py-1.5 text-sm outline-none transition-colors duration-200",
                         // Keyboard selection styling
                         selectedIndex === index
                           ? "bg-primary-soft text-primary"

@@ -69,16 +69,6 @@ export function WorkAreaSection({
     enabled: !!selectedWorkAreaDetailId,
   });
 
-  // Reset dependent selections when parent changes
-  useEffect(() => {
-    if (slaId) {
-      updateField("locationId", "");
-      updateField("zoneId", "");
-      updateField("workAreaId", "");
-      updateField("workAreaDetailId", "");
-      updateField("displayLocation", "");
-    }
-  }, [slaId]);
 
   // Sync location address to form for AssignmentSection
   useEffect(() => {
@@ -91,8 +81,27 @@ export function WorkAreaSection({
   useEffect(() => {
     if (selectedWorkAreaDetail) {
       updateField("workAreaDetailName", selectedWorkAreaDetail.name);
+      
+      // If we're in edit mode (have workAreaDetailId but missing parent IDs), back-fill them
+      if (!selectedWorkAreaId && selectedWorkAreaDetail.workAreaId) {
+        updateField("workAreaId", selectedWorkAreaDetail.workAreaId);
+      }
     }
-  }, [selectedWorkAreaDetail]);
+  }, [selectedWorkAreaDetail, selectedWorkAreaId]);
+
+  // Back-fill zoneId from workArea
+  useEffect(() => {
+    if (selectedWorkArea && !selectedZoneId && selectedWorkArea.zoneId) {
+      updateField("zoneId", selectedWorkArea.zoneId);
+    }
+  }, [selectedWorkArea, selectedZoneId]);
+
+  // Back-fill locationId from zone
+  useEffect(() => {
+    if (selectedZone && !selectedLocationId && selectedZone.locationId) {
+      updateField("locationId", selectedZone.locationId);
+    }
+  }, [selectedZone, selectedLocationId]);
 
   // Auto-generate displayLocation when all selections are made
   useEffect(() => {
@@ -102,13 +111,14 @@ export function WorkAreaSection({
       selectedWorkArea &&
       formData.workAreaDetailName
     ) {
-      const locName = selectedLocation.address || selectedLocation.name || "";
+      // Ưu tiên thông tin chi tiết lên trước để dễ nhận diện trong danh sách
       const displayLocation = [
-        locName, 
-        selectedZone.name, 
-        selectedWorkArea.name, 
-        formData.workAreaDetailName
+        formData.workAreaDetailName, // Tên phòng/vị trí cụ thể (ví dụ: Phòng 101)
+        selectedWorkArea.name,       // Khu vực (ví dụ: Sảnh)
+        selectedZone.name,           // Zone (ví dụ: Tòa nhà A)
+        selectedLocation.address || selectedLocation.name || "" // Địa chỉ tổng quát
       ].filter(Boolean).join(", ");
+      
       updateField("displayLocation", displayLocation);
     }
   }, [

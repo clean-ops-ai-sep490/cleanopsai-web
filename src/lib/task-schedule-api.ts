@@ -10,7 +10,7 @@ import {
   UpdateTaskScheduleData,
 } from "@/types/schedule";
 import { PaginatedResponse } from "./api-response-parser";
-import { PaginatedRequest, PaginatedResult } from "@/types/common";
+import { PaginatedRequest } from "@/types/common";
 
 // Request interfaces
 export interface TaskSchedulesPaginatedRequest {
@@ -101,81 +101,19 @@ export async function generateTaskAssignments(
   );
 }
 
-// Create task schedule with work area supervisor assignment
-// Flow:
-// 1. Tạo WorkAreaDetail mới (nếu có workAreaDetailName)
-// 2. Tạo task schedule với workAreaDetailId
-// 3. Tạo work area supervisor assignment
-export async function createTaskScheduleWithAssignment(
-  taskData: CreateTaskScheduleData & {
-    supervisorId: string;
-    workAreaDetailName?: string;
-    workAreaDetailArea?: number;
-  },
-): Promise<TaskSchedule> {
-  // Import the work area supervisor API function
-  const { assignWorkersToSupervisor } =
-    await import("./work-area-supervisor-api");
-  const { createWorkAreaDetail } = await import("./work-area-detail-api");
 
-  try {
-    let workAreaDetailId = taskData.workAreaDetailId;
-
-    // 1. Nếu có workAreaDetailName, tạo WorkAreaDetail mới trước
-    if (
-      taskData.workAreaDetailName &&
-      taskData.workAreaDetailArea !== undefined
-    ) {
-      const newWorkAreaDetail = await createWorkAreaDetail({
-        workAreaId: taskData.workAreaId,
-        name: taskData.workAreaDetailName,
-        area: taskData.workAreaDetailArea,
-      });
-      workAreaDetailId = newWorkAreaDetail.id;
-    }
-
-    // Validate workAreaDetailId
-    if (!workAreaDetailId) {
-      throw new Error("workAreaDetailId is required");
-    }
-
-    // 2. Tạo task schedule với workAreaDetailId
-    const {
-      supervisorId,
-      workAreaDetailName,
-      workAreaDetailArea,
-      ...taskScheduleData
-    } = taskData;
-    const taskSchedule = await createTaskSchedule({
-      ...taskScheduleData,
-      workAreaDetailId,
-    });
-
-    // 3. Tạo work area supervisor assignment
-    await assignWorkersToSupervisor({
-      workAreaId: taskData.workAreaId,
-      supervisorId: supervisorId,
-      workerIds: [taskData.assigneeId],
-    });
-
-    return taskSchedule;
-  } catch (error) {
-    console.error("Failed to create task schedule with assignment:", error);
-    throw error;
-  }
-}
 
 export async function getTaskSchedulesByWorkArea(
   workAreaId: string,
   params: PaginatedRequest = {},
-): Promise<PaginatedResult<any>> {
+): Promise<PaginatedResponse<any>> {
   const queryParams = new URLSearchParams({
     pageNumber: (params.pageNumber || 1).toString(),
     pageSize: (params.pageSize || 10).toString(),
   });
 
   try {
-    const response = await api.get<PaginatedResult<any>>(
+    const response = await api.get<PaginatedResponse<any>>(
       `/TaskSchedules/by-workarea/${workAreaId}?${queryParams.toString()}`,
     );
     return response;

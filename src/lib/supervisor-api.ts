@@ -8,7 +8,7 @@ import type {
   AssignSupervisorToWorkAreaData,
   UnassignSupervisorFromWorkAreaData,
 } from "@/types/supervisor";
-import type { PaginatedRequest, PaginatedResult } from "@/types/common";
+import type { PaginatedRequest, PaginatedResponse } from "@/types/common";
 
 // Create CRUD API using factory
 const supervisorApi = createSearchableApi<
@@ -31,7 +31,7 @@ export const {
 // Work Area Supervisor Assignment functions
 export async function getWorkAreaSupervisorAssignments(
   params: PaginatedRequest = {},
-): Promise<PaginatedResult<WorkAreaSupervisorAssignment>> {
+): Promise<PaginatedResponse<WorkAreaSupervisorAssignment>> {
   const { pageNumber = 1, pageSize = 10, search, ...rest } = params;
 
   const queryParams = new URLSearchParams({
@@ -51,7 +51,7 @@ export async function getWorkAreaSupervisorAssignments(
 
   try {
     const response = await api.get<
-      PaginatedResult<WorkAreaSupervisorAssignment>
+      PaginatedResponse<WorkAreaSupervisorAssignment>
     >(`/WorkAreaSupervisors?${queryParams.toString()}`);
     return response;
   } catch (error) {
@@ -77,7 +77,7 @@ export async function assignSupervisorToWorkArea(
 
 export async function getAuthSupervisors(
   params: PaginatedRequest = {},
-): Promise<PaginatedResult<Supervisor>> {
+): Promise<PaginatedResponse<Supervisor>> {
   const queryParams = new URLSearchParams({
     pageNumber: (params.pageNumber || 1).toString(),
     pageSize: (params.pageSize || 10).toString(),
@@ -88,7 +88,7 @@ export async function getAuthSupervisors(
   }
 
   try {
-    const response = await api.get<PaginatedResult<Supervisor>>(
+    const response = await api.get<PaginatedResponse<Supervisor>>(
       `/Auths/supervisors?${queryParams.toString()}`,
     );
     return response;

@@ -35,6 +35,7 @@ export interface WorkerFilterParams {
   certificateCategories?: string[];
   startAt?: string; // time format HH:MM:SS
   endAt?: string; // time format HH:MM:SS
+  search?: string; // Search by name or other criteria
   pageNumber?: number;
   pageSize?: number;
 }
@@ -61,6 +62,7 @@ export async function filterWorkers(
   }
   if (params.startAt) queryParams.append("startAt", params.startAt);
   if (params.endAt) queryParams.append("endAt", params.endAt);
+  if (params.search) queryParams.append("search", params.search);
   if (params.pageNumber)
     queryParams.append("pageNumber", params.pageNumber.toString());
   if (params.pageSize)

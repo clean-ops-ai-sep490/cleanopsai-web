@@ -2,15 +2,13 @@
 
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -41,23 +39,21 @@ export function ConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isLoading}>
-            {cancelLabel}
-          </AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onConfirm}
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
             disabled={isLoading}
-            className="bg-red-600 hover:bg-red-700"
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Đang xử lý...
-              </>
-            ) : (
-              confirmLabel
-            )}
-          </AlertDialogAction>
+            {cancelLabel}
+          </Button>
+          <Button
+            onClick={onConfirm}
+            loading={isLoading}
+            variant="destructive"
+            className="min-w-[100px]"
+          >
+            {confirmLabel}
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

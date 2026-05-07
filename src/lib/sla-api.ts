@@ -34,6 +34,7 @@ const slaShiftApi = createSearchableApi<
 
 export const {
   create: createSLAShift,
+  getById: getSLAShiftById,
   update: updateSLAShift,
   delete: deleteSLAShift,
   getAll: getSLAShifts,
@@ -56,6 +57,7 @@ const slaTaskApi = createSearchableApi<
 
 export const {
   create: createSLATask,
+  getById: getSLATaskById,
   update: updateSLATask,
   delete: deleteSLATask,
   getAll: getSLATasks,

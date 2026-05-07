@@ -19,6 +19,7 @@ import { getSLAsPaginated } from "@/lib/sla-api";
 import { useDeleteSLA } from "@/hooks/useSLAQuery";
 import { usePagination } from "@/hooks/usePagination";
 import { translateServiceType } from "@/lib/utils/translate";
+import { useLoading } from "@/contexts/LoadingContext";
 import {
   Select,
   SelectContent,
@@ -31,6 +32,7 @@ export default function SLATriggerPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [serviceTypeFilter, setServiceTypeFilter] = useState("all");
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const { startLoading } = useLoading();
 
   // Single source of truth for pagination state
   const { currentPage, pageSize, setPage, paginationParams, goToFirstPage } = usePagination({ initialPageSize: 10 });
@@ -73,10 +75,22 @@ export default function SLATriggerPage() {
       className: "text-right pr-6",
       cell: (sla: any) => (
         <div className="flex items-center justify-end gap-1">
-          <Button asChild variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary rounded-lg">
+          <Button 
+            asChild 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-slate-400 hover:text-primary rounded-lg"
+            onClick={() => startLoading("Đang tải chi tiết SLA...")}
+          >
             <Link href={`/manager/sla-trigger/${sla.id}`}><Eye className="h-4 w-4" /></Link>
           </Button>
-          <Button asChild variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-primary rounded-lg">
+          <Button 
+            asChild 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-slate-400 hover:text-primary rounded-lg"
+            onClick={() => startLoading("Đang chuẩn bị trình chỉnh sửa...")}
+          >
             <Link href={`/manager/sla-trigger/${sla.id}/edit`}><Edit className="h-4 w-4" /></Link>
           </Button>
           <Button 
@@ -98,7 +112,11 @@ export default function SLATriggerPage() {
         title="Bộ kích hoạt SLA"
         description="Quản lý các luật SLA bằng dạng danh sách rõ ràng, dễ lọc và dễ kiểm tra."
         action={
-          <Button asChild className="rounded-xl">
+          <Button 
+            onClick={() => startLoading("Đang chuẩn bị trình tạo SLA...")}
+            asChild 
+            className="rounded-xl"
+          >
             <Link href="/manager/sla-trigger/create">
               <Plus className="h-4 w-4 mr-2" />
               Tạo SLA mới
