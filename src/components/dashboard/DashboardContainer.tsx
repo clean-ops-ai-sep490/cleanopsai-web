@@ -4,13 +4,10 @@ import { AlertCircle, BarChart3, ShieldAlert, CalendarDays, Users } from "lucide
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard, calculateDashboardMetrics } from "@/hooks/useDashboard";
 import { TaskCompletionChart } from "./TaskCompletionChart";
-import { WorkerListCard } from "./WorkerListCard";
 import { MetricsCards } from "./MetricsCards";
-import { SectionCard } from "@/components/ui/section-card";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { ErrorState } from "@/components/ui/error-state";
-import { StatsCard } from "../ui/stats-card";
 import { PageHeader } from "@/components/ui/page-header";
+import { WorkerListCard } from "./WorkerListCard";
 
 function DashboardSkeleton() {
   return (
