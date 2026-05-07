@@ -117,8 +117,13 @@ export interface ScoringRetrainBatchListItem {
   promoted: boolean;
   failureReason?: string | null;
   promotionReason?: string | null;
+  metricKey?: string | null;
+  candidateMetric?: number | null;
+  baselineMetric?: number | null;
+  minimumImprovement?: number | null;
   runCount: number;
   latestRunStartedAtUtc?: string | null;
+  runs?: ScoringRetrainRun[];
 }
 
 export interface ScoringRetrainBatchDetail extends ScoringRetrainBatchListItem {
@@ -137,6 +142,7 @@ export interface ScoringRetrainRun {
   completedAtUtc?: string | null;
   exitCode?: number | null;
   message?: string | null;
+  logs?: string | null;
 }
 
 export interface TriggerScoringRetrainRequest {
