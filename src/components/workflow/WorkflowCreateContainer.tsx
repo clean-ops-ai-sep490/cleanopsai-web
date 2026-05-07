@@ -19,7 +19,7 @@ export function WorkflowCreateContainer({ sopId }: { sopId?: string }) {
   const [formData, setFormData] = useState<SOPFormData>({
     name: "",
     description: "",
-    serviceType: "Vệ sinh",
+    serviceType: "Cleaning",
     environmentTypeId: "",
     requiredSkillIds: [],
     requiredCertificationIds: [],
@@ -42,7 +42,7 @@ export function WorkflowCreateContainer({ sopId }: { sopId?: string }) {
       setFormData({
         name: existingSOP.name,
         description: existingSOP.description || "",
-        serviceType: existingSOP.serviceType || "Vệ sinh",
+        serviceType: existingSOP.serviceType || "Cleaning",
         environmentTypeId: existingSOP.environmentTypeId,
         requiredSkillIds: existingSOP.requiredSkillIds || [],
         requiredCertificationIds: existingSOP.requiredCertificationIds || [],
@@ -295,7 +295,7 @@ export function WorkflowCreateContainer({ sopId }: { sopId?: string }) {
         />
 
         {/* Main Content Area */}
-        <div className="flex-1 space-y-6">
+        <div className="flex-1 min-w-0 space-y-6">
           {/* SOP Information */}
           <WorkflowForm formData={formData} onChange={setFormData} />
 

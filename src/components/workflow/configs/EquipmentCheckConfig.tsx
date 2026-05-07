@@ -81,10 +81,11 @@ export function EquipmentCheckConfig({
               });
 
               return {
-                content: response.content.map((equipment) => ({
+                content: response.content.map((equipment: any) => ({
                   value: equipment.id,
                   label: equipment.name,
                   description: `${equipment.type} - ${equipment.description}`,
+                  imageUrl: equipment.imageUrl ? equipment.imageUrl.split("?")[0] : undefined,
                 })),
                 pageNumber: page,
                 pageSize,

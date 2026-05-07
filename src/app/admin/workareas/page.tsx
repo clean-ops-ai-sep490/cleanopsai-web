@@ -229,8 +229,6 @@ export default function WorkAreasPage() {
             {details.items.map((d: any) => (
               <div key={d.id} className="border-b pb-2">
                 <p><b>Tên:</b> {d.name}</p>
-                <p><b>Diện tích:</b> {d.area}</p>
-                <p><b>Tổng diện tích:</b> {d.totalArea}</p>
               </div>
             ))}
           </div>

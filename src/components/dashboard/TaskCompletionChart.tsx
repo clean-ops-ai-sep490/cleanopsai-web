@@ -3,114 +3,99 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { AlertTriangle, CheckCircle2, CircleDashed, TrendingUp } from "lucide-react";
-import type { DashboardMetrics, TaskStatusCount } from "@/types/dashboard";
+import { CircleDashed, TrendingUp, CheckCircle2, Clock } from "lucide-react";
+import type { DashboardData, DashboardMetrics } from "@/types/dashboard";
 
 interface TaskCompletionChartProps {
-  taskStatusCounts: TaskStatusCount[];
+  data: DashboardData;
   metrics: DashboardMetrics;
 }
 
-const statusConfig = {
-  Completed: { label: "Đã hoàn thành", color: "#22c55e" },
-  InProgress: { label: "Đang thực hiện", color: "#3b82f6" },
-  NotStarted: { label: "Chưa bắt đầu", color: "#f59e0b" },
-  Block: { label: "Bị chặn", color: "#ef4444" },
-};
-
-export function TaskCompletionChart({ taskStatusCounts, metrics }: TaskCompletionChartProps) {
-  const totalTasks = taskStatusCounts.reduce((sum, status) => sum + status.totalTasks, 0);
-  const statusData = taskStatusCounts.map((status) => ({
-    ...status,
-    config: statusConfig[status.status],
-    percentage: totalTasks > 0 ? (status.totalTasks / totalTasks) * 100 : 0,
-  }));
-
-  let chartOffset = 25;
+export function TaskCompletionChart({ data, metrics }: TaskCompletionChartProps) {
+  const { taskSummary } = data;
+  const total = taskSummary.totalTasksToDate;
+  
+  const passedPercentage = total > 0 ? (taskSummary.passedTasksToDate / total) * 100 : 0;
+  const nonPassedPercentage = total > 0 ? (taskSummary.nonPassedTasksToDate / total) * 100 : 0;
 
   return (
-    <Card className="border-slate-200 bg-white shadow-sm">
-      <CardHeader className="gap-2">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <Card className="border-slate-200 bg-white shadow-sm overflow-hidden h-full">
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between">
           <div>
-            <CardTitle>Hoàn thành công việc</CardTitle>
-            <CardDescription>Theo dõi trạng thái công việc và điểm cần xử lý.</CardDescription>
+            <CardTitle className="text-lg font-bold text-slate-900">Tiến độ công việc</CardTitle>
+            <CardDescription className="text-sm text-slate-500">Tỷ lệ hoàn thành công việc trong ngày.</CardDescription>
           </div>
-          <Badge variant="outline" className="w-fit border-blue-200 text-blue-700">
-            <TrendingUp className="h-3 w-3" /> Hiệu suất {metrics.efficiencyScore.toFixed(1)}%
+          <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-100">
+            <TrendingUp className="mr-1 h-3 w-3" />
+            {metrics.completionRate.toFixed(0)}%
           </Badge>
         </div>
       </CardHeader>
 
-      <CardContent>
-        {totalTasks === 0 ? (
+      <CardContent className="pt-6">
+        {total === 0 ? (
           <EmptyState
-            title="Chưa có dữ liệu công việc"
-            description="Biểu đồ sẽ xuất hiện khi hệ thống có task để phân tích."
-            icon={<CircleDashed className="h-10 w-10" />}
+            title="Chưa có dữ liệu"
+            description="Số liệu sẽ hiển thị khi có công việc được ghi nhận."
+            icon={<CircleDashed className="h-10 w-10 text-slate-300" />}
           />
         ) : (
-          <div className="grid gap-6 lg:grid-cols-[240px_1fr] lg:items-center">
-            <div className="relative mx-auto h-60 w-60">
-              <svg className="h-60 w-60 -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#e5e7eb" strokeWidth="10" />
-                {statusData.map((status) => {
-                  const circle = (
-                    <circle
-                      key={status.status}
-                      cx="50"
-                      cy="50"
-                      r="38"
-                      fill="none"
-                      stroke={status.config.color}
-                      strokeDasharray={`${status.percentage} ${100 - status.percentage}`}
-                      strokeDashoffset={chartOffset}
-                      strokeLinecap="round"
-                      strokeWidth="10"
-                    />
-                  );
-                  chartOffset -= status.percentage;
-                  return circle;
-                })}
+          <div className="flex flex-col items-center gap-8 md:flex-row md:justify-around">
+            <div className="relative h-48 w-48">
+              <svg className="h-48 w-48 -rotate-90" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  fill="none"
+                  stroke="#f1f5f9"
+                  strokeWidth="12"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="42"
+                  fill="none"
+                  stroke="#3b82f6"
+                  strokeDasharray={`${passedPercentage * 2.64} 264`}
+                  strokeLinecap="round"
+                  strokeWidth="12"
+                  className="transition-all duration-1000 ease-out"
+                />
               </svg>
-
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                <p className="text-3xl font-semibold tracking-tight text-slate-950">{metrics.completionRate.toFixed(1)}%</p>
-                <p className="text-sm text-slate-500">hoàn thành</p>
+                <span className="text-4xl font-bold tracking-tight text-slate-900">{metrics.completionRate.toFixed(0)}%</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Hoàn thành</span>
               </div>
             </div>
 
-            <div className="space-y-3">
-              {statusData.map((status) => (
-                <div key={status.status} className="rounded-lg border border-slate-100 p-3 transition hover:bg-slate-50">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="h-3 w-3 rounded-full" style={{ backgroundColor: status.config.color }} />
-                      <span className="text-sm font-medium text-slate-900">{status.config.label}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-950">{status.totalTasks}</span>
-                      <Badge variant="outline">{status.percentage.toFixed(1)}%</Badge>
-                    </div>
+            <div className="flex flex-col gap-4 min-w-[180px]">
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-100 p-4 transition-colors hover:bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-blue-100 p-2">
+                    <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-slate-500">Đã đạt</p>
+                    <p className="text-sm font-bold text-slate-900">{taskSummary.passedTasksToDate}</p>
                   </div>
                 </div>
-              ))}
+                <Badge variant="outline" className="border-blue-100 text-blue-600">{passedPercentage.toFixed(0)}%</Badge>
+              </div>
 
-              {metrics.blockedTasksCount > 0 ? (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 text-red-600" />
-                    <p className="text-sm font-medium text-red-800">{metrics.blockedTasksCount} công việc đang bị chặn cần xử lý sớm.</p>
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-100 p-4 transition-colors hover:bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-lg bg-slate-100 p-2">
+                    <Clock className="h-4 w-4 text-slate-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-slate-500">Chưa đạt</p>
+                    <p className="text-sm font-bold text-slate-900">{taskSummary.nonPassedTasksToDate}</p>
                   </div>
                 </div>
-              ) : (
-                <div className="rounded-lg border border-green-200 bg-green-50 p-3">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-green-600" />
-                    <p className="text-sm font-medium text-green-800">Không có công việc bị chặn trong dữ liệu hiện tại.</p>
-                  </div>
-                </div>
-              )}
+                <Badge variant="outline" className="border-slate-100 text-slate-500">{nonPassedPercentage.toFixed(0)}%</Badge>
+              </div>
             </div>
           </div>
         )}

@@ -281,7 +281,7 @@ export function AnnotationEditor() {
   const candidateId = params.candidateId;
   const { hasRole } = useRole();
   const editRequested = searchParams.get("mode") === "edit";
-  const canManage = hasRole([UserRole.Manager, UserRole.Admin]);
+  const canManage = hasRole([UserRole.Supervisor, UserRole.Admin]);
   const { data: candidate, isLoading } = useAnnotationCandidate(candidateId);
   const upsertMutation = useUpsertScoringAnnotation(candidateId);
   const approveMutation = useApproveAnnotationCandidate();
@@ -352,7 +352,7 @@ export function AnnotationEditor() {
       <Card>
         <CardContent className="p-8 text-center">
           <p className="mb-4 text-red-600">Không tìm thấy annotation.</p>
-          <Button onClick={() => router.push("/manager/ai-retrain")}>
+          <Button onClick={() => router.push("/supervisor/ai-retrain")}>
             Quay lại
           </Button>
         </CardContent>
@@ -379,7 +379,7 @@ export function AnnotationEditor() {
       <div className="flex items-center justify-between">
         <div>
           <Link
-            href="/manager/ai-retrain"
+            href="/supervisor/ai-retrain"
             className="mb-2 inline-flex items-center text-sm text-[#1a80a2]"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />

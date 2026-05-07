@@ -1,20 +1,20 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getTaskAssignments,
   getTaskAssignmentById,
+  deleteTaskAssignment,
+  updateTaskAssignment,
 } from "@/lib/task-assignment-api";
-import { generateMockTaskAssignments } from "@/lib/mock-task-assignments";
 import type { TaskAssignmentStatus } from "@/types/task";
 import type { PaginationParams } from "@/types/common";
-
-// Enable mock data for development
-const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
+import type { TaskAssignmentUpdatePayload } from "@/types/task-assignment";
+import { toastUtils } from "@/lib/utils/toast-utils";
 
 /**
  * Hook for fetching task assignments with optional filters
  */
 export function useTaskAssignments(params?: {
-  assignedToWorkerId?: string;
+  assigneeId?: string;
   workAreaId?: string;
   status?: TaskAssignmentStatus;
   fromDate?: string;
@@ -25,31 +25,7 @@ export function useTaskAssignments(params?: {
   return useQuery({
     queryKey: ["task-assignments", params],
     queryFn: async () => {
-      // Use mock data if enabled or if no date range provided
-      if (USE_MOCK_DATA && params?.fromDate && params?.toDate) {
-        return generateMockTaskAssignments(params.fromDate, params.toDate);
-      }
-
-      try {
-        const result = await getTaskAssignments(params);
-
-        // If API returns empty data and we have date range, use mock data
-        if (
-          (!result.content || result.content.length === 0) &&
-          params?.fromDate &&
-          params?.toDate
-        ) {
-          return generateMockTaskAssignments(params.fromDate, params.toDate);
-        }
-
-        return result;
-      } catch (error) {
-        // Fallback to mock data if API fails
-        if (params?.fromDate && params?.toDate) {
-          return generateMockTaskAssignments(params.fromDate, params.toDate);
-        }
-        throw error;
-      }
+      return getTaskAssignments(params);
     },
   });
 }
@@ -105,6 +81,49 @@ export function useTaskAssignmentsByStatus(
     queryFn: () => getTaskAssignments({ status, ...params }),
   });
 }
+
+/**
+ * Hook for deleting a task assignment
+ */
+export function useDeleteTaskAssignment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteTaskAssignment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
+      toastUtils.success("Đã hủy công việc thành công.");
+    },
+    onError: (error: any) => {
+      console.error("Failed to delete task assignment:", error);
+      toastUtils.error("Không thể hủy công việc. Vui lòng thử lại.");
+    },
+  });
+}
+
+/**
+ * Hook for updating a task assignment
+ */
+export function useUpdateTaskAssignment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: TaskAssignmentUpdatePayload;
+    }) => updateTaskAssignment(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["task-assignments"] });
+      toastUtils.success("Đã cập nhật công việc thành công.");
+    },
+    onError: (error: any) => {
+      console.error("Failed to update task assignment:", error);
+      toastUtils.error("Không thể cập nhật công việc. Vui lòng thử lại.");
+    },
+  });
+}
+
 
 /**
  * Hook for fetching task assignments within a date range

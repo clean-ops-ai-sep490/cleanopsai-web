@@ -14,6 +14,7 @@ import { Plus, Edit2, Trash2, MapPin } from "lucide-react";
 import { useLocations, useCreateLocation, useUpdateLocation, useDeleteLocation } from "@/hooks/useLocations";
 import { usePagination } from "@/hooks/usePagination";
 import { StandardDialog } from "@/components/ui/standard-dialog";
+import { PaginationWithInfo } from "@/components/ui/pagination";
 import LocationForm from "./LocationForm";
 import { toast } from "sonner";
 
@@ -51,16 +52,34 @@ export default function LocationsPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    await deleteMutation.mutateAsync(deleteTarget.id);
-    setDeleteTarget(null);
-    queryClient.invalidateQueries({ queryKey: ["locations"] });
+    try {
+      await deleteMutation.mutateAsync(deleteTarget.id);
+      toast.success("Xóa vị trí thành công");
+      setDeleteTarget(null);
+      queryClient.invalidateQueries({ queryKey: ["locations"] });
+    } catch {
+      toast.error("Không thể xóa vị trí");
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Quản lý vị trí" description="Danh sách vị trí theo pattern bảng chuẩn." action={<Button onClick={() => { setEditing(null); setOpen(true); }}><Plus className="h-4 w-4" />Thêm vị trí</Button>} />
+    <div className="space-y-8 pb-10">
+      <PageHeader 
+        title="Quản lý vị trí" 
+        description="Quản lý các cơ sở, tòa nhà và khu vực làm việc của hệ thống." 
+        action={
+          <Button 
+            onClick={() => { setEditing(null); setOpen(true); }}
+            className="rounded-xl"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Thêm vị trí
+          </Button>
+        } 
+      />
+
       {isLoading ? (
-        <ListPageSkeleton cards={3} rows={6} />
+        <ListPageSkeleton rows={8} />
       ) : error ? (
         <ErrorState title="Không thể tải vị trí" description="Vui lòng thử lại sau." onAction={() => refetch()} />
       ) : !data?.items?.length ? (
@@ -70,30 +89,52 @@ export default function LocationsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Tên</TableHead>
+                <TableHead className="pl-6">Tên vị trí</TableHead>
                 <TableHead>Địa chỉ</TableHead>
-                <TableHead>Tỉnh (TP)</TableHead>
+                <TableHead>Tỉnh / TP</TableHead>
                 <TableHead>Khách hàng</TableHead>
-                <TableHead className="text-right">Hành động</TableHead>
+                <TableHead className="text-right pr-6">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.items.map((l: any) => (
-                <TableRow key={l.id}>
-                  <TableCell>{l.name}</TableCell>
-                  <TableCell className="max-w-[260px] truncate">{l.address}</TableCell>
-                  <TableCell>{l.province}</TableCell>
-                  <TableCell className="max-w-[220px] truncate">{l.clientName}</TableCell>
-                  <TableCell className="text-right"><div className="flex justify-end gap-2"><Button variant="ghost" size="icon-sm" onClick={() => { setEditing(l); setOpen(true); }}><Edit2 className="h-4 w-4" /></Button><Button variant="ghost" size="icon-sm" className="text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setDeleteTarget(l)}><Trash2 className="h-4 w-4" /></Button></div></TableCell>
+                <TableRow key={l.id} className="hover:bg-slate-50/30 transition-colors">
+                  <TableCell className="pl-6 font-bold text-slate-900">{l.name}</TableCell>
+                  <TableCell className="max-w-[260px] truncate text-slate-500">{l.address}</TableCell>
+                  <TableCell className="text-slate-600">{l.province}</TableCell>
+                  <TableCell className="max-w-[220px] truncate font-medium">{l.clientName}</TableCell>
+                  <TableCell className="text-right pr-6">
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-slate-400 hover:text-slate-900 rounded-lg"
+                        onClick={() => { setEditing(l); setOpen(true); }}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg" 
+                        onClick={() => setDeleteTarget(l)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-          <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
-            <Button variant="outline" disabled={pagination.currentPage === 1} onClick={pagination.prevPage}>Trước</Button>
-            <span>Trang {pagination.currentPage} / {totalPages || 1}</span>
-            <Button variant="outline" disabled={pagination.currentPage >= totalPages} onClick={pagination.nextPage}>Sau</Button>
-          </div>
+
+          <PaginationWithInfo 
+            currentPage={pagination.currentPage}
+            totalPages={totalPages}
+            pageSize={pagination.pageSize}
+            totalElements={data?.totalCount ?? 0}
+            onPageChange={pagination.setPage}
+          />
         </SectionCard>
       )}
 
@@ -101,7 +142,14 @@ export default function LocationsPage() {
         <LocationForm initialData={editing} onSubmit={handleSubmit} onCancel={() => setOpen(false)} />
       </StandardDialog>
 
-      <ConfirmDialog open={!!deleteTarget} title="Xóa vị trí này?" description="Thao tác này không thể hoàn tác." confirmLabel="Xóa" onConfirm={handleDelete} onOpenChange={(open) => !open && setDeleteTarget(null)} />
+      <ConfirmDialog 
+        open={!!deleteTarget} 
+        title="Xóa vị trí này?" 
+        description="Thao tác này không thể hoàn tác. Các dữ liệu liên quan có thể bị ảnh hưởng." 
+        confirmLabel="Xóa vĩnh viễn" 
+        onConfirm={handleDelete} 
+        onOpenChange={(open) => !open && setDeleteTarget(null)} 
+      />
     </div>
   );
 }

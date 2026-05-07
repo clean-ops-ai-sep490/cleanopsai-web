@@ -11,8 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
-import { format } from "date-fns";
+import { Loader2, Calendar } from "lucide-react";
 import { toastUtils } from "@/lib/utils/toast-utils";
 import { generateTaskAssignments } from "@/lib/task-schedule-api";
 import { Input } from "@/components/ui/input";
@@ -20,15 +19,19 @@ import { Input } from "@/components/ui/input";
 interface AssignTaskScheduleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  taskScheduleId: string;
-  taskScheduleName: string;
+  taskScheduleIds: string[];
+  title?: string;
+  description?: string;
+  onSuccess?: () => void;
 }
 
 export function AssignTaskScheduleDialog({
   open,
   onOpenChange,
-  taskScheduleId,
-  taskScheduleName,
+  taskScheduleIds,
+  title = "Phân công lịch trình công việc",
+  description,
+  onSuccess,
 }: AssignTaskScheduleDialogProps) {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -49,7 +52,7 @@ export function AssignTaskScheduleDialog({
       setIsSubmitting(true);
 
       const response = await generateTaskAssignments({
-        taskScheduleIds: [taskScheduleId],
+        taskScheduleIds: taskScheduleIds,
         fromDate: fromDate,
         toDate: toDate,
       });
@@ -63,6 +66,7 @@ export function AssignTaskScheduleDialog({
       // Reset form
       setFromDate("");
       setToDate("");
+      onSuccess?.();
     } catch (error) {
       console.error("Failed to generate task assignments:", error);
       toastUtils.error(
@@ -76,80 +80,82 @@ export function AssignTaskScheduleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[450px] rounded-2xl border-none shadow-2xl">
         <DialogHeader>
-          <DialogTitle>Phân công lịch trình công việc</DialogTitle>
-          <DialogDescription>
-            Tạo phân công công việc thủ công cho lịch trình:{" "}
-            <span className="font-semibold text-black">{taskScheduleName}</span>
+          <DialogTitle className="text-xl font-bold text-slate-900">{title}</DialogTitle>
+          <DialogDescription className="text-slate-500 pt-1">
+            {description || `Tạo phân công công việc thủ công cho ${taskScheduleIds.length} lịch trình đã chọn.`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* From Date */}
-          <div className="space-y-2">
-            <Label htmlFor="fromDate">Ngày bắt đầu *</Label>
-            <Input
-              id="fromDate"
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="bg-white border-[#e5e5e5]"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="fromDate" className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ngày bắt đầu</Label>
+              <div className="relative">
+                <Input
+                  id="fromDate"
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="bg-white border-slate-200 rounded-xl h-11 focus:border-primary transition-all pl-3"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="toDate" className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ngày kết thúc</Label>
+              <Input
+                id="toDate"
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="bg-white border-slate-200 rounded-xl h-11 focus:border-primary transition-all pl-3"
+                min={fromDate || undefined}
+              />
+            </div>
           </div>
 
-          {/* To Date */}
-          <div className="space-y-2">
-            <Label htmlFor="toDate">Ngày kết thúc *</Label>
-            <Input
-              id="toDate"
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="bg-white border-[#e5e5e5]"
-              min={fromDate || undefined}
-            />
-          </div>
-
-          {/* Info */}
-          <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800">
-            <p className="font-medium mb-1">Lưu ý:</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>
-                Task assignment sẽ được tạo dựa trên recurrence pattern của task
-                schedule
-              </li>
-              <li>
-                Chỉ tạo task assignment cho các ngày trong khoảng thời gian đã
-                chọn
-              </li>
-              <li>Task assignment đã tồn tại sẽ không bị tạo lại</li>
-            </ul>
+          <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
+            <div className="flex gap-3">
+              <div className="mt-0.5">
+                <Calendar className="h-4 w-4 text-slate-400" />
+              </div>
+              <div className="text-[12px] leading-relaxed text-slate-500">
+                <p className="font-bold text-slate-700 mb-1">Cơ chế hoạt động:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Phân công dựa trên tần suất lặp lại</li>
+                  <li>Không tạo đè lên các phân công đã có</li>
+                  <li>Chỉ áp dụng cho các lịch trình đang hoạt động</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
+            className="rounded-xl text-slate-400 hover:text-slate-900"
             onClick={() => onOpenChange(false)}
             disabled={isSubmitting}
           >
-            Hủy
+            Hủy bỏ
           </Button>
           <Button
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting || !fromDate || !toDate}
-            className="bg-primary hover:bg-primary/90"
+            className="rounded-xl px-6 h-11 font-bold"
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Đang tạo...
+                Đang xử lý...
               </>
             ) : (
-              "Tạo Task Assignment"
+              "Xác nhận phân công"
             )}
           </Button>
         </DialogFooter>

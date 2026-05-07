@@ -10,6 +10,11 @@ export interface Contract {
   name: string;
   clientId: string;
   file?: File;
+  urlFile?: string;
+  contractStartDate: string;
+  contractEndDate: string;
+  clientName?: string;
+  created?: string;
 }
 
 export interface Location {

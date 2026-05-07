@@ -28,7 +28,7 @@ export function CheckInConfig({
   const configDetail = getConfigDetail(step);
   const selectedMethod = configDetail?.method || "";
 
-  const selectMethod = (method: "qr" | "ble") => {
+  const selectMethod = (method: "qr") => {
     // Tạo configDetail mới, loại bỏ methods cũ và chỉ giữ method mới
     const newConfigDetail = { ...configDetail };
 
@@ -44,12 +44,6 @@ export function CheckInConfig({
   return (
     <div className="space-y-4">
       <div>
-        <Label className="text-sm font-medium text-gray-900">
-          Phương thức check-in
-        </Label>
-        <p className="text-sm text-gray-500 mt-1">
-          Chọn một phương thức mà worker sẽ sử dụng để check-in
-        </p>
         <div className="space-y-3 mt-3">
           <div
             className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
@@ -73,33 +67,6 @@ export function CheckInConfig({
               }`}
             >
               {selectedMethod === "qr" && (
-                <div className="w-2 h-2 rounded-full bg-white"></div>
-              )}
-            </div>
-          </div>
-
-          <div
-            className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
-              selectedMethod === "ble"
-                ? "border-primary bg-blue-50"
-                : "border-gray-200 hover:border-gray-300"
-            }`}
-            onClick={() => selectMethod("ble")}
-          >
-            <div>
-              <div className="font-medium text-sm">Bluetooth (BLE)</div>
-              <div className="text-sm text-gray-500">
-                Kết nối Bluetooth để check-in
-              </div>
-            </div>
-            <div
-              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                selectedMethod === "ble"
-                  ? "border-primary bg-primary"
-                  : "border-gray-300"
-              }`}
-            >
-              {selectedMethod === "ble" && (
                 <div className="w-2 h-2 rounded-full bg-white"></div>
               )}
             </div>

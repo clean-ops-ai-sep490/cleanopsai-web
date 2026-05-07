@@ -9,47 +9,60 @@ interface TaskCardProps {
   task: TaskAssignment;
 }
 
-const getStatusColor = (status: string) => {
+const getStatusStyles = (status: string) => {
   switch (status) {
     case "Completed":
-      return "bg-green-500 hover:bg-green-600 text-white border-green-600";
+      return {
+        wrapper: "bg-emerald-50/90 border-l-[3px] border-emerald-500 hover:bg-emerald-100 hover:shadow-emerald-100/50",
+        timeText: "text-emerald-700/70",
+        titleText: "text-emerald-900",
+      };
     case "InProgress":
-      return "bg-blue-500 hover:bg-blue-600 text-white border-blue-600";
+      return {
+        wrapper: "bg-blue-50/90 border-l-[3px] border-blue-500 hover:bg-blue-100 hover:shadow-blue-100/50",
+        timeText: "text-blue-700/70",
+        titleText: "text-blue-900",
+      };
     case "Cancelled":
-      return "bg-gray-400 hover:bg-gray-500 text-white border-gray-500";
+      return {
+        wrapper: "bg-slate-50/90 border-l-[3px] border-slate-400 hover:bg-slate-100 hover:shadow-slate-100/50 opacity-80",
+        timeText: "text-slate-500/70",
+        titleText: "text-slate-700",
+      };
     default: // NotStarted
-      return "bg-orange-500 hover:bg-orange-600 text-white border-orange-600";
-  }
-};
-
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case "Completed":
-      return "✓";
-    case "InProgress":
-      return "●";
-    case "Cancelled":
-      return "✕";
-    default:
-      return "○";
+      return {
+        wrapper: "bg-amber-50/90 border-l-[3px] border-amber-500 hover:bg-amber-100 hover:shadow-amber-100/50",
+        timeText: "text-amber-700/70",
+        titleText: "text-amber-900",
+      };
   }
 };
 
 export function TaskCard({ task }: TaskCardProps) {
   const [showDetail, setShowDetail] = useState(false);
 
-  const startTime = format(parseISO(task.scheduledStartAt), "HH:mm");
-  const endTime = format(parseISO(task.scheduledEndAt), "HH:mm");
+  const startAt = parseISO(task.scheduledStartAt.replace("Z", ""));
+  const endAt = parseISO(task.scheduledEndAt.replace("Z", ""));
+  const startTime = format(startAt, "HH:mm");
+  const endTime = format(endAt, "HH:mm");
+  
+  const styles = getStatusStyles(task.status);
 
   return (
     <>
       <div
         onClick={() => setShowDetail(true)}
-        className={`${getStatusColor(task.status)} rounded-lg border-l-4 px-3 py-2 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md h-[28px] flex items-center relative overflow-hidden`}
-        title={`${task.displayLocation}\n${startTime} - ${endTime}\nTrạng thái: ${task.status}`}
+        className={`${styles.wrapper} group relative h-8 rounded-r-md px-2.5 flex items-center cursor-pointer transition-all duration-200 shadow-sm backdrop-blur-sm overflow-hidden`}
+        title={`${task.taskName}\n${task.displayLocation}\n${startTime} - ${endTime}\nTrạng thái: ${task.status}`}
       >
-        {/* Gradient overlay for better text readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/10 pointer-events-none"></div>
+        <div className="flex items-center gap-1.5 w-full z-10 relative">
+          <span className={`text-[10px] font-bold tracking-tight whitespace-nowrap ${styles.timeText}`}>
+            {startTime}
+          </span>
+          <span className={`text-[11px] font-semibold truncate flex-1 ${styles.titleText}`}>
+            {task.taskName || (task.isAdhocTask ? task.nameAdhocTask : "Công việc")}
+          </span>
+        </div>
       </div>
 
       <TaskDetailDialog

@@ -11,7 +11,7 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        "flex flex-col gap-4 overflow-hidden rounded-[var(--radius-lg)] border border-slate-200 bg-white text-sm text-slate-950 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-shadow",
+        "flex flex-col gap-4 overflow-hidden rounded-[var(--app-radius-sm)] border border-slate-200 bg-white text-sm text-slate-950 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-shadow",
         "data-[size=sm]:gap-3",
         className,
       )}

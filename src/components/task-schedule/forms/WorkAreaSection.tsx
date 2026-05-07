@@ -2,20 +2,15 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useWorkAreas } from "@/hooks/useWorkAreas";
-import { useWorkAreaDetailsByWorkArea } from "@/hooks/useWorkAreaDetails";
-import { useZonesByLocation } from "@/hooks/useZones";
-import { useSLA } from "@/hooks/useSLAQuery";
-import { useContract } from "@/hooks/useContracts";
-import { useLocationsByClient } from "@/hooks/useLocations";
-import { useState, useEffect } from "react";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { getLocationsPaginatedNew, getLocationById } from "@/lib/location-api";
+import { getZonesPaginatedNew, getZoneById } from "@/lib/zone-api";
+import { getWorkAreasPaginatedNew, getWorkAreaById } from "@/lib/work-area-api";
+import { getWorkAreaDetailsPaginated, getWorkAreaDetailById } from "@/lib/work-area-detail-api";
+import { getSLAById } from "@/lib/sla-api";
+import { getContractById } from "@/lib/contract-api";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 interface WorkAreaSectionProps {
   formData: any;
@@ -28,102 +23,113 @@ export function WorkAreaSection({
   errors,
   updateField,
 }: WorkAreaSectionProps) {
-  // Use formData instead of local state where possible
   const selectedLocationId = formData.locationId;
   const selectedZoneId = formData.zoneId;
   const selectedWorkAreaId = formData.workAreaId;
+  const selectedWorkAreaDetailId = formData.workAreaDetailId;
   const slaId = formData.slaId;
 
   // Fetch SLA details to get contractId
-  const { data: slaData } = useSLA(slaId, {
+  const { data: slaData } = useQuery({
+    queryKey: ["sla", slaId],
+    queryFn: () => getSLAById(slaId),
     enabled: !!slaId,
   });
-
-  // Get the actual SLA object from array
-  const slaObject =
-    Array.isArray(slaData) && slaData.length > 0 ? slaData[0] : slaData;
+  const slaObject = Array.isArray(slaData) ? slaData[0] : slaData;
 
   // Fetch contract details to get clientId
-  const {
-    data: contractData,
-  } = useContract(slaObject?.contractId);
+  const { data: contractData } = useQuery({
+    queryKey: ["contract", slaObject?.contractId],
+    queryFn: () => getContractById(slaObject?.contractId),
+    enabled: !!slaObject?.contractId,
+  });
   
-  // Fetch locations by clientId
-  const {
-    data: locationsData,
-    isLoading: locationsLoading,
-  } = useLocationsByClient(contractData?.clientId);
-  const locations = locationsData?.items || [];
+  // Get selected objects for display name and address logic
+  const { data: selectedLocation } = useQuery({
+    queryKey: ["location", selectedLocationId],
+    queryFn: () => getLocationById(selectedLocationId),
+    enabled: !!selectedLocationId,
+  });
 
-  // Fetch zones based on selected location
-  const { data: zonesData, isLoading: zonesLoading } =
-    useZonesByLocation(selectedLocationId);
-  const zones = zonesData?.items || [];
+  const { data: selectedZone } = useQuery({
+    queryKey: ["zone", selectedZoneId],
+    queryFn: () => getZoneById(selectedZoneId),
+    enabled: !!selectedZoneId,
+  });
 
-  // Fetch work areas based on selected zone
-  const { data: workAreasData, isLoading: workAreasLoading } = useWorkAreas(
-    selectedZoneId ? { zoneId: selectedZoneId } : undefined,
-  );
-  const workAreas = workAreasData?.items || [];
+  const { data: selectedWorkArea } = useQuery({
+    queryKey: ["work-area", selectedWorkAreaId],
+    queryFn: () => getWorkAreaById(selectedWorkAreaId),
+    enabled: !!selectedWorkAreaId,
+  });
 
-  // Fetch work area details based on selected work area
-  const { data: workAreaDetailsData } =
-    useWorkAreaDetailsByWorkArea(selectedWorkAreaId);
-  const workAreaDetails = workAreaDetailsData?.items || [];
+  const { data: selectedWorkAreaDetail } = useQuery({
+    queryKey: ["work-area-detail", selectedWorkAreaDetailId],
+    queryFn: () => getWorkAreaDetailById(selectedWorkAreaDetailId),
+    enabled: !!selectedWorkAreaDetailId,
+  });
 
-  // Reset dependent selections when parent changes
+
+  // Sync location address to form for AssignmentSection
   useEffect(() => {
-    if (slaId) {
-      updateField("locationId", "");
-      updateField("zoneId", "");
-      updateField("workAreaId", "");
-      updateField("workAreaDetailId", "");
-      updateField("displayLocation", "");
+    if (selectedLocation) {
+      updateField("locationAddress", selectedLocation.address);
     }
-  }, [slaId]);
+  }, [selectedLocation]);
+
+  // Sync work area detail info to form
+  useEffect(() => {
+    if (selectedWorkAreaDetail) {
+      updateField("workAreaDetailName", selectedWorkAreaDetail.name);
+      
+      // If we're in edit mode (have workAreaDetailId but missing parent IDs), back-fill them
+      if (!selectedWorkAreaId && selectedWorkAreaDetail.workAreaId) {
+        updateField("workAreaId", selectedWorkAreaDetail.workAreaId);
+      }
+    }
+  }, [selectedWorkAreaDetail, selectedWorkAreaId]);
+
+  // Back-fill zoneId from workArea
+  useEffect(() => {
+    if (selectedWorkArea && !selectedZoneId && selectedWorkArea.zoneId) {
+      updateField("zoneId", selectedWorkArea.zoneId);
+    }
+  }, [selectedWorkArea, selectedZoneId]);
+
+  // Back-fill locationId from zone
+  useEffect(() => {
+    if (selectedZone && !selectedLocationId && selectedZone.locationId) {
+      updateField("locationId", selectedZone.locationId);
+    }
+  }, [selectedZone, selectedLocationId]);
 
   // Auto-generate displayLocation when all selections are made
   useEffect(() => {
-    const selectedLocation = locations.find(
-      (loc) => loc.id === selectedLocationId,
-    );
-    const selectedZone = zones.find((zone) => zone.id === selectedZoneId);
-    const selectedWorkArea = workAreas.find(
-      (area) => area.id === selectedWorkAreaId,
-    );
-    // Note: We're currently creating a NEW work area detail in the form, 
-    // but the original code had some logic for existing details too.
-    // Let's stick to the creation logic as per the form fields below.
-
     if (
       selectedLocation &&
       selectedZone &&
       selectedWorkArea &&
       formData.workAreaDetailName
     ) {
-      const displayLocation = `${selectedLocation.address}, ${selectedZone.name}, ${selectedWorkArea.name}, ${formData.workAreaDetailName}`;
+      // Ưu tiên thông tin chi tiết lên trước để dễ nhận diện trong danh sách
+      const displayLocation = [
+        formData.workAreaDetailName, // Tên phòng/vị trí cụ thể (ví dụ: Phòng 101)
+        selectedWorkArea.name,       // Khu vực (ví dụ: Sảnh)
+        selectedZone.name,           // Zone (ví dụ: Tòa nhà A)
+        selectedLocation.address || selectedLocation.name || "" // Địa chỉ tổng quát
+      ].filter(Boolean).join(", ");
+      
       updateField("displayLocation", displayLocation);
     }
   }, [
-    selectedLocationId,
-    selectedZoneId,
-    selectedWorkAreaId,
+    selectedLocation,
+    selectedZone,
+    selectedWorkArea,
     formData.workAreaDetailName,
-    locations,
-    zones,
-    workAreas,
   ]);
 
   const handleLocationChange = (value: string) => {
     updateField("locationId", value);
-
-    // Lưu address vào form để AssignmentSection sử dụng
-    const selectedLocation = locations.find((loc) => loc.id === value);
-    if (selectedLocation) {
-      updateField("locationAddress", selectedLocation.address);
-    }
-
-    // Reset dependent selections
     updateField("zoneId", "");
     updateField("workAreaId", "");
     updateField("workAreaDetailId", "");
@@ -131,56 +137,53 @@ export function WorkAreaSection({
 
   const handleZoneChange = (value: string) => {
     updateField("zoneId", value);
-    // Reset dependent selections
     updateField("workAreaId", "");
     updateField("workAreaDetailId", "");
   };
 
   const handleWorkAreaChange = (value: string) => {
     updateField("workAreaId", value);
-    // Reset work area detail when work area changes
     updateField("workAreaDetailId", "");
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-black mb-4">
+        {/* <h2 className="text-lg font-semibold text-black mb-4">
           Cấu hình khu vực
-        </h2>
+        </h2> */}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Location Selection */}
           <div className="space-y-2">
             <Label>Địa điểm *</Label>
-            <Select
+            <SearchableSelect
               value={selectedLocationId || ""}
               onValueChange={handleLocationChange}
-              disabled={!contractData?.clientId || locationsLoading}
-            >
-              <SelectTrigger className="bg-white border-[#e5e5e5]">
-                <SelectValue
-                  placeholder={
-                    !slaId
-                      ? "Chọn SLA trước"
-                      : !contractData?.clientId
-                        ? "Đang tải thông tin khách hàng..."
-                        : locationsLoading
-                          ? "Đang tải địa điểm..."
-                          : locations.length === 0
-                            ? "Không có địa điểm nào"
-                            : "Chọn địa điểm"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {locations.map((location: any) => (
-                  <SelectItem key={location.id} value={location.id!}>
-                    {location.address}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder={!slaId ? "Chọn SLA trước" : "Chọn địa điểm"}
+              disabled={!contractData?.clientId}
+              useInfiniteLoading={true}
+              pageSize={10}
+              queryKey={["locations", "infinite", contractData?.clientId || ""]}
+              queryFn={(page, pageSize, search) => 
+                getLocationsPaginatedNew(page, pageSize, { search, clientId: contractData?.clientId }).then(res => ({
+                  ...res,
+                  content: res.content.map(item => ({
+                    ...item,
+                    id: item.id || "",
+                    name: item.name || ""
+                  }))
+                }))
+              }
+              getItemById={(id) => 
+                getLocationById(id).then(item => ({
+                  ...item,
+                  id: item.id || "",
+                  name: item.name || ""
+                }))
+              }
+              displayFormatter={(item: any) => item.address}
+            />
             {errors.locationId && (
               <p className="text-sm text-red-500">{errors.locationId}</p>
             )}
@@ -189,101 +192,104 @@ export function WorkAreaSection({
           {/* Zone Selection */}
           <div className="space-y-2">
             <Label>Zone *</Label>
-            <Select
+            <SearchableSelect
               value={selectedZoneId || ""}
               onValueChange={handleZoneChange}
-              disabled={!selectedLocationId || zonesLoading}
-            >
-              <SelectTrigger className="bg-white border-[#e5e5e5]">
-                <SelectValue
-                  placeholder={
-                    !selectedLocationId
-                      ? "Chọn địa điểm trước"
-                      : zonesLoading
-                        ? "Đang tải..."
-                        : zones.length === 0
-                          ? "Không có zone nào"
-                          : "Chọn zone"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {zones.map((zone: any) => (
-                  <SelectItem key={zone.id} value={zone.id!}>
-                    {zone.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder={!selectedLocationId ? "Chọn địa điểm trước" : "Chọn zone"}
+              disabled={!selectedLocationId}
+              useInfiniteLoading={true}
+              pageSize={10}
+              queryKey={["zones", "infinite", selectedLocationId || ""]}
+              queryFn={(page, pageSize, search) => 
+                getZonesPaginatedNew(page, pageSize, { search, locationId: selectedLocationId }).then(res => ({
+                  ...res,
+                  content: res.content.map(item => ({
+                    ...item,
+                    id: item.id || "",
+                    name: item.name || ""
+                  }))
+                }))
+              }
+              getItemById={(id) => 
+                getZoneById(id).then(item => ({
+                  ...item,
+                  id: item.id || "",
+                  name: item.name || ""
+                }))
+              }
+            />
             {errors.zoneId && (
               <p className="text-sm text-red-500">{errors.zoneId}</p>
             )}
           </div>
 
+          {/* Work Area Selection */}
           <div className="space-y-2">
             <Label>Khu vực làm việc *</Label>
-            <Select
+            <SearchableSelect
               value={selectedWorkAreaId || ""}
               onValueChange={handleWorkAreaChange}
+              placeholder={!selectedZoneId ? "Chọn zone trước" : "Chọn khu vực"}
               disabled={!selectedZoneId}
-            >
-              <SelectTrigger className="bg-white border-[#e5e5e5]">
-                <SelectValue
-                  placeholder={
-                    !selectedZoneId
-                      ? "Chọn zone trước"
-                      : workAreasLoading
-                        ? "Đang tải..."
-                        : "Chọn khu vực"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {workAreas.map((area: any) => (
-                  <SelectItem key={area.id} value={area.id!}>
-                    {area.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              useInfiniteLoading={true}
+              pageSize={10}
+              queryKey={["work-areas", "infinite", selectedZoneId || ""]}
+              queryFn={(page, pageSize, search) => 
+                getWorkAreasPaginatedNew(page, pageSize, { search, zoneId: selectedZoneId }).then(res => ({
+                  ...res,
+                  content: res.content.map(item => ({
+                    ...item,
+                    id: item.id || "",
+                    name: item.name || ""
+                  }))
+                }))
+              }
+              getItemById={(id) => 
+                getWorkAreaById(id).then(item => ({
+                  ...item,
+                  id: item.id || "",
+                  name: item.name || ""
+                }))
+              }
+            />
             {errors.workAreaId && (
               <p className="text-sm text-red-500">{errors.workAreaId}</p>
             )}
           </div>
-        </div>
 
-        {/* WorkAreaDetail Creation Fields */}
-        <div className="mt-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="workAreaDetailName">Tên chi tiết khu vực</Label>
-              <Input
-                id="workAreaDetailName"
-                value={formData.workAreaDetailName || ""}
-                onChange={(e) => updateField("workAreaDetailName", e.target.value)}
-                placeholder="Nhập tên chi tiết khu vực"
-                className="bg-white border-[#e5e5e5]"
-              />
-              {errors.workAreaDetailName && (
-                <p className="text-sm text-red-500">{errors.workAreaDetailName}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="workAreaDetailArea">Diện tích (m²)</Label>
-              <Input
-                id="workAreaDetailArea"
-                type="number"
-                step="0.01"
-                value={formData.workAreaDetailArea || ""}
-                onChange={(e) => updateField("workAreaDetailArea", Number(e.target.value))}
-                placeholder="Nhập diện tích"
-                className="bg-white border-[#e5e5e5]"
-              />
-              {errors.workAreaDetailArea && (
-                <p className="text-sm text-red-500">{errors.workAreaDetailArea}</p>
-              )}
-            </div>
+          {/* WorkAreaDetail Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="workAreaDetailId">Chi tiết khu vực *</Label>
+            <SearchableSelect
+              value={selectedWorkAreaDetailId || ""}
+              onValueChange={(val) => updateField("workAreaDetailId", val)}
+              placeholder={!selectedWorkAreaId ? "Chọn khu vực làm việc trước" : "Chọn chi tiết khu vực"}
+              disabled={!selectedWorkAreaId}
+              useInfiniteLoading={true}
+              pageSize={10}
+              queryKey={["work-area-details", "infinite", selectedWorkAreaId || ""]}
+              queryFn={(page, pageSize, search) => 
+                getWorkAreaDetailsPaginated(page, pageSize, { search, workAreaId: selectedWorkAreaId }).then(res => ({
+                  ...res,
+                  content: res.content.map(item => ({
+                    ...item,
+                    id: item.id || "",
+                    name: item.name || ""
+                  }))
+                }))
+              }
+              getItemById={(id) => 
+                getWorkAreaDetailById(id).then(item => ({
+                  ...item,
+                  id: item.id || "",
+                  name: item.name || ""
+                }))
+              }
+              displayFormatter={(item: any) => item.name}
+            />
+            {errors.workAreaDetailId && (
+              <p className="text-sm text-red-500">{errors.workAreaDetailId}</p>
+            )}
           </div>
         </div>
       </div>

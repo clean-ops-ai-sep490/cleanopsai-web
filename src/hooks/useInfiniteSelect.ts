@@ -37,7 +37,7 @@ export interface UseInfiniteSelectReturn<T> {
   debouncedSearchQuery: string;
 
   // Scroll handling
-  scrollRef: React.RefObject<HTMLDivElement>;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
   handleScroll: (e: React.UIEvent<HTMLDivElement>) => void;
 }
 
@@ -57,7 +57,7 @@ export function useInfiniteSelect<T>({
   const [internalSearchQuery, setInternalSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout>();
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Use external search query if provided, otherwise use internal
   const searchQuery = externalSearchQuery ?? internalSearchQuery;
@@ -114,8 +114,11 @@ export function useInfiniteSelect<T>({
     placeholderData: (previousData) => previousData, // Keep previous data while loading
   });
 
-  // Flatten all pages into single array
-  const items = data?.pages.flatMap((page) => page.content) ?? [];
+  // Flatten all pages into single array and ensure uniqueness
+  const allItems = data?.pages.flatMap((page) => page.content) ?? [];
+  const items = Array.from(
+    new Map(allItems.map((item: any) => [item.id || item.value, item])).values(),
+  ) as T[];
 
   // Handle scroll to load more
   const handleScroll = useCallback(

@@ -20,12 +20,11 @@ export function BasicInfoSection({
     <div className="space-y-6">
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-black">Thông tin cơ bản</h2>
           <div className="flex items-center gap-2 text-sm text-primary">
-            <Info className="w-4 h-4" />
+            {/* <Info className="w-4 h-4" />
             <span>
               Các trường sẽ tự động điền khi chọn SOP, SLA, SLA Shift và SLA Task
-            </span>
+            </span> */}
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -52,7 +51,7 @@ export function BasicInfoSection({
               type="number"
               value={formData.durationMinutes || ""}
               onChange={(e) => updateField("durationMinutes", Number(e.target.value))}
-              placeholder="Sẽ tự động tính từ SLA Shift"
+              placeholder="Nhập thời gian thực hiện (phút)"
               className="bg-white border-[#e5e5e5]"
             />
             {errors.durationMinutes && (

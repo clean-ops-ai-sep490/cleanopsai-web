@@ -12,8 +12,10 @@ import {
   deleteTaskSchedule,
   activateTaskSchedule,
   deactivateTaskSchedule,
+  getTaskSchedulesByWorkArea,
   TaskSchedulesPaginatedRequest,
 } from "@/lib/task-schedule-api";
+import { PaginatedRequest } from "@/types/common";
 import {
   TaskSchedule,
   CreateTaskScheduleData,
@@ -28,6 +30,8 @@ export const taskScheduleKeys = {
     [...taskScheduleKeys.lists(), params] as const,
   details: () => [...taskScheduleKeys.all, "detail"] as const,
   detail: (id: string) => [...taskScheduleKeys.details(), id] as const,
+  byWorkArea: (workAreaId: string, params: PaginatedRequest) =>
+    [...taskScheduleKeys.all, "byWorkArea", workAreaId, params] as const,
 };
 
 // Get paginated task schedules
@@ -64,33 +68,7 @@ export function useCreateTaskSchedule() {
   });
 }
 
-// Create task schedule with work area supervisor assignment mutation
-export function useCreateTaskScheduleWithAssignment() {
-  const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async (
-      data: CreateTaskScheduleData & {
-        supervisorId: string;
-        workAreaDetailName?: string;
-        workAreaDetailArea?: number;
-      },
-    ) => {
-      const { createTaskScheduleWithAssignment } =
-        await import("@/lib/task-schedule-api");
-      return createTaskScheduleWithAssignment(data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: taskScheduleKeys.lists() });
-      // Also invalidate work area supervisor queries if they exist
-      queryClient.invalidateQueries({ queryKey: ["workAreaSupervisors"] });
-      apiToasts.createSuccess("lịch trình và phân công giám sát");
-    },
-    onError: (error: any) => {
-      apiToasts.createError("lịch trình");
-    },
-  });
-}
 
 // Update task schedule mutation
 export function useUpdateTaskSchedule() {
@@ -157,5 +135,17 @@ export function useDeactivateTaskSchedule() {
     onError: (error: any) => {
       apiToasts.updateError("hủy kích hoạt lịch trình");
     },
+  });
+}
+
+// Get task schedules by work area
+export function useTaskSchedulesByWorkArea(
+  workAreaId: string,
+  params: PaginatedRequest = {},
+) {
+  return useQuery({
+    queryKey: taskScheduleKeys.byWorkArea(workAreaId, params),
+    queryFn: () => getTaskSchedulesByWorkArea(workAreaId, params),
+    enabled: !!workAreaId,
   });
 }

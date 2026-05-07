@@ -36,7 +36,7 @@ export function StatsCard({
             {helper ? <p className="text-sm text-slate-500">{helper}</p> : null}
           </div>
           {icon ? (
-            <div className={cn("rounded-2xl p-3", toneClass[tone])}>{icon}</div>
+            <div className={cn("rounded-[var(--app-radius-sm)] p-3", toneClass[tone])}>{icon}</div>
           ) : null}
         </div>
       </CardContent>

@@ -18,6 +18,7 @@ export interface SOP {
     id: string;
     name: string;
   } | null;
+  sopSteps?: SOPStep[];
 }
 
 export interface SOPStep {

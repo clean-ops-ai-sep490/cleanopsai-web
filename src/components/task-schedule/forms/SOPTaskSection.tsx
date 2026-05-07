@@ -1,18 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useSOPs } from "@/hooks/useSOPs";
-import { useSLAQuery } from "@/hooks/useSLAQuery";
-import { getSLAShiftsBySLA, getSLATasksBySLA } from "@/lib/sla-api";
-import { getSOPById } from "@/lib/sop-api";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { getSOPs, getSOPById } from "@/lib/sop-api";
+import { getSLAsPaginated, getSLAById, getSLAShiftsBySLA, getSLATasksBySLA } from "@/lib/sla-api";
 import { useQuery } from "@tanstack/react-query";
 import type { SLA, SLAShift, SLATask } from "@/types/sla";
 import type { SOP } from "@/types/sop";
@@ -35,44 +27,41 @@ export function SOPTaskSection({
   updateField,
   onAutoFill,
 }: SOPTaskSectionProps) {
-  // Use state only for tracking internal selection if needed, 
-  // but better to use formData directly for consistency.
   const selectedSlaId = formData.slaId;
   const selectedSopId = formData.sopId;
   const selectedSlaShiftId = formData.slaShiftId;
   const selectedSlaTaskId = formData.slaTaskId;
 
-  // Fetch SOPs from API
-  const { data: sopsData, isLoading: sopsLoading } = useSOPs();
-  const sops = sopsData?.content || [];
-
-  // Fetch all SLAs
-  const { data: slaData, isLoading: slaLoading } = useSLAQuery();
-  const slas = slaData?.slas || [];
-
-  // Fetch SLA Shifts based on selected SLA
-  const { data: slaShifts = [], isLoading: shiftsLoading } = useQuery({
-    queryKey: ["slaShifts", selectedSlaId],
-    queryFn: () => getSLAShiftsBySLA(selectedSlaId),
-    enabled: !!selectedSlaId,
-  });
-
-  // Fetch SLA Tasks based on selected SLA
-  const { data: slaTasks = [], isLoading: tasksLoading } = useQuery({
-    queryKey: ["slaTasks", selectedSlaId],
-    queryFn: () => getSLATasksBySLA(selectedSlaId),
-    enabled: !!selectedSlaId,
-  });
-
-  // Fetch SOP details when selected
+  // Fetch only the selected SOP details
   const { data: selectedSop } = useQuery({
     queryKey: ["sop", selectedSopId],
     queryFn: () => getSOPById(selectedSopId),
     enabled: !!selectedSopId,
   });
 
-  // Get selected SLA, SLA Shift, and SLA Task objects
-  const selectedSla = slas.find((sla) => sla.id === selectedSlaId);
+  // Fetch only the selected SLA details
+  const { data: selectedSlaData } = useQuery({
+    queryKey: ["sla", selectedSlaId],
+    queryFn: () => getSLAById(selectedSlaId),
+    enabled: !!selectedSlaId,
+  });
+  const selectedSla = Array.isArray(selectedSlaData) ? selectedSlaData[0] : selectedSlaData;
+
+  // Fetch SLA Shifts based on selected SLA
+  const { data: slaShifts = [] } = useQuery({
+    queryKey: ["slaShifts", selectedSlaId],
+    queryFn: () => getSLAShiftsBySLA(selectedSlaId),
+    enabled: !!selectedSlaId,
+  });
+
+  // Fetch SLA Tasks based on selected SLA
+  const { data: slaTasks = [] } = useQuery({
+    queryKey: ["slaTasks", selectedSlaId],
+    queryFn: () => getSLATasksBySLA(selectedSlaId),
+    enabled: !!selectedSlaId,
+  });
+
+  // Get other selected objects from the lists we already have
   const selectedSlaShift = slaShifts.find(
     (shift) => shift.id === selectedSlaShiftId,
   );
@@ -80,10 +69,9 @@ export function SOPTaskSection({
     (task) => task.id === selectedSlaTaskId,
   );
 
-  // Auto-fill form when all required selections are made
+  // Auto-fill form when all required selections are present
   useEffect(() => {
     if (selectedSop && selectedSla && selectedSlaShift && selectedSlaTask) {
-      // Call the callback to notify parent component
       if (onAutoFill) {
         onAutoFill({
           sop: selectedSop,
@@ -93,138 +81,104 @@ export function SOPTaskSection({
         });
       }
     }
-  }, [selectedSop, selectedSla, selectedSlaShift, selectedSlaTask, onAutoFill]);
+  }, [
+    selectedSop?.id,
+    selectedSla?.id,
+    selectedSlaShift?.id,
+    selectedSlaTask?.id,
+    onAutoFill,
+  ]);
 
   const handleSlaChange = (slaId: string) => {
     updateField("slaId", slaId);
-    // Reset dependent fields when SLA changes
     updateField("slaShiftId", "");
     updateField("slaTaskId", "");
+    // Reset location selections when SLA changes
+    updateField("locationId", "");
+    updateField("zoneId", "");
+    updateField("workAreaId", "");
+    updateField("workAreaDetailId", "");
+    updateField("displayLocation", "");
   };
 
   const handleSopChange = (sopId: string) => {
     updateField("sopId", sopId);
   };
 
-  const handleSlaShiftChange = (shiftId: string) => {
-    updateField("slaShiftId", shiftId);
-  };
-
-  const handleSlaTaskChange = (taskId: string) => {
-    updateField("slaTaskId", taskId);
-  };
-
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-black mb-4">
-          Cấu hình SOP & Task
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label>SOP *</Label>
-            <Select onValueChange={handleSopChange} value={selectedSopId || ""}>
-              <SelectTrigger className="bg-white border-[#e5e5e5]">
-                <SelectValue
-                  placeholder={sopsLoading ? "Đang tải..." : "Chọn SOP"}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {sops.map((sop) => (
-                  <SelectItem key={sop.id} value={sop.id}>
-                    {sop.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.sopId && (
-              <p className="text-sm text-red-500">{errors.sopId}</p>
-            )}
-          </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="space-y-2">
+        <Label>SOP *</Label>
+        <SearchableSelect
+          value={selectedSopId || ""}
+          onValueChange={handleSopChange}
+          placeholder="Chọn SOP"
+          searchPlaceholder="Tìm kiếm SOP..."
+          emptyMessage="Không tìm thấy SOP"
+          useInfiniteLoading={true}
+          pageSize={10}
+          queryKey={["sops", "infinite"]}
+          queryFn={(page, pageSize, search) => getSOPs({ pageNumber: page, pageSize, search })}
+          getItemById={getSOPById}
+        />
+        {errors.sopId && <p className="text-xs text-red-500">{errors.sopId}</p>}
+      </div>
 
-          <div className="space-y-2">
-            <Label>SLA *</Label>
-            <Select onValueChange={handleSlaChange} value={selectedSlaId || ""}>
-              <SelectTrigger className="bg-white border-[#e5e5e5]">
-                <SelectValue
-                  placeholder={slaLoading ? "Đang tải..." : "Chọn SLA"}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {slas.map((sla) => (
-                  <SelectItem key={sla.id} value={sla.id}>
-                    {sla.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.slaId && (
-              <p className="text-sm text-red-500">{errors.slaId}</p>
-            )}
-          </div>
+      <div className="space-y-2">
+        <Label>SLA *</Label>
+        <SearchableSelect
+          value={selectedSlaId || ""}
+          onValueChange={handleSlaChange}
+          placeholder="Chọn SLA"
+          searchPlaceholder="Tìm kiếm SLA..."
+          emptyMessage="Không tìm thấy SLA"
+          useInfiniteLoading={true}
+          pageSize={10}
+          queryKey={["slas", "infinite"]}
+          queryFn={(page, pageSize, search) => getSLAsPaginated(page, pageSize, { search })}
+          getItemById={async (id) => {
+            const res = await getSLAById(id);
+            return Array.isArray(res) ? res[0] : res;
+          }}
+        />
+        {errors.slaId && <p className="text-xs text-red-500">{errors.slaId}</p>}
+      </div>
 
-          <div className="space-y-2">
-            <Label>Ca làm việc *</Label>
-            <Select
-              onValueChange={handleSlaShiftChange}
-              value={selectedSlaShiftId || ""}
-              disabled={!selectedSlaId}
-            >
-              <SelectTrigger className="bg-white border-[#e5e5e5]">
-                <SelectValue
-                  placeholder={
-                    !selectedSlaId
-                      ? "Chọn SLA trước"
-                      : shiftsLoading
-                        ? "Đang tải..."
-                        : "Chọn ca làm việc"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {slaShifts.map((shift) => (
-                  <SelectItem key={shift.id} value={shift.id}>
-                    {shift.name} ({shift.startTime} - {shift.endTime})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.slaShiftId && (
-              <p className="text-sm text-red-500">{errors.slaShiftId}</p>
-            )}
-          </div>
+      <div className="space-y-2">
+        <Label>Ca làm việc *</Label>
+        <SearchableSelect
+          value={selectedSlaShiftId || ""}
+          onValueChange={(id) => updateField("slaShiftId", id)}
+          placeholder={!selectedSlaId ? "Chọn SLA trước" : "Chọn ca làm việc"}
+          disabled={!selectedSlaId}
+          loadItems={async () => ({
+            items: slaShifts.map((shift) => ({
+              id: shift.id,
+              name: `${shift.name} (${shift.startTime?.substring(0, 5) || "--:--"} - ${shift.endTime?.substring(0, 5) || "--:--"})`,
+            })),
+            totalCount: slaShifts.length,
+          })}
+        />
+        {errors.slaShiftId && (
+          <p className="text-xs text-red-500">{errors.slaShiftId}</p>
+        )}
+      </div>
 
-          <div className="space-y-2">
-            <Label>SLA Task *</Label>
-            <Select
-              onValueChange={handleSlaTaskChange}
-              value={selectedSlaTaskId || ""}
-              disabled={!selectedSlaId}
-            >
-              <SelectTrigger className="bg-white border-[#e5e5e5]">
-                <SelectValue
-                  placeholder={
-                    !selectedSlaId
-                      ? "Chọn SLA trước"
-                      : tasksLoading
-                        ? "Đang tải..."
-                        : "Chọn SLA Task"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {slaTasks.map((task) => (
-                  <SelectItem key={task.id} value={task.id}>
-                    {task.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.slaTaskId && (
-              <p className="text-sm text-red-500">{errors.slaTaskId}</p>
-            )}
-          </div>
-        </div>
+      <div className="space-y-2">
+        <Label>SLA Task *</Label>
+        <SearchableSelect
+          value={selectedSlaTaskId || ""}
+          onValueChange={(id) => updateField("slaTaskId", id)}
+          placeholder={!selectedSlaId ? "Chọn SLA trước" : "Chọn SLA Task"}
+          disabled={!selectedSlaId}
+          loadItems={async () => ({
+            items: slaTasks.map((task) => ({ id: task.id, name: task.name })),
+            totalCount: slaTasks.length,
+          })}
+        />
+        {errors.slaTaskId && (
+          <p className="text-xs text-red-500">{errors.slaTaskId}</p>
+        )}
       </div>
     </div>
   );

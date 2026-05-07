@@ -17,6 +17,7 @@ export interface MultiSelectOption {
   value: string;
   label: string;
   description?: string;
+  imageUrl?: string;
 }
 
 interface MultiSelectProps {
@@ -233,10 +234,10 @@ export function MultiSelect({
       {Array.from({ length: 3 }).map((_, index) => (
         <div
           key={index}
-          className="flex items-center px-2 py-1.5 rounded-md animate-pulse"
+          className="flex items-center px-2 py-1.5 rounded-[var(--app-radius-sm)] animate-pulse"
         >
-          <div className="w-4 h-4 bg-gray-200 rounded mr-2"></div>
-          <div className="h-4 bg-gray-200 rounded flex-1"></div>
+          <div className="w-4 h-4 bg-gray-200 rounded-[var(--app-radius-sm)] mr-2"></div>
+          <div className="h-4 bg-gray-200 rounded-[var(--app-radius-sm)] flex-1"></div>
         </div>
       ))}
     </div>
@@ -260,12 +261,12 @@ export function MultiSelect({
           aria-expanded={open}
           disabled={disabled}
           className={cn(
-            "w-full justify-between h-8 px-3 py-1 text-left font-normal",
+            "w-full justify-between h-auto min-h-8 px-3 py-1.5 text-left font-normal whitespace-normal",
             className,
           )}
           onKeyDown={handleKeyDown}
         >
-          <div className="flex items-center gap-1 flex-1 min-w-0">
+          <div className="flex items-center gap-1 flex-1 min-w-0 flex-wrap">
             {selectedOptions.length === 0 ? (
               <span className="text-gray-500 truncate">{placeholder}</span>
             ) : (
@@ -330,7 +331,7 @@ export function MultiSelect({
               value={currentSearchQuery}
               onChange={(e) => setCurrentSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="flex h-11 w-full rounded-md bg-white py-3 text-sm text-black outline-none placeholder:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-11 w-full rounded-[var(--app-radius-sm)] bg-white py-3 text-sm text-black outline-none placeholder:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
 
@@ -359,7 +360,7 @@ export function MultiSelect({
                     <div
                       key={option.value}
                       className={cn(
-                        "relative flex cursor-default select-none items-start rounded-md px-2 py-1.5 text-sm outline-none transition-colors duration-200",
+                        "relative flex cursor-pointer select-none items-start rounded-[var(--app-radius-sm)] px-2 py-1.5 text-sm outline-none transition-colors duration-200",
                         // Keyboard selection styling
                         selectedIndex === index
                           ? "bg-primary-soft text-primary"
@@ -377,13 +378,24 @@ export function MultiSelect({
                             : "opacity-0",
                         )}
                       />
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className="font-medium">{option.label}</span>
-                        {option.description && (
-                          <span className="text-xs text-gray-500 mt-0.5">
-                            {option.description}
-                          </span>
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        {option.imageUrl && (
+                          <div className="w-10 h-10 rounded-[var(--app-radius-sm)] overflow-hidden flex-shrink-0 border border-gray-100 shadow-sm bg-gray-50 mt-0.5">
+                            <img
+                              src={option.imageUrl}
+                              alt={option.label}
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
                         )}
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <span className="font-medium text-gray-900">{option.label}</span>
+                          {option.description && (
+                            <span className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                              {option.description}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

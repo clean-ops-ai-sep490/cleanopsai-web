@@ -1,11 +1,11 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import type { ZoneFormData } from "@/types/contract";
-import { useAllLocations } from "@/hooks/useLocations";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { getLocationsPaginatedNew, getLocationById } from "@/lib/location-api";
 
 type Props = {
   initialData?: any | null;
@@ -23,8 +23,6 @@ export default function ZoneForm({ initialData, onSubmit, onCancel }: Props) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
-
-  const { data: locations } = useAllLocations();
 
   useEffect(() => {
     if (initialData) {
@@ -63,7 +61,6 @@ export default function ZoneForm({ initialData, onSubmit, onCancel }: Props) {
 
   return (
     <div className="space-y-5">
-
       {success && (
         <div className="text-green-600 flex items-center gap-2">
           <CheckCircle className="w-4 h-4" />
@@ -79,39 +76,58 @@ export default function ZoneForm({ initialData, onSubmit, onCancel }: Props) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          placeholder="Tên khu vực"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-        />
-        {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
+        <div className="space-y-1">
+          <Label>Tên khu vực *</Label>
+          <Input
+            placeholder="Tên khu vực"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+          {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
+        </div>
 
-        <Input
-          placeholder="Mô tả"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-        />
+        <div className="space-y-1">
+          <Label>Mô tả</Label>
+          <Input
+            placeholder="Mô tả"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+        </div>
 
-        <select
-          value={form.locationId}
-          onChange={(e) =>
-            setForm({ ...form, locationId: e.target.value })
-          }
-          className="w-full border rounded-md px-3 py-2 text-sm"
-        >
-          <option value="">Chọn vị trí</option>
-          {locations?.map((l: any) => (
-            <option key={l.id} value={l.id}>
-              {l.name}
-            </option>
-          ))}
-        </select>
+        <div className="space-y-1">
+          <Label>Vị trí (Location) *</Label>
+          <SearchableSelect
+            value={form.locationId}
+            onValueChange={(value) => setForm({ ...form, locationId: value })}
+            placeholder="Chọn vị trí"
+            useInfiniteLoading={true}
+            pageSize={10}
+            queryKey={["locations", "infinite"]}
+            queryFn={(page, pageSize, search) =>
+              getLocationsPaginatedNew(page, pageSize, { search }).then(res => ({
+                ...res,
+                content: res.content.map(item => ({
+                  ...item,
+                  id: item.id || "",
+                  name: item.name || ""
+                }))
+              }))
+            }
+            getItemById={(id) => 
+              getLocationById(id).then(item => ({
+                ...item,
+                id: item.id || "",
+                name: item.name || ""
+              }))
+            }
+          />
+          {errors.locationId && (
+            <p className="text-red-500 text-xs">{errors.locationId}</p>
+          )}
+        </div>
 
-        {errors.locationId && (
-          <p className="text-red-500 text-xs">{errors.locationId}</p>
-        )}
-
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="outline" onClick={onCancel}>
             Hủy
           </Button>

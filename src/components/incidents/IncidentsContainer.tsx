@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, ClipboardPlus, RefreshCw } from "lucide-react";
+import { AlertTriangle, ClipboardPlus } from "lucide-react";
 import { toastUtils } from "@/lib/utils/toast-utils";
 import { IssueReportsTable } from "./IssueReportsTable";
 import { EmergencyLeaveDashboard } from "./EmergencyLeaveDashboard";
@@ -14,6 +12,9 @@ import {
 } from "@/lib/issue-report-api";
 import { getEmergencyLeaveRequestsPaginated } from "@/lib/emergency-leave-request-api";
 import { useStartTask } from "@/hooks/useTaskActions";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { motion } from "framer-motion";
+import { PageHeader } from "@/components/ui/page-header";
 
 type TabKey = "issues" | "requests";
 
@@ -101,14 +102,9 @@ export function IncidentsContainer() {
   if (issueReportsLoading || emergencyLeaveRequestsLoading) {
     return (
       <div className="space-y-8">
-        <PageHeader />
-        <div className="flex items-center justify-center py-20">
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-[2.5px] border-gray-200 border-t-[#1a80a2]" />
-            <p className="text-sm text-gray-400 tracking-wide">
-              Đang tải dữ liệu...
-            </p>
-          </div>
+        <PageHeader title="Sự cố & Yêu cầu" description="Đang tải dữ liệu..." />
+        <div className="flex items-center justify-center py-32 bg-white rounded-2xl border border-slate-100 shadow-none">
+          <LoadingSpinner label="Đang tải dữ liệu sự cố..." />
         </div>
       </div>
     );
@@ -118,28 +114,19 @@ export function IncidentsContainer() {
   if (issueReportsError) {
     return (
       <div className="space-y-8">
-        <PageHeader />
-        <div className="flex flex-col items-center justify-center gap-4 py-20">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50">
-            <AlertTriangle className="h-6 w-6 text-red-400" />
+        <PageHeader title="Sự cố & Yêu cầu" description="Lỗi kết nối máy chủ" />
+        <div className="flex flex-col items-center justify-center gap-4 py-20 bg-white rounded-2xl border border-slate-100 shadow-none">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50/50">
+            <AlertTriangle className="h-8 w-8 text-rose-500" />
           </div>
           <div className="text-center">
-            <p className="text-sm font-medium text-gray-900">
-              Không thể tải dữ liệu
+            <p className="text-base font-semibold text-slate-900">
+              Không thể kết nối máy chủ
             </p>
-            <p className="mt-1 text-xs text-gray-400">
-              Vui lòng kiểm tra kết nối và thử lại
+            <p className="mt-1 text-sm text-slate-400">
+              Vui lòng kiểm tra lại kết nối mạng của bạn
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetchIssueReports()}
-            className="mt-1"
-          >
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-            Thử lại
-          </Button>
         </div>
       </div>
     );
@@ -170,51 +157,61 @@ export function IncidentsContainer() {
   ];
 
   return (
-    <div className="space-y-6">
-      <PageHeader />
+    <div className="space-y-8 pb-10">
+      <PageHeader 
+        title="Sự cố & Yêu cầu" 
+        description="Quản lý báo cáo sự cố và yêu cầu nghỉ phép khẩn cấp từ nhân viên." 
+      />
 
-      {/* ── Custom Tabs ── */}
-      <div className="flex items-center gap-1 border-b border-gray-100">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.key;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`
-                relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all duration-200
-                ${
-                  isActive
-                    ? "text-primary"
-                    : "text-gray-400 hover:text-gray-600"
-                }
-              `}
-            >
-              {tab.icon}
-              <span>{tab.label}</span>
-              {tab.count !== undefined && (
-                <span
-                  className={`text-xs tabular-nums ${isActive ? "text-primary/60" : "text-gray-300"}`}
-                >
-                  {tab.count}
+      {/* ── Tabs System ── */}
+      <div className="flex items-center justify-between border-b border-slate-100 pb-px">
+        <div className="flex items-center gap-1">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`
+                  relative flex items-center gap-2.5 px-6 py-3.5 text-sm font-semibold transition-all duration-300
+                  ${
+                    isActive
+                      ? "text-primary"
+                      : "text-slate-400 hover:text-slate-600 hover:bg-slate-50/50"
+                  }
+                  rounded-t-xl
+                `}
+              >
+                <span className={`transition-transform duration-300 ${isActive ? "scale-110" : "scale-100 opacity-70"}`}>
+                  {tab.icon}
                 </span>
-              )}
-              {(tab.badgeCount ?? 0) > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-semibold text-white tabular-nums">
-                  {tab.badgeCount}
-                </span>
-              )}
-              {/* Active indicator */}
-              {isActive && (
-                <span className="absolute bottom-0 left-0 right-0 h-[2px] rounded-t-full bg-primary" />
-              )}
-            </button>
-          );
-        })}
+                <span>{tab.label}</span>
+                
+                {tab.badgeCount !== undefined && tab.badgeCount > 0 && (
+                  <span className={`
+                    flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold
+                    bg-rose-500 text-white ml-1
+                  `}>
+                    {tab.badgeCount}
+                  </span>
+                )}
+
+                {/* Active Underline */}
+                {isActive && (
+                  <motion.div 
+                    layoutId="activeTab"
+                    className="absolute bottom-0 left-0 right-0 h-[3px] bg-primary rounded-t-full"
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
+
       {/* ── Content ── */}
-      <div>
+      <div className="pt-2">
         {activeTab === "issues" && (
           <IssueReportsTable
             issues={issueReports}
@@ -226,20 +223,6 @@ export function IncidentsContainer() {
         )}
         {activeTab === "requests" && <EmergencyLeaveDashboard />}
       </div>
-    </div>
-  );
-}
-
-/* ── Page Header Component ── */
-function PageHeader() {
-  return (
-    <div>
-      <h1 className="text-xl font-semibold tracking-tight text-gray-900">
-        Sự cố & Yêu cầu
-      </h1>
-      <p className="mt-1 text-sm text-gray-400">
-        Quản lý báo cáo sự cố và yêu cầu nghỉ phép khẩn cấp từ nhân viên
-      </p>
     </div>
   );
 }

@@ -9,9 +9,11 @@ import {
   Zap,
   Workflow,
   Calendar,
+  MapPin,
 } from "lucide-react";
-import { useRole } from "@/hooks/useRole";
+import { useRole, UserRole } from "@/hooks/useRole";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLoading } from "@/contexts/LoadingContext";
 
 const navigation = [
   {
@@ -21,13 +23,13 @@ const navigation = [
         name: "Bảng điều khiển",
         href: "/manager",
         icon: LayoutDashboard,
-        roles: ["1"],
+        roles: [UserRole.Manager],
       },
       {
         name: "Sự cố & Yêu cầu",
         href: "/manager/incidents",
         icon: AlertTriangle,
-        roles: ["1"],
+        roles: [UserRole.Manager],
       },
     ],
   },
@@ -38,19 +40,25 @@ const navigation = [
         name: "Bộ kích hoạt SLA",
         href: "/manager/sla-trigger",
         icon: Zap,
-        roles: ["1"],
+        roles: [UserRole.Manager],
       },
       {
         name: "Quy trình làm việc",
         href: "/manager/workflow",
         icon: Workflow,
-        roles: ["1"],
+        roles: [UserRole.Manager],
       },
       {
         name: "Lịch trình công việc",
         href: "/manager/task-schedule",
         icon: Calendar,
-        roles: ["1"],
+        roles: [UserRole.Manager],
+      },
+      {
+        name: "Quản lý giám sát khu vực",
+        href: "/manager/work-area-supervisors",
+        icon: MapPin,
+        roles: [UserRole.Manager],
       },
     ],
   },
@@ -60,10 +68,13 @@ export function Sidebar() {
   const pathname = usePathname();
   const { role } = useRole();
 
+  const { startLoading } = useLoading();
   const filteredNavigation = navigation
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => item.roles.includes(role || "")),
+      items: section.items.filter(
+        (item) => role && item.roles.includes(role as UserRole),
+      ),
     }))
     .filter((section) => section.items.length > 0);
 
@@ -97,15 +108,17 @@ export function Sidebar() {
               {section.items.map((item) => {
                 const isActive =
                   pathname === item.href ||
-                  (pathname.startsWith(item.href + "/") && item.href !== "/manager");
+                  (pathname.startsWith(item.href + "/") &&
+                    item.href !== "/manager");
                 const IconComponent = item.icon;
 
                 return (
                   <li key={item.name} className="list-none">
                     <Link
                       href={item.href}
+                      onClick={() => !isActive && startLoading(`Đang chuyển tới ${item.name}...`)}
                       className={cn(
-                        "group relative flex items-center px-6 py-3.5 text-[15px] font-medium transition-colors duration-200 no-underline",
+                        "group relative flex items-center px-6 py-3.5 text-[15px] font-medium transition-colors duration-200 no-underline cursor-pointer",
                         isActive
                           ? "text-primary"
                           : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",
@@ -117,7 +130,11 @@ export function Sidebar() {
                             initial={{ scaleX: 0, originX: 1, opacity: 0 }}
                             animate={{ scaleX: 1, opacity: 1 }}
                             exit={{ scaleX: 0, originX: 1, opacity: 0 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            transition={{
+                              type: "spring",
+                              stiffness: 300,
+                              damping: 30,
+                            }}
                             className="absolute inset-0 bg-primary-soft"
                           />
                         )}
@@ -126,15 +143,21 @@ export function Sidebar() {
                       <IconComponent
                         className={cn(
                           "relative z-10 mr-4 h-5 w-5 transition-colors duration-200",
-                          isActive ? "text-primary" : "text-slate-400 group-hover:text-slate-600",
+                          isActive
+                            ? "text-primary"
+                            : "text-slate-400 group-hover:text-slate-600",
                         )}
                       />
                       <span className="relative z-10 flex-1">{item.name}</span>
-                      
+
                       {isActive && (
                         <motion.div
                           layoutId="manager-active-border"
-                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
+                          }}
                           className="absolute right-0 top-0 bottom-0 w-1 bg-primary z-20"
                         />
                       )}

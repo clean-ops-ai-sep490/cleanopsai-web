@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Eye } from "lucide-react";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import type { NotificationRecipientDto } from "@/types/notification";
@@ -54,21 +54,13 @@ export function NotificationItem({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={(e) => onMarkAsRead(notification.id, e)}
+                onClick={(e) => onMarkAsRead(notification.notificationId, e)}
                 className="h-6 w-6 p-0"
                 title="Đánh dấu đã đọc"
               >
                 <Check className="h-3 w-3" />
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0"
-              title="Xem chi tiết"
-            >
-              <Eye className="h-3 w-3" />
-            </Button>
           </div>
         </div>
       </div>

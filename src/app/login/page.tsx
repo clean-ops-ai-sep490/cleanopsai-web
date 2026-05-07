@@ -9,7 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+
 export default function LoginPage() {
+
   const { login, isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -47,14 +50,17 @@ export default function LoginPage() {
 
   if (isLoading || isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--app-bg)] px-4">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[var(--app-primary)]" />
-          <p className="text-sm font-medium text-slate-500">Đang chuyển hướng...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] px-4">
+        <LoadingSpinner 
+          size={50} 
+          label="Hệ thống đang chuyển hướng bạn..." 
+        />
       </div>
     );
   }
+
+
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--app-bg)] px-4">
