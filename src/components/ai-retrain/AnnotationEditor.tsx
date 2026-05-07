@@ -111,6 +111,14 @@ function statusBadgeClass(status: string) {
   return "bg-blue-50 text-blue-700 border-blue-200";
 }
 
+const statusLabels: Record<string, string> = {
+  QUEUED: "Đang chờ",
+  INPROGRESS: "Đang xử lý",
+  SUBMITTED: "Đã gửi",
+  APPROVED: "Đã duyệt",
+  REJECTED: "Đã từ chối",
+};
+
 function LoadingSpinner() {
   return (
     <div className="flex min-h-[240px] items-center justify-center">
@@ -120,7 +128,7 @@ function LoadingSpinner() {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return "N/A";
+  if (!value) return "Chưa có";
   return new Date(value).toLocaleString("vi-VN");
 }
 
@@ -310,10 +318,10 @@ export function AnnotationEditor() {
         reviewerNote: note.trim() || undefined,
         submit,
       });
-      toastUtils.success(submit ? "Đã submit annotation" : "Đã lưu draft");
+      toastUtils.success(submit ? "Đã gửi nhãn" : "Đã lưu nháp");
     } catch (error) {
-      console.error("Failed to save annotation:", error);
-      toastUtils.error("Không thể lưu annotation");
+      console.error("Không thể lưu nhãn:", error);
+      toastUtils.error("Không thể lưu nhãn");
     }
   };
 
@@ -323,10 +331,10 @@ export function AnnotationEditor() {
         candidateId,
         note: note.trim() || undefined,
       });
-      toastUtils.success("Đã approve annotation candidate");
+      toastUtils.success("Đã duyệt ảnh gán nhãn");
     } catch (error) {
-      console.error("Failed to approve annotation:", error);
-      toastUtils.error("Không thể approve annotation candidate");
+      console.error("Không thể duyệt ảnh gán nhãn:", error);
+      toastUtils.error("Không thể duyệt ảnh gán nhãn");
     }
   };
 
@@ -336,10 +344,10 @@ export function AnnotationEditor() {
         candidateId,
         reason: note.trim() || undefined,
       });
-      toastUtils.success("Đã reject annotation candidate");
+      toastUtils.success("Đã từ chối ảnh gán nhãn");
     } catch (error) {
-      console.error("Failed to reject annotation:", error);
-      toastUtils.error("Không thể reject annotation candidate");
+      console.error("Không thể từ chối ảnh gán nhãn:", error);
+      toastUtils.error("Không thể từ chối ảnh gán nhãn");
     }
   };
 
@@ -351,7 +359,7 @@ export function AnnotationEditor() {
     return (
       <Card>
         <CardContent className="p-8 text-center">
-          <p className="mb-4 text-red-600">Không tìm thấy annotation.</p>
+          <p className="mb-4 text-red-600">Không tìm thấy dữ liệu gán nhãn.</p>
           <Button onClick={() => router.push("/supervisor/ai-retrain")}>
             Quay lại
           </Button>
@@ -367,11 +375,11 @@ export function AnnotationEditor() {
   const approvedLocked = candidate.candidateStatus === "APPROVED";
   const readOnly = !editRequested || !canManage || approvedLocked;
   const readOnlyMessage = approvedLocked
-    ? "Approved annotations are locked để giữ ground-truth và audit retrain."
+    ? "Annotation đã duyệt sẽ bị khóa để giữ dữ liệu chuẩn và phục vụ audit retrain."
     : !editRequested
-      ? "Bạn đang ở chế độ chỉ xem. Bấm Edit từ danh sách annotation candidate để chỉnh sửa."
+      ? "Bạn đang ở chế độ chỉ xem. Bấm Chỉnh sửa từ danh sách gán nhãn để chỉnh sửa."
       : !canManage
-        ? "Tài khoản hiện tại không có quyền chỉnh sửa annotation candidate."
+        ? "Tài khoản hiện tại không có quyền chỉnh sửa ảnh gán nhãn."
         : null;
 
   return (
@@ -383,18 +391,18 @@ export function AnnotationEditor() {
             className="mb-2 inline-flex items-center text-sm text-[#1a80a2]"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Quay lại AI Retrain
+            Quay lại quy trình huấn luyện lại AI
           </Link>
           <h1 className="text-2xl font-semibold text-black">
-            Annotation Candidate
+            Ảnh chờ gán nhãn
           </h1>
           <p className="mt-1 text-gray-600">
             {candidate.environmentKey} / {candidate.requestId} /{" "}
-            {readOnly ? "View only" : "Edit mode"}
+            {readOnly ? "Chỉ xem" : "Đang chỉnh sửa"}
           </p>
         </div>
         <Badge variant="outline" className={statusBadgeClass(candidate.candidateStatus)}>
-          {candidate.candidateStatus}
+          {statusLabels[candidate.candidateStatus] || candidate.candidateStatus}
         </Badge>
       </div>
 
@@ -403,7 +411,7 @@ export function AnnotationEditor() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {readOnly ? "Ảnh gốc để xem annotation" : "Ảnh gốc để annotate"}
+                {readOnly ? "Ảnh gốc để xem nhãn" : "Ảnh gốc để gán nhãn"}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -420,14 +428,14 @@ export function AnnotationEditor() {
           {candidate.visualizationBlobUrl && (
             <Card>
               <CardHeader>
-                <CardTitle>AI visualization tham chiếu</CardTitle>
+                <CardTitle>Ảnh phân tích AI tham chiếu</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="overflow-hidden rounded-lg border bg-gray-50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={candidate.visualizationBlobUrl}
-                    alt="AI visualization tham chiếu"
+                    alt="Ảnh phân tích AI tham chiếu"
                     className="block max-h-[520px] w-full object-contain"
                   />
                 </div>
@@ -449,7 +457,7 @@ export function AnnotationEditor() {
               )}
 
               <div>
-                <label className="mb-2 block text-sm font-medium">Label</label>
+                <label className="mb-2 block text-sm font-medium">Loại nhãn</label>
                 <Select
                   value={activeLabel}
                   disabled={readOnly}
@@ -462,9 +470,9 @@ export function AnnotationEditor() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="stain_or_water">
-                      stain_or_water
+                      Vết bẩn hoặc nước
                     </SelectItem>
-                    <SelectItem value="wet_surface">wet_surface</SelectItem>
+                    <SelectItem value="wet_surface">Bề mặt ướt</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -475,12 +483,12 @@ export function AnnotationEditor() {
                   value={note}
                   disabled={readOnly}
                   onChange={(event) => setNote(event.target.value)}
-                  placeholder="Reviewer note"
+                  placeholder="Ghi chú của người duyệt"
                 />
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-medium">Labels ({labels.length})</p>
+                <p className="text-sm font-medium">Nhãn đã vẽ ({labels.length})</p>
                 <div className="max-h-[240px] space-y-2 overflow-y-auto">
                   {labels.map((label, index) => (
                     <div
@@ -508,7 +516,7 @@ export function AnnotationEditor() {
                   ))}
                   {labels.length === 0 && (
                     <p className="rounded border p-3 text-sm text-gray-500">
-                      Chưa có bbox nào.
+                      Chưa vẽ vùng nào.
                     </p>
                   )}
                 </div>
@@ -526,7 +534,7 @@ export function AnnotationEditor() {
                     ) : (
                       <Save className="mr-2 h-4 w-4" />
                     )}
-                    Lưu draft
+                    Lưu nháp
                   </Button>
                   <Button
                     disabled={busy}
@@ -538,7 +546,7 @@ export function AnnotationEditor() {
                     ) : (
                       <Send className="mr-2 h-4 w-4" />
                     )}
-                    Submit annotation
+                    Gửi nhãn
                   </Button>
                   <Button
                     disabled={busy || labels.length === 0}
@@ -550,7 +558,7 @@ export function AnnotationEditor() {
                     ) : (
                       <CheckCircle2 className="mr-2 h-4 w-4" />
                     )}
-                    Approve
+                    Duyệt
                   </Button>
                   <Button
                     disabled={busy}
@@ -563,7 +571,7 @@ export function AnnotationEditor() {
                     ) : (
                       <XCircle className="mr-2 h-4 w-4" />
                     )}
-                    Reject
+                    Từ chối
                   </Button>
                 </div>
               )}
@@ -572,23 +580,23 @@ export function AnnotationEditor() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Metadata</CardTitle>
+              <CardTitle>Thông tin hệ thống</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <p>
-                <span className="text-gray-500">Created:</span>{" "}
+                <span className="text-gray-500">Ngày tạo:</span>{" "}
                 {formatDate(candidate.createdAtUtc)}
               </p>
               <p>
-                <span className="text-gray-500">Submitted:</span>{" "}
+                <span className="text-gray-500">Ngày gửi:</span>{" "}
                 {formatDate(candidate.submittedAtUtc)}
               </p>
               <p>
-                <span className="text-gray-500">Approved:</span>{" "}
+                <span className="text-gray-500">Ngày duyệt:</span>{" "}
                 {formatDate(candidate.approvedAtUtc)}
               </p>
               <p className="break-all">
-                <span className="text-gray-500">Result:</span>{" "}
+                <span className="text-gray-500">Mã kết quả:</span>{" "}
                 {candidate.resultId}
               </p>
             </CardContent>
