@@ -53,11 +53,11 @@ export function AssignSupervisorDialog({
   // Extract unique workers from task schedules
   const workers = taskData?.content ? Array.from(
     new Map(
-      taskData.content
+      (taskData.content as any[])
         .filter((task: any) => task.assigneeId)
         .map((task: any) => [task.assigneeId, { id: task.assigneeId, name: task.assigneeName }])
     ).values()
-  ) : [];
+  ) as { id: string; name: string }[] : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,7 +112,7 @@ export function AssignSupervisorDialog({
               queryFn={(page, pageSize, search) => 
                 getAuthSupervisors({ pageNumber: page, pageSize, search }).then(res => ({
                   ...res,
-                  content: res.content.map(item => ({
+                  content: res.content.map((item: any) => ({
                     ...item,
                     id: item.id,
                     name: item.fullName
@@ -121,7 +121,7 @@ export function AssignSupervisorDialog({
               }
               getItemById={(id) => 
                 getAuthSupervisors({ pageNumber: 1, pageSize: 1 }).then(res => {
-                  const item = res.content.find(i => i.id === id);
+                  const item = res.content.find((i: any) => i.id === id);
                   return item ? { ...item, id: item.id, name: item.fullName } : null;
                 })
               }
@@ -213,22 +213,15 @@ export function AssignSupervisorDialog({
             </Button>
             <Button
               type="submit"
+              loading={assignMutation.isPending}
               disabled={
                 !selectedWorkAreaId ||
                 !selectedSupervisorId ||
-                assignMutation.isPending ||
                 workers.length === 0
               }
               className="flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-700"
             >
-              {assignMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Đang xử lý...
-                </>
-              ) : (
-                "Xác nhận phân công"
-              )}
+              Xác nhận phân công
             </Button>
           </DialogFooter>
         </form>

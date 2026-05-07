@@ -38,7 +38,7 @@ interface SearchableSelectProps<T extends SearchableSelectItem> {
     filters?: Record<string, any>,
   ) => Promise<PaginatedResponse<T>>;
   getItemById?: (id: string) => Promise<T>;
-  displayFormatter?: (item: T) => string;
+  displayFormatter?: (item: T) => React.ReactNode;
   filters?: Record<string, any>;
   pageSize?: number;
   useInfiniteLoading?: boolean;
@@ -198,10 +198,8 @@ export function SearchableSelect<T extends SearchableSelectItem>({
       setFilteredItems(items);
     } else {
       const filtered = items.filter((item) => {
-        const displayText = displayFormatter
-          ? displayFormatter(item)
-          : item.name;
-        return displayText.toLowerCase().includes(searchQuery.toLowerCase());
+        const searchContent = item.name || "";
+        return searchContent.toLowerCase().includes((searchQuery || "").toLowerCase());
       });
       setFilteredItems(filtered);
     }
@@ -387,7 +385,7 @@ export function SearchableSelect<T extends SearchableSelectItem>({
                     <div
                       key={item.id}
                       className={cn(
-                        "relative flex cursor-default select-none items-center rounded-[var(--app-radius-sm)] px-2 py-1.5 text-sm outline-none transition-colors duration-200",
+                        "relative flex cursor-pointer select-none items-center rounded-[var(--app-radius-sm)] px-2 py-1.5 text-sm outline-none transition-colors duration-200",
                         // Keyboard selection styling
                         selectedIndex === index
                           ? "bg-primary-soft text-primary"

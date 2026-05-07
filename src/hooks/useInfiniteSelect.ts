@@ -37,7 +37,7 @@ export interface UseInfiniteSelectReturn<T> {
   debouncedSearchQuery: string;
 
   // Scroll handling
-  scrollRef: React.RefObject<HTMLDivElement>;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
   handleScroll: (e: React.UIEvent<HTMLDivElement>) => void;
 }
 
@@ -57,7 +57,7 @@ export function useInfiniteSelect<T>({
   const [internalSearchQuery, setInternalSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout>();
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Use external search query if provided, otherwise use internal
   const searchQuery = externalSearchQuery ?? internalSearchQuery;

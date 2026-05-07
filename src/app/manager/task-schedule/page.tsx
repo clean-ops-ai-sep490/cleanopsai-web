@@ -24,6 +24,22 @@ import { TaskScheduleDetailDrawer } from "@/components/task-schedule/TaskSchedul
 import { TaskSchedule } from "@/types/schedule";
 import { AssignTaskScheduleDialog } from "@/components/task-schedule/dialogs/AssignTaskScheduleDialog";
 import { toastUtils } from "@/lib/utils/toast-utils";
+import { useLoading } from "@/contexts/LoadingContext";
+
+const FREQUENCY_LABELS: Record<string, string> = {
+  Daily: "Hàng ngày",
+  Weekly: "Hàng tuần",
+  Monthly: "Hàng tháng",
+  Quarterly: "Hàng quý",
+  Yearly: "Hàng năm",
+  OnDemand: "Theo yêu cầu",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  Active: "Hoạt động",
+  Paused: "Tạm dừng",
+  Inactive: "Ngừng hoạt động",
+};
 
 export default function TaskScheduleListPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -104,7 +120,7 @@ export default function TaskScheduleListPage() {
       header: "Tần suất",
       cell: (s: any) => (
         <Badge variant="outline" className="rounded-md px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider text-slate-400 border-slate-200">
-          {s.recurrenceType}
+          {FREQUENCY_LABELS[s.recurrenceType] || s.recurrenceType}
         </Badge>
       )
     },
@@ -121,9 +137,16 @@ export default function TaskScheduleListPage() {
       header: "Trạng thái",
       headerClassName: "text-right pr-6",
       className: "text-right pr-6",
-      cell: (s: any) => <StatusBadge status={s.isActive ? 'Active' : 'Paused'} />
+      cell: (s: any) => (
+        <StatusBadge 
+          status={s.isActive ? STATUS_LABELS.Active : STATUS_LABELS.Paused} 
+          variant={s.isActive ? "success" : "warning"}
+        />
+      )
     }
   ];
+
+  const { startLoading } = useLoading();
 
   return (
     <div className="space-y-8 pb-10">
@@ -132,13 +155,22 @@ export default function TaskScheduleListPage() {
         description="Quản lý các kịch bản công việc định kỳ và phân công nhân sự." 
         action={
           <div className="flex gap-2">
-            <Button variant="outline" asChild className="rounded-xl border-slate-200">
+            <Button 
+              variant="outline" 
+              className="rounded-xl border-slate-200"
+              onClick={() => startLoading("Đang tải lịch trình...")}
+              asChild
+            >
               <Link href="/manager/task-schedule/calendar">
                 <Calendar className="h-4 w-4 mr-2" />
                 Xem lịch
               </Link>
             </Button>
-            <Button asChild className="rounded-xl">
+            <Button 
+              className="rounded-xl"
+              onClick={() => startLoading("Đang chuẩn bị form...")}
+              asChild
+            >
               <Link href="/manager/task-schedule/create">
                 <Plus className="h-4 w-4 mr-2" />
                 Tạo lịch mới
@@ -168,7 +200,7 @@ export default function TaskScheduleListPage() {
                 className="rounded-xl h-10 px-4 text-xs font-bold border-slate-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-100"
               >
                 <Play className="h-3.5 w-3.5 mr-2" />
-                Bật tất cả
+                Bật
               </Button>
               <Button 
                 variant="outline"
@@ -176,7 +208,7 @@ export default function TaskScheduleListPage() {
                 className="rounded-xl h-10 px-4 text-xs font-bold border-slate-200 text-rose-600 hover:bg-rose-50 hover:border-rose-100"
               >
                 <Pause className="h-3.5 w-3.5 mr-2" />
-                Tắt tất cả
+                Tắt
               </Button>
               <Button 
                 variant="ghost" 

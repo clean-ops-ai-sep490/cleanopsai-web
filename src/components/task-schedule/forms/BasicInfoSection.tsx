@@ -51,7 +51,7 @@ export function BasicInfoSection({
               type="number"
               value={formData.durationMinutes || ""}
               onChange={(e) => updateField("durationMinutes", Number(e.target.value))}
-              placeholder="Sẽ tự động tính từ SLA Shift"
+              placeholder="Nhập thời gian thực hiện (phút)"
               className="bg-white border-[#e5e5e5]"
             />
             {errors.durationMinutes && (

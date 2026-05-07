@@ -130,42 +130,53 @@ export function RecurrenceSection({
           <Label className="font-semibold">Thời điểm bắt đầu task (Times)</Label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {times.map((time, index) => (
-              <div
-                key={`${time}-${index}`}
-                className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100 group transition-all hover:border-primary/30"
-              >
-                <div className="flex-1">
-                  <TimePicker
-                    value={time}
-                    onChange={(newVal) => updateTimeSlot(time, newVal)}
-                    format="24"
-                    className="border-none bg-transparent h-8 shadow-none focus-visible:ring-0"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeTimeSlot(time)}
-                  className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  disabled={times.length <= 1}
+              <div key={`${index}`} className="space-y-1.5">
+                {isInherited && (
+                  <Label className="text-[10px] font-bold text-gray-400 uppercase ml-1">
+                    Mốc giờ {index + 1}
+                  </Label>
+                )}
+                <div
+                  className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100 group transition-all hover:border-primary/30"
                 >
-                  <X className="w-4 h-4" />
-                </button>
+                  <div className="flex-1">
+                    <TimePicker
+                      value={time}
+                      onChange={(newVal) => updateTimeSlot(time, newVal)}
+                      format="24"
+                      className="border-none bg-transparent h-8 shadow-none focus-visible:ring-0"
+                    />
+                  </div>
+                  {!isInherited && (
+                    <button
+                      type="button"
+                      onClick={() => removeTimeSlot(time)}
+                      className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      disabled={times.length <= 1}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-dashed border-2 h-[46px] text-gray-500 hover:text-primary hover:border-primary"
-              onClick={addTimeSlot}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Thêm khung giờ
-            </Button>
+            {!isInherited && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="border-dashed border-2 h-[46px] text-gray-500 hover:text-primary hover:border-primary"
+                onClick={addTimeSlot}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Thêm khung giờ
+              </Button>
+            )}
           </div>
           <p className="text-xs text-gray-500">
-            Mỗi mốc giờ là thời điểm task bắt đầu; hệ thống sẽ kiểm tra theo
-            thời lượng thực hiện (duration).
+            {isInherited 
+              ? `Số lượng khung giờ (${times.length}) được cố định theo cấu hình SLA.`
+              : "Mỗi mốc giờ là thời điểm task bắt đầu; hệ thống sẽ kiểm tra theo thời lượng thực hiện (duration)."}
           </p>
           {errors.times && <p className="text-xs text-red-500">{errors.times}</p>}
         </div>

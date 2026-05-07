@@ -40,7 +40,7 @@ export function SupervisorSidebar() {
                 <Link
                   href={item.href}
                   className={cn(
-                    "group relative flex items-center px-6 py-3.5 text-[15px] font-medium transition-colors duration-200 no-underline",
+                    "group relative flex items-center px-6 py-3.5 text-[15px] font-medium transition-colors duration-200 no-underline cursor-pointer",
                     isActive
                       ? "text-primary"
                       : "text-slate-500 hover:bg-slate-50 hover:text-slate-900",

@@ -1,11 +1,11 @@
-﻿"use client";
+"use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { CreateTaskScheduleData, RecurrenceConfig } from "@/types/schedule";
+import { CreateTaskScheduleData, RecurrenceConfig, MonthDay } from "@/types/schedule";
 import type { SLAShift, SLATask } from "@/types/sla";
 
 // Import form sections
@@ -76,7 +76,6 @@ export interface TaskScheduleFormData {
   contractEndDate: string;
   isActive: boolean;
   workAreaDetailName: string;
-  workAreaDetailArea: number;
   selectedMonth?: number;
 }
 
@@ -85,6 +84,7 @@ interface TaskScheduleFormProps {
   onSubmit: (data: CreateTaskScheduleData) => void;
   isSubmitting?: boolean;
   submitButtonText?: string;
+  isModal?: boolean;
 }
 
 export function TaskScheduleForm({
@@ -92,7 +92,19 @@ export function TaskScheduleForm({
   onSubmit,
   isSubmitting = false,
   submitButtonText = "Luu",
+  isModal = false,
 }: TaskScheduleFormProps) {
+  // Normalize initialData to ensure camelCase keys (in case API returns PascalCase)
+  const normalizedInitialData = useMemo(() => {
+    if (!initialData) return {};
+    const normalized: any = {};
+    Object.entries(initialData).forEach(([key, value]) => {
+      const camelKey = key.charAt(0).toLowerCase() + key.slice(1);
+      normalized[camelKey] = value;
+    });
+    return normalized;
+  }, [initialData]);
+
   // Form state
   const [formData, setFormData] = useState<TaskScheduleFormData>({
     sopId: "",
@@ -109,16 +121,25 @@ export function TaskScheduleForm({
     assigneeId: "",
     assigneeName: "",
     displayLocation: "",
-    durationMinutes: 60,
+    durationMinutes: null as any,
     recurrenceType: "Daily",
     contractStartDate: "",
     contractEndDate: "",
     isActive: true,
     workAreaDetailName: "",
-    workAreaDetailArea: 0,
     selectedMonth: 1,
-    ...initialData,
+    ...normalizedInitialData,
   });
+
+  // Sync with initialData when it arrives (for edit mode)
+  useEffect(() => {
+    if (normalizedInitialData && Object.keys(normalizedInitialData).length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        ...normalizedInitialData,
+      }));
+    }
+  }, [normalizedInitialData]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [times, setTimes] = useState<string[]>([""]);
@@ -160,12 +181,12 @@ export function TaskScheduleForm({
   }, [contract]);
 
   useEffect(() => {
-    if (!initialData?.recurrenceConfig) return;
+    if (!normalizedInitialData?.recurrenceConfig) return;
 
-    const config = initialData.recurrenceConfig;
+    const config = normalizedInitialData.recurrenceConfig;
 
     if (Array.isArray(config.times) && config.times.length > 0) {
-      setTimes(config.times.map((time) => normalizeTime(time)));
+      setTimes(config.times.map((time: string) => normalizeTime(time)));
     }
     if (Array.isArray(config.daysOfWeek)) {
       setSelectedDaysOfWeek(config.daysOfWeek);
@@ -175,7 +196,7 @@ export function TaskScheduleForm({
     }
     if (Array.isArray(config.monthDays)) {
       const validMonthDays = config.monthDays.filter(
-        (md) =>
+        (md: MonthDay) =>
           md &&
           Number.isInteger(md.month) &&
           md.month >= 1 &&
@@ -191,8 +212,8 @@ export function TaskScheduleForm({
         setFormData((prev) => ({ ...prev, selectedMonth: initialMonth }));
         setDaysOfMonth(
           validMonthDays
-            .filter((md) => md.month === initialMonth)
-            .map((md) => md.day),
+            .filter((md: MonthDay) => md.month === initialMonth)
+            .map((md: MonthDay) => md.day),
         );
       }
     }
@@ -238,12 +259,7 @@ export function TaskScheduleForm({
       newErrors.durationMinutes = "Thời gian thực hiện phải lớn hơn 0 phút";
     }
 
-    if (
-      formData.workAreaDetailName &&
-      formData.workAreaDetailName.trim() === ""
-    ) {
-      newErrors.workAreaDetailName = "Tên chi tiết khu vực không được để trống";
-    }
+
 
     const normalizedTimes = Array.from(
       new Set(times.map((time) => normalizeTime(time)).filter(Boolean)),
@@ -332,27 +348,27 @@ export function TaskScheduleForm({
       setSelectedSlaShift(slaShift || null);
       setSelectedSlaTask(slaTask || null);
 
-      if (sop && slaTask) {
+      // Only auto-fill name/description if not in edit mode
+      // or if they are currently empty
+      const isEditMode = !!normalizedInitialData?.id;
+      const isCloneMode = !normalizedInitialData?.id && !!normalizedInitialData?.name;
+
+      if (sop && slaTask && !formData.name && !isCloneMode) {
         updates.name = `${slaTask.name}`;
       }
 
-      if (sop && sop.description) {
+      if (sop && sop.description && !formData.description && !isCloneMode) {
         updates.description = sop.description;
       }
 
       if (slaShift && slaShift.startTime && slaShift.endTime) {
-        const shiftWindow = getShiftWindow(
-          slaShift.startTime,
-          slaShift.endTime,
-        );
-        if (shiftWindow && shiftWindow.duration > 0) {
-          updates.durationMinutes = shiftWindow.duration;
-        }
-
+        // We no longer auto-fill durationMinutes from shift duration as per user request
+        
         const shiftStartTime = normalizeTime(
           slaShift.startTime.substring(0, 5),
         );
-        if (shiftStartTime) {
+        // Only set initial time if times array is currently empty or just has the default empty string
+        if (shiftStartTime && (times.length <= 1 && !times[0])) {
           setTimes([shiftStartTime]);
         }
       }
@@ -366,6 +382,13 @@ export function TaskScheduleForm({
 
         const config = slaTask.recurrenceConfig;
         if (config) {
+          // Initialize times array based on interval (repetitions)
+          const interval = config.interval || 1;
+          const newTimes = Array(interval).fill("");
+          
+          // If we already have some times, try to preserve them, otherwise leave empty for manager to fill
+          setTimes(newTimes);
+
           if (
             slaTask.recurrenceType === "Weekly" &&
             Array.isArray(config.daysOfWeek)
@@ -384,9 +407,9 @@ export function TaskScheduleForm({
             slaTask.recurrenceType === "Yearly" &&
             Array.isArray(config.monthDays)
           ) {
-            const validMonthDays: { month: number; day: number }[] =
-              config.monthDays.filter(
-                (md: any) =>
+        const validMonthDays: MonthDay[] =
+          config.monthDays.filter(
+            (md: MonthDay) =>
                   md &&
                   Number.isInteger(md.month) &&
                   md.month >= 1 &&
@@ -402,10 +425,10 @@ export function TaskScheduleForm({
               setDaysOfMonth(
                 validMonthDays
                   .filter(
-                    (md: { month: number; day: number }) =>
+                    (md: MonthDay) =>
                       md.month === validMonthDays[0].month,
                   )
-                  .map((md: { month: number; day: number }) => md.day),
+                  .map((md: MonthDay) => md.day),
               );
             }
           }
@@ -540,10 +563,10 @@ export function TaskScheduleForm({
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto">
+    <div className={isModal ? "w-full" : "max-w-[1200px] mx-auto"}>
       <form
         onSubmit={handleSubmit}
-        className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+        className={`grid grid-cols-1 ${isModal ? "xl:grid-cols-3" : "lg:grid-cols-3"} gap-6`}
       >
         {/* Main Content Column */}
         <div className="lg:col-span-2 space-y-6">
@@ -556,7 +579,10 @@ export function TaskScheduleForm({
             />
           </SectionCard>
 
-          <SectionCard title="Địa điểm & Khu vực">
+          <SectionCard 
+            title="Địa điểm & Khu vực"
+            className={!formData.slaId ? "opacity-60 pointer-events-none transition-opacity" : "transition-opacity"}
+          >
             <WorkAreaSection
               formData={formData}
               updateField={updateField}
@@ -564,7 +590,10 @@ export function TaskScheduleForm({
             />
           </SectionCard>
 
-          <SectionCard title="Cấu hình lặp lại">
+          <SectionCard 
+            title="Cấu hình lặp lại"
+            className={!selectedSlaTask ? "opacity-60 pointer-events-none transition-opacity" : "transition-opacity"}
+          >
             <RecurrenceSection
               formData={formData}
               updateField={updateField}
@@ -587,7 +616,10 @@ export function TaskScheduleForm({
             />
           </SectionCard>
 
-          <SectionCard title="Thông tin cơ bản">
+          <SectionCard 
+            title="Thông tin cơ bản"
+            className={!selectedSlaTask ? "opacity-60 pointer-events-none transition-opacity" : "transition-opacity"}
+          >
             <BasicInfoSection
               formData={formData}
               errors={errors}
@@ -595,7 +627,10 @@ export function TaskScheduleForm({
             />
           </SectionCard>
 
-          <SectionCard title="Phân công nhân sự">
+          <SectionCard 
+            title="Phân công nhân sự"
+            className={!selectedSlaTask || !formData.locationId ? "opacity-60 pointer-events-none transition-opacity" : "transition-opacity"}
+          >
             <AssignmentSection
               formData={formData}
               updateField={updateField}
@@ -609,17 +644,10 @@ export function TaskScheduleForm({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              loading={isSubmitting}
               className="bg-primary hover:bg-primary/90 text-white min-w-[140px] rounded-[8px]"
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Đang tạo
-                </>
-              ) : (
-                submitButtonText
-              )}
+              {submitButtonText}
             </Button>
           </div>
         </div>
@@ -649,7 +677,7 @@ export function TaskScheduleForm({
                       {contract.name}
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">
                         Ngày bắt đầu
@@ -718,7 +746,7 @@ export function TaskScheduleForm({
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 font-bold mb-1">
-                    SLA SHIFT
+                    Quy định ca làm việc
                   </p>
                   <p className="text-sm">
                     {selectedSlaShift
@@ -728,7 +756,7 @@ export function TaskScheduleForm({
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 font-bold mb-1">
-                    SLA TASK
+                    Quy định công việc
                   </p>
                   <p className="text-sm">
                     {selectedSlaTask ? selectedSlaTask.name : "Chưa chọn"}

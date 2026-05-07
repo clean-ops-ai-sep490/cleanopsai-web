@@ -16,7 +16,7 @@ import { toastUtils } from "@/lib/utils/toast-utils";
 export function useSupervisors(params?: PaginatedRequest) {
   return useQuery({
     queryKey: ["supervisors", params],
-    queryFn: () => getSupervisorsPaginated(params),
+    queryFn: () => getSupervisorsPaginated(params?.pageNumber, params?.pageSize, params),
   });
 }
 

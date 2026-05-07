@@ -93,6 +93,12 @@ export function SOPTaskSection({
     updateField("slaId", slaId);
     updateField("slaShiftId", "");
     updateField("slaTaskId", "");
+    // Reset location selections when SLA changes
+    updateField("locationId", "");
+    updateField("zoneId", "");
+    updateField("workAreaId", "");
+    updateField("workAreaDetailId", "");
+    updateField("displayLocation", "");
   };
 
   const handleSopChange = (sopId: string) => {

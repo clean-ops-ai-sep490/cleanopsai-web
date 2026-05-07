@@ -1,61 +1,57 @@
-"use client";
-
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Building2, CheckCircle, ClipboardList, Users } from "lucide-react";
-import type { DashboardData, DashboardMetrics } from "@/types/dashboard";
+import { AlertTriangle, CheckCircle2, CircleDashed, Activity } from "lucide-react";
+import type { DashboardData } from "@/types/dashboard";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 interface MetricsCardsProps {
   data: DashboardData;
-  metrics: DashboardMetrics;
 }
 
-export function MetricsCards({ data, metrics }: MetricsCardsProps) {
-  const totalWorkAreaTasks = data.workAreaStats.reduce(
-    (sum, area) => sum + area.totalTasks,
-    0,
-  );
+export function MetricsCards({ data }: MetricsCardsProps) {
+  const { taskStatusCounts } = data;
 
-  // Keep every card in the same structure so students can edit labels easily.
+  const getCount = (status: string) => 
+    taskStatusCounts.find((s) => s.status === status)?.totalTasks || 0;
+
   const cards = [
     {
-      title: "Công việc hôm nay",
-      value: data.taskSummary.totalTasksToDate,
-      subtitle: `${data.taskSummary.passedTasksToDate} hoàn thành, ${data.taskSummary.nonPassedTasksToDate} đang chờ`,
-      icon: ClipboardList,
+      title: "Chưa bắt đầu",
+      value: getCount("NotStarted"),
+      icon: CircleDashed,
+      color: "slate",
+      badge: "Đang chờ",
+      variant: "default" as const,
+    },
+    {
+      title: "Đang thực hiện",
+      value: getCount("InProgress"),
+      icon: Activity,
       color: "blue",
-      badge: "Daily",
+      badge: "Đang chạy",
+      variant: "info" as const,
     },
     {
-      title: "Tuân thủ AI",
-      value: `${data.aiComplianceRate.passedPercentage}%`,
-      subtitle: `${data.aiComplianceRate.passedChecks}/${data.aiComplianceRate.totalAutomatedEvaluatedChecks} kiểm tra đạt`,
-      icon: CheckCircle,
+      title: "Đã hoàn thành",
+      value: getCount("Completed"),
+      icon: CheckCircle2,
       color: "green",
-      badge: "Quality",
+      badge: "Hoàn thành",
+      variant: "success" as const,
     },
     {
-      title: "Khu vực hoạt động",
-      value: metrics.activeWorkAreas,
-      subtitle: `${totalWorkAreaTasks} tổng công việc`,
-      icon: Building2,
-      color: "yellow",
-      badge: "Sites",
-    },
-    {
-      title: "Sử dụng nhân lực",
-      value: `${metrics.workerUtilization.toFixed(1)}%`,
-      subtitle: `${data.topWorkers.length}/${data.workerTotal.totalWorkers} nhân viên đang hoạt động`,
-      icon: Users,
+      title: "Bị chặn",
+      value: getCount("Block"),
+      icon: AlertTriangle,
       color: "red",
-      badge: "Staff",
+      badge: "Bị chặn",
+      variant: "error" as const,
     },
   ];
 
   const colorClasses = {
+    slate: "border-slate-100 bg-slate-50 text-slate-600",
     blue: "border-blue-100 bg-blue-50 text-blue-700",
     green: "border-green-100 bg-green-50 text-green-700",
-    yellow: "border-yellow-100 bg-yellow-50 text-yellow-700",
     red: "border-red-100 bg-red-50 text-red-700",
   };
 
@@ -69,27 +65,26 @@ export function MetricsCards({ data, metrics }: MetricsCardsProps) {
         return (
           <Card
             key={card.title}
-            className="border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            className="border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
           >
             <CardContent className="p-5">
               <div className="flex items-start justify-between gap-3">
-                <div className={`rounded-lg border p-2.5 ${colorClass}`}>
+                <div className={`rounded-xl border p-2.5 ${colorClass}`}>
                   <Icon className="h-5 w-5" />
                 </div>
-                <Badge variant="outline" className="text-gray-500">
-                  {card.badge}
-                </Badge>
+                <StatusBadge 
+                  status={card.badge} 
+                  variant={card.variant} 
+                  className="px-2 py-0.5"
+                />
               </div>
 
               <div className="mt-5">
-                <p className="text-sm font-medium text-gray-500">
+                <p className="text-sm font-medium text-slate-500">
                   {card.title}
                 </p>
-                <p className="mt-2 text-3xl font-semibold tracking-tight text-gray-950">
-                  {card.value}
-                </p>
-                <p className="mt-2 text-sm leading-5 text-gray-500">
-                  {card.subtitle}
+                <p className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
+                  {card.value.toLocaleString()}
                 </p>
               </div>
             </CardContent>

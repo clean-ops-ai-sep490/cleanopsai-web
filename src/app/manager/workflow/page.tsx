@@ -22,12 +22,15 @@ import { Search, Plus, Workflow as WorkflowIcon } from "lucide-react";
 import { useSOPs } from "@/hooks/useSOPs";
 import { usePagination } from "@/hooks/usePagination";
 import { translateServiceType } from "@/lib/utils/translate";
+import { useLoading } from "@/contexts/LoadingContext";
 
 export default function WorkflowListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selected, setSelected] = useState<any | null>(null);
+  const { startLoading } = useLoading();
 
   const pagination = usePagination({ initialPageSize: 9 });
+  // ... rest of state
   const { data, isLoading, error, refetch } = useSOPs({
     pageNumber: pagination.currentPage,
     pageSize: pagination.pageSize,
@@ -53,7 +56,11 @@ export default function WorkflowListPage() {
           title="Thiết lập quy trình"
           description="Quản lý các quy trình SOP theo hướng rõ ràng, dễ xem và dễ mở chi tiết."
           action={
-            <Button asChild className="rounded-xl">
+            <Button 
+              onClick={() => startLoading("Đang chuẩn bị trình tạo SOP...")}
+              asChild 
+              className="rounded-xl"
+            >
               <Link href="/manager/workflow/create">
                 <Plus className="h-4 w-4 mr-2" />
                 Tạo SOP mới
@@ -124,7 +131,12 @@ export default function WorkflowListPage() {
                     <Button variant="ghost" size="sm" className="flex-1 rounded-lg text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-primary" onClick={() => setSelected(sop)}>
                       Chi tiết
                     </Button>
-                    <Button asChild size="sm" className="flex-1 rounded-lg">
+                    <Button 
+                      asChild 
+                      size="sm" 
+                      className="flex-1 rounded-lg"
+                      onClick={() => startLoading("Đang tải chi tiết SOP...")}
+                    >
                       <Link href={`/manager/workflow/${sop.id}`}>Mở SOP</Link>
                     </Button>
                   </div>
@@ -171,7 +183,11 @@ export default function WorkflowListPage() {
 
                 <div className="flex justify-end gap-3 pt-2">
                   <Button variant="ghost" className="text-slate-400 hover:text-slate-900" onClick={() => setSelected(null)}>Đóng</Button>
-                  <Button asChild className="rounded-xl px-6">
+                  <Button 
+                    asChild 
+                    className="rounded-xl px-6"
+                    onClick={() => startLoading("Đang tải chi tiết SOP...")}
+                  >
                     <Link href={`/manager/workflow/${selected.id}`}>Mở trang chi tiết</Link>
                   </Button>
                 </div>
