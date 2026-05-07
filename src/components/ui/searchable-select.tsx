@@ -30,7 +30,7 @@ interface SearchableSelectProps<T extends SearchableSelectItem> {
   // Legacy support - will be converted to infinite loading
   loadItems?: (search?: string) => Promise<{ items: T[]; totalCount: number }>;
   // New infinite loading props
-  queryKey?: (string | number)[];
+  queryKey?: (string | number | null | undefined)[];
   queryFn?: (
     page: number,
     pageSize: number,
@@ -76,10 +76,18 @@ export function SearchableSelect<T extends SearchableSelectItem>({
   const [cachedSelectedItem, setCachedSelectedItem] = React.useState<T | null>(
     null,
   );
+  const safeQueryKey = React.useMemo(
+    () =>
+      (queryKey || ["default"]).filter(
+        (value): value is string | number =>
+          value !== undefined && value !== null && value !== "",
+      ),
+    [queryKey],
+  );
 
   // Always call useInfiniteSelect hook, but conditionally enable it
   const infiniteSelect = useInfiniteSelect<T>({
-    queryKey: queryKey || ["default"],
+    queryKey: safeQueryKey,
     queryFn:
       queryFn ||
       (() =>

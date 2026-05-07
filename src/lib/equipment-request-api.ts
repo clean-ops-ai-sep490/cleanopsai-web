@@ -142,7 +142,7 @@ export async function getEquipmentRequestsByStatus(
   const { pageNumber = 1, pageSize = 10 } = params;
 
   try {
-    const response = await api.get(
+    const response = await api.get<any>(
       `/EquipmentRequests/status/${status}`,
       {
         params: { pageNumber, pageSize },

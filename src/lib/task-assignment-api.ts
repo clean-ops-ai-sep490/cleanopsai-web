@@ -12,6 +12,7 @@ export async function getTaskAssignments(
   const params = new URLSearchParams();
 
   if (filters?.assigneeId) params.append("assigneeId", filters.assigneeId);
+  if (filters?.workAreaId) params.append("workAreaId", filters.workAreaId);
   if (filters?.fromDate) params.append("fromDate", filters.fromDate);
   if (filters?.toDate) params.append("toDate", filters.toDate);
   if (filters?.status) params.append("status", filters.status);

@@ -5,7 +5,6 @@ import {
 } from "./useBaseQuery";
 
 import {
-  getEquipmentRequests,
   getEquipmentRequestById,
   getEquipmentRequestsByStatus,
   getEquipmentRequestsByTaskAssignment,
@@ -140,11 +139,11 @@ export function useSearchEquipmentRequests(
   return useBaseSearchQuery(
     ["equipment-requests", "search", keyword, pageNumber, pageSize],
     () =>
-      getEquipmentRequests({
+      getEquipmentRequestsPaginated({
         pageNumber,
         pageSize,
-        keyword: keyword ?? "",
-      } as any),
+        search: keyword ?? "",
+      }),
   );
 }
 

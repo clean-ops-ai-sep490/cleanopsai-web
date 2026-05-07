@@ -43,7 +43,13 @@ export default function SkillsPage() {
   const updateMutation = useUpdateSkill();
   const deleteMutation = useDeleteSkill();
 
-  const items = useMemo(() => (data?.content ?? data ?? []), [data]);
+  const items = useMemo(() => {
+    if (!data) return [];
+    return Array.isArray(data) ? data : data.content;
+  }, [data]);
+  const totalItems = Array.isArray(data)
+    ? data.length
+    : (data?.totalElements ?? 0);
 
   const handleSubmit = async (form: any) => {
     if (editing) await updateMutation.mutateAsync({ id: editing.id, data: form });
@@ -85,7 +91,7 @@ export default function SkillsPage() {
       ) : items.length === 0 ? (
         <EmptyState title="Chưa có kỹ năng" description="Kỹ năng sẽ hiển thị tại đây sau khi được tạo." icon={<Star className="h-10 w-10" />} actionLabel="Thêm kỹ năng" onAction={() => { setEditing(null); setOpen(true); }} />
       ) : (
-        <SectionCard title={`Danh sách kỹ năng (${data?.totalElements ?? data?.length ?? 0})`}>
+        <SectionCard title={`Danh sách kỹ năng (${totalItems})`}>
           <Table>
             <TableHeader>
               <TableRow>

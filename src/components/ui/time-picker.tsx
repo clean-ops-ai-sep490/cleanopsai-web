@@ -103,7 +103,7 @@ function TimePicker({
   const displayValue = React.useMemo(() => {
     if (selectedHour === null || selectedMinute === null) return "";
 
-    let hour = selectedHour;
+    const hour = selectedHour;
     if (format === "12") {
       const suffix = period;
       return `${hour.toString().padStart(2, "0")}:${selectedMinute.toString().padStart(2, "0")} ${suffix}`;

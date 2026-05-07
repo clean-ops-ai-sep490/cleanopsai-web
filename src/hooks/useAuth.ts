@@ -14,6 +14,11 @@ export type LoginRequest = {
   password: string;
 };
 
+type TokenResponse = {
+  accessToken: string;
+  refreshToken: string;
+};
+
 export type RegisterRequest = {
   email: string;
   password: string;
@@ -49,7 +54,7 @@ export function useAuth() {
 
   // ================= LOGIN =================
   const login = async (data: LoginRequest) => {
-    const res = await api.post("/Auths/login", data);
+    const res = await api.post<TokenResponse>("/Auths/login", data);
 
     const { accessToken, refreshToken } = res;
 
@@ -74,7 +79,7 @@ export function useAuth() {
 
   // ================= REFRESH TOKEN =================
   const refreshToken = async (refreshToken: string) => {
-    const res = await api.post("/Auths/refresh", {
+    const res = await api.post<TokenResponse>("/Auths/refresh", {
       refreshToken,
     });
 
