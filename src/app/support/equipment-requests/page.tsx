@@ -15,9 +15,10 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ListPageSkeleton } from "@/components/ui/page-skeleton";
 import { Search, ClipboardList, Check, X, Loader2 } from "lucide-react";
-import { useEquipmentRequests, useEquipmentRequestsByStatus, useReviewEquipmentRequest } from "@/hooks/useEquipmentRequest";
+import { useEquipmentRequest, useEquipmentRequests, useEquipmentRequestsByStatus, useReviewEquipmentRequest } from "@/hooks/useEquipmentRequest";
 import { StandardDialog } from "@/components/ui/standard-dialog";
 import { usePagination } from "@/hooks/usePagination";
+import { useTaskAssignment } from "@/hooks/useTaskAssignments";
 
 export default function SupportEquipmentRequestsPage() {
   const [search, setSearch] = useState("");
@@ -29,6 +30,10 @@ export default function SupportEquipmentRequestsPage() {
 
   const reviewMutation = useReviewEquipmentRequest();
   const pagination = usePagination({ initialPage: 1, initialPageSize: 10 });
+  const { data: detail, isLoading: loadingDetail } =
+  useEquipmentRequest(openDialog ? selected?.id : undefined);
+  const { data: taskDetail, isLoading: loadingTask } =
+  useTaskAssignment(detail?.taskAssignmentId || "");
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -120,7 +125,37 @@ export default function SupportEquipmentRequestsPage() {
       <StandardDialog open={openDialog} onOpenChange={setOpenDialog} title="Đánh giá yêu cầu">
         {selected && (
           <div className="space-y-4">
-            <div><p className="text-sm text-slate-500">Worker</p><p className="font-semibold">{selected.workerName}</p></div>
+            <div><p className="text-sm text-slate-500">Worker</p><p>{selected.workerName}</p></div>
+            <div>
+  <p className="text-sm text-slate-500">Công việc</p>
+  <p>
+    {loadingDetail ? "Loading..." : detail?.taskName || "-"}
+  </p>
+</div>
+<div>
+  <p className="text-sm text-slate-500">Thiết bị yêu cầu</p>
+
+  {loadingDetail ? (
+    <p>Loading...</p>
+  ) : detail?.items?.length ? (
+    detail.items.map((item, i) => (
+      <div key={i} className="flex justify-between border-b py-1">
+        <span>{item.equipmentName}</span>
+        <span>x{item.quantity}</span>
+      </div>
+    ))
+  ) : (
+    <p>-</p>
+  )}
+</div>
+<div>
+  <p className="text-sm text-slate-500">Vị trí</p>
+  {loadingTask ? (
+    <p>Loading...</p>
+  ) : (
+    <p>{taskDetail?.displayLocation || "-"}</p>
+  )}
+</div>
             <div><p className="text-sm text-slate-500">Lý do</p><p>{selected.reason || "-"}</p></div>
             <div><p className="text-sm text-slate-500">Trạng thái</p><Badge variant="outline"><StatusBadge status={selected.status} /></Badge></div>
             <div className="flex justify-end gap-3 pt-4">
