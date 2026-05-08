@@ -228,7 +228,7 @@ export function WorkflowCreateContainer({ sopId }: { sopId?: string }) {
   const handleSubmit = async () => {
     // Validate form
     if (!formData.name.trim()) {
-      alert("Vui lòng nhập tên SOP");
+      alert("Vui lòng nhập tên quy trình");
       return;
     }
 
@@ -330,9 +330,9 @@ export function WorkflowCreateContainer({ sopId }: { sopId?: string }) {
                   {isEditMode ? "Đang cập nhật..." : "Đang tạo..."}
                 </>
               ) : isEditMode ? (
-                "Cập nhật SOP"
+                "Cập nhật quy trình"
               ) : (
-                "Tạo SOP"
+                "Tạo quy trình"
               )}
             </Button>
           </div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -13,13 +14,16 @@ import {
   Trash2,
   Eye,
   Filter,
+  Info,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { getSLAsPaginated } from "@/lib/sla-api";
+import { getSLAsPaginated, getSLAsFiltered } from "@/lib/sla-api";
+import { getContracts } from "@/lib/contract-api";
 import { useDeleteSLA } from "@/hooks/useSLAQuery";
 import { usePagination } from "@/hooks/usePagination";
 import { translateServiceType } from "@/lib/utils/translate";
 import { useLoading } from "@/contexts/LoadingContext";
+import { SLADetailSheet } from "@/components/sla/SLADetailSheet";
 import {
   Select,
   SelectContent,
@@ -32,17 +36,28 @@ export default function SLATriggerPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [serviceTypeFilter, setServiceTypeFilter] = useState("all");
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [viewDetailId, setViewDetailId] = useState<string | null>(null);
+  const router = useRouter();
   const { startLoading } = useLoading();
 
   // Single source of truth for pagination state
   const { currentPage, pageSize, setPage, paginationParams, goToFirstPage } = usePagination({ initialPageSize: 10 });
   
+  const { data: contracts = [] } = useQuery({
+    queryKey: ["contracts-all"],
+    queryFn: getContracts,
+  });
+
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["slas", currentPage, pageSize, searchTerm, serviceTypeFilter],
-    queryFn: () => getSLAsPaginated(currentPage, pageSize, {
-      search: searchTerm || undefined,
-      serviceType: serviceTypeFilter !== "all" ? serviceTypeFilter : undefined,
-    }),
+    queryFn: () => {
+      const params: any = {
+        search: searchTerm || undefined,
+        serviceType: serviceTypeFilter !== "all" ? serviceTypeFilter : undefined,
+      };
+
+      return getSLAsPaginated(currentPage, pageSize, params);
+    },
   });
 
   const deleteMutation = useDeleteSLA();
@@ -65,6 +80,11 @@ export default function SLATriggerPage() {
       cell: (sla: any) => <StatusBadge status={translateServiceType(sla.serviceType)} />
     },
     {
+      header: "Hợp đồng",
+      className: "text-slate-600 font-medium",
+      cell: (sla: any) => sla.contractName || "Không rõ hợp đồng"
+    },
+    {
       header: "Mô tả",
       className: "text-slate-500 italic max-w-[400px] truncate",
       cell: (sla: any) => sla.description || "Không có mô tả"
@@ -75,12 +95,21 @@ export default function SLATriggerPage() {
       className: "text-right pr-6",
       cell: (sla: any) => (
         <div className="flex items-center justify-end gap-1">
+          {/* <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg"
+            onClick={() => setViewDetailId(sla.id)}
+            title="Xem nhanh cấu hình"
+          >
+            <Info className="h-4 w-4" />
+          </Button> */}
           <Button 
             asChild 
             variant="ghost" 
             size="icon" 
             className="h-8 w-8 text-slate-400 hover:text-primary rounded-lg"
-            onClick={() => startLoading("Đang tải chi tiết SLA...")}
+            onClick={() => startLoading("Đang tải chi tiết...")}
           >
             <Link href={`/manager/sla-trigger/${sla.id}`}><Eye className="h-4 w-4" /></Link>
           </Button>
@@ -109,8 +138,8 @@ export default function SLATriggerPage() {
   return (
     <div className="space-y-8 pb-10">
       <PageHeader
-        title="Bộ kích hoạt SLA"
-        description="Quản lý các luật SLA bằng dạng danh sách rõ ràng, dễ lọc và dễ kiểm tra."
+        title="Điều khoản hợp đồng"
+        description="Quản lý các điều khoản công việc bằng dạng danh sách rõ ràng, dễ lọc và dễ kiểm tra."
         action={
           <Button 
             onClick={() => startLoading("Đang chuẩn bị trình tạo SLA...")}
@@ -119,7 +148,7 @@ export default function SLATriggerPage() {
           >
             <Link href="/manager/sla-trigger/create">
               <Plus className="h-4 w-4 mr-2" />
-              Tạo SLA mới
+              Tạo điều khoản mới
             </Link>
           </Button>
         }
@@ -131,11 +160,11 @@ export default function SLATriggerPage() {
         columns={columns}
         data={data?.content || []}
         isLoading={isLoading}
-        emptyMessage="Chưa có SLA phù hợp"
+        emptyMessage="Chưa có điều khoản phù hợp"
         search={{
           value: searchTerm,
           onChange: (val) => { setSearchTerm(val); goToFirstPage(); },
-          placeholder: "Tìm kiếm SLA theo tên..."
+          placeholder: "Tìm kiếm điều khoản theo tên..."
         }}
         filters={
           <div className="flex items-center gap-3">
@@ -153,6 +182,31 @@ export default function SLATriggerPage() {
                 <SelectItem value="Repair">Sửa chữa</SelectItem>
               </SelectContent>
             </Select>
+
+            <Select 
+              value="all" 
+              onValueChange={(value) => { 
+                if (value !== "all") {
+                  startLoading("Đang tải danh sách điều khoản của hợp đồng...");
+                  router.push(`/manager/sla-trigger/by-contract/${value}`);
+                }
+              }}
+            >
+              <SelectTrigger className="h-11 w-[220px] border-slate-200/60 bg-white text-xs font-bold text-slate-400 shadow-none rounded-xl uppercase tracking-wider">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-3 w-3" />
+                  <SelectValue placeholder="Xem theo Hợp đồng" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Chọn hợp đồng để xem...</SelectItem>
+                {Array.isArray(contracts) && contracts.map((contract: any) => (
+                  <SelectItem key={contract.id} value={contract.id || ""}>
+                    {contract.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         }
         pagination={{
@@ -166,11 +220,16 @@ export default function SLATriggerPage() {
 
       <ConfirmDialog 
         open={!!deleteTarget} 
-        title="Xóa SLA này?" 
+        title="Xóa điều khoản này?" 
         description="Hành động này không thể hoàn tác. Các điều kiện kích hoạt liên quan sẽ bị vô hiệu hóa." 
         confirmLabel="Xóa vĩnh viễn" 
         onConfirm={handleDelete} 
         onOpenChange={(open) => !open && setDeleteTarget(null)} 
+      />
+
+      <SLADetailSheet 
+        slaId={viewDetailId} 
+        onClose={() => setViewDetailId(null)} 
       />
     </div>
   );

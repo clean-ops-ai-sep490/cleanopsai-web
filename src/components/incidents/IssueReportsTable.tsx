@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -40,21 +40,7 @@ interface IssueReportsTableProps {
   isLoading?: boolean;
 }
 
-const statusConfig: Record<
-  string,
-  {
-    label: string;
-    variant: "success" | "warning" | "info" | "destructive" | "secondary";
-  }
-> = {
-  Open: { label: "Mở", variant: "warning" },
-  InProgress: { label: "Đang xử lý", variant: "info" },
-  Resolved: { label: "Đã giải quyết", variant: "success" },
-  Closed: { label: "Đóng", variant: "secondary" },
-  Pending: { label: "Chờ xử lý", variant: "warning" },
-  Approved: { label: "Đã duyệt", variant: "success" },
-  Rejected: { label: "Đã từ chối", variant: "destructive" },
-};
+
 
 export function IssueReportsTable({
   issues,
@@ -120,9 +106,13 @@ export function IssueReportsTable({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Tất cả</SelectItem>
-              {Object.keys(statusConfig).map(status => (
-                <SelectItem key={status} value={status}>{statusConfig[status].label}</SelectItem>
-              ))}
+              <SelectItem value="Open">Mở</SelectItem>
+              <SelectItem value="InProgress">Đang xử lý</SelectItem>
+              <SelectItem value="Pending">Chờ xử lý</SelectItem>
+              <SelectItem value="Approved">Đã duyệt</SelectItem>
+              <SelectItem value="Rejected">Đã từ chối</SelectItem>
+              <SelectItem value="Resolved">Đã giải quyết</SelectItem>
+              <SelectItem value="Closed">Đóng</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -150,10 +140,7 @@ export function IssueReportsTable({
               </TableRow>
             ) : (
               paginatedIssues.map((issue) => {
-                const st = statusConfig[issue.status] || {
-                  label: issue.status,
-                  variant: "secondary",
-                };
+
 
                 return (
                   <TableRow key={issue.id} className="group hover:bg-slate-50/30 transition-colors">
@@ -193,9 +180,7 @@ export function IssueReportsTable({
 
                     {/* Status */}
                     <TableCell className="text-center">
-                      <Badge variant={st.variant} className="rounded-md px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider">
-                        {st.label}
-                      </Badge>
+                        <StatusBadge status={issue.status} className="rounded-md px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider" />
                     </TableCell>
 
                     {/* Date */}

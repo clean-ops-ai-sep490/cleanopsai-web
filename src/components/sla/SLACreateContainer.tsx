@@ -49,7 +49,7 @@ export function SLACreateContainer() {
   const steps: Step[] = [
     { number: 1, title: "Thông tin cơ bản", active: currentStep === 1 },
     { number: 2, title: "Bố trí nhân sự", active: currentStep === 2 },
-    { number: 3, title: "Cấu hình công việc", active: currentStep === 3 },
+    { number: 3, title: "Tần suất công việc", active: currentStep === 3 },
   ];
 
   // Memoize onChange functions to prevent unnecessary re-renders
@@ -97,14 +97,14 @@ export function SLACreateContainer() {
         taskRequirements,
       );
 
-      toastUtils.success("Tạo SLA thành công!");
+      toastUtils.success("Tạo điều khoản thành công!");
       router.push("/manager/sla-trigger");
     } catch (error) {
       console.error("Failed to create SLA:", error);
       toastUtils.error(
         error instanceof Error
           ? error.message
-          : "Không thể tạo SLA. Vui lòng thử lại.",
+          : "Không thể tạo điều khoản. Vui lòng thử lại.",
       );
     } finally {
       setIsSubmitting(false);
@@ -143,7 +143,7 @@ export function SLACreateContainer() {
         </Link>
       </div>
       <div>
-        <h1 className="text-2xl font-semibold text-black">Tạo SLA Mới</h1>
+        <h1 className="text-2xl font-semibold text-black">Tạo điều khoản Mới</h1>
         <p className="text-gray-600 mt-1">
           Thiết lập thỏa thuận về hợp đồng với khách hàng
         </p>
@@ -229,7 +229,7 @@ export function SLACreateContainer() {
               Đang tạo...
             </>
           ) : currentStep === 3 ? (
-            "Tạo SLA"
+            "Tạo điều khoản"
           ) : (
             <>
               Tiếp tục

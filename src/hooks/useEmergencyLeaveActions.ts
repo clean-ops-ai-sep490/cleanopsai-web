@@ -91,7 +91,9 @@ export function useEmergencyLeaveActions() {
         const filteredTasks = allTasks.filter((task) => {
           const taskStart = new Date(task.scheduledStartAt).getTime();
           const taskEnd = new Date(task.scheduledEndAt).getTime();
-          return taskStart < leaveEnd && taskEnd > leaveStart;
+          const isOverlapping = taskStart < leaveEnd && taskEnd > leaveStart;
+          const isActive = task.status !== "Completed" && task.status !== "Cancelled";
+          return isOverlapping && isActive;
         });
 
         // Sort tasks: InProgress first, then by Start time

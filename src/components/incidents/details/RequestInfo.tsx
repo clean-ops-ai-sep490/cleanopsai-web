@@ -69,10 +69,15 @@ export function RequestInfo({ request }: RequestInfoProps) {
         </div>
       )}
 
-      {request.reviewedByUserName && (
-        <div className="flex items-center gap-2 text-xs font-bold text-emerald-600">
+      {(request.reviewedByUserName || request.reviewedByUserId) && (
+        <div className={`flex items-center gap-2 text-xs font-bold w-fit px-3 py-1.5 rounded-lg border ${
+          request.status === "Approved" 
+            ? "text-emerald-600 bg-emerald-50 border-emerald-100" 
+            : "text-rose-600 bg-rose-50 border-rose-100"
+        }`}>
           <UserCheck className="h-4 w-4" />
-          Đã duyệt bởi: {request.reviewedByUserName}
+          {request.status === "Approved" ? "Đã duyệt bởi: " : "Đã từ chối bởi: "}
+          {request.reviewedByUserName || "Quản trị viên"}
         </div>
       )}
     </div>

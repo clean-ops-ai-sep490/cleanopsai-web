@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { format } from "date-fns";
 import { 
   Clock, 
   MapPin, 
@@ -21,6 +22,8 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { TaskAssignment } from "@/types/task-assignment";
 import type { Worker } from "@/lib/worker-api";
@@ -86,11 +89,7 @@ export function TaskCard({
     }
   }, [currentAction, needsWorker, workers.length, loadingWorker, onFetchWorkers]);
 
-  // Convert ISO to datetime-local compatible format (YYYY-MM-DDTHH:mm)
-  const formatForInput = (isoStr?: string) => {
-    if (!isoStr) return "";
-    return isoStr.substring(0, 16);
-  };
+
 
   return (
     <div
@@ -129,24 +128,40 @@ export function TaskCard({
 
           {/* Inline Edit Fields */}
           {currentAction && !disabled && (
-            <div className="grid grid-cols-2 gap-6 pt-4">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-medium text-slate-400">Bắt đầu điều phối</label>
-                <Input
-                  type="datetime-local"
-                  className="h-10 text-sm bg-white border-slate-200"
-                  value={formatForInput(decision?.scheduledStartAt)}
-                  onChange={(e) => onUpdateDecision({ scheduledStartAt: e.target.value + ":00Z" })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-medium text-slate-400">Thời lượng (phút)</label>
-                <Input
-                  type="number"
-                  className="h-10 text-sm bg-white border-slate-200"
-                  value={decision?.durationMinutes ?? 0}
-                  onChange={(e) => onUpdateDecision({ durationMinutes: parseInt(e.target.value) || 0 })}
-                />
+            <div className="space-y-4 pt-5 border-t border-slate-100 mt-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em] block ml-1">Ngày bắt đầu điều phối</label>
+                  <DatePicker
+                    className="text-xs"
+                    date={decision?.scheduledStartAt ? new Date(decision.scheduledStartAt.split('T')[0]) : undefined}
+                    onSelect={(date) => {
+                      if (!date) return;
+                      const dateStr = format(date, 'yyyy-MM-dd');
+                      const currentTime = (decision?.scheduledStartAt || task.scheduledStartAt).split('T')[1] || "00:00:00Z";
+                      onUpdateDecision({ scheduledStartAt: `${dateStr}T${currentTime}` });
+                    }}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em] block ml-1">Giờ bắt đầu</label>
+                  <TimePicker
+                    value={(decision?.scheduledStartAt || task.scheduledStartAt).split('T')[1]?.substring(0, 5)}
+                    onChange={(time) => {
+                      const currentDate = (decision?.scheduledStartAt || task.scheduledStartAt).split('T')[0];
+                      onUpdateDecision({ scheduledStartAt: `${currentDate}T${time}:00Z` });
+                    }}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em] block ml-1">Thời lượng (phút)</label>
+                  <Input
+                    type="number"
+                    className="h-10 text-xs bg-white border-slate-200 px-3"
+                    value={decision?.durationMinutes ?? 0}
+                    onChange={(e) => onUpdateDecision({ durationMinutes: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -174,13 +189,13 @@ export function TaskCard({
                 <SelectItem value="REASSIGN_START">
                   <span className="flex items-center gap-2">
                     <Play className="h-4 w-4 text-emerald-500" />
-                    Giao lại (Giữ InProgress)
+                    Giao tiếp
                   </span>
                 </SelectItem>
                 <SelectItem value="REASSIGN_LATER">
                   <span className="flex items-center gap-2">
                     <Pause className="h-4 w-4 text-blue-500" />
-                    Giao lại (Đặt về NotStarted)
+                    Giao lại từ đầu
                   </span>
                 </SelectItem>
                 <SelectItem value="KEEP_CONTINUE">

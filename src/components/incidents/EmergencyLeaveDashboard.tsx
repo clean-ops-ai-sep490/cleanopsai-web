@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import {
   getEmergencyLeaveRequestsPaginated,
+  getEmergencyLeaveRequestById,
   type EmergencyLeaveRequest,
 } from "@/lib/emergency-leave-request-api";
 import { useEmergencyLeaveActions } from "@/hooks/useEmergencyLeaveActions";
@@ -69,10 +70,19 @@ export function EmergencyLeaveDashboard() {
 
   const handleSelectRequest = useCallback(
     async (request: EmergencyLeaveRequest) => {
-      setSelectedRequest(request);
       setIsSheetOpen(true);
       reset();
-      await fetchAffectedTasks(request);
+      
+      try {
+        // Fetch full detail for better data (like taskName)
+        const fullRequest = await getEmergencyLeaveRequestById(request.id);
+        setSelectedRequest(fullRequest);
+        await fetchAffectedTasks(fullRequest);
+      } catch (err) {
+        console.error("Failed to fetch request details:", err);
+        setSelectedRequest(request);
+        await fetchAffectedTasks(request);
+      }
     },
     [fetchAffectedTasks, reset],
   );

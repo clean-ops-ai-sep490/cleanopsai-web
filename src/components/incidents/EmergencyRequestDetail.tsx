@@ -57,6 +57,9 @@ export function EmergencyRequestDetail({
   onUpdateDecision,
 }: EmergencyRequestDetailProps) {
   const isPending = request.status === "Pending";
+  const isApproved = request.status === "Approved";
+  const isRejected = request.status === "Rejected";
+  
   const hasFailures = results.some((r) => !r.success);
 
   const allTasksHandled = affectedTasks.every((t) => decisions[t.id]?.action);
@@ -77,8 +80,10 @@ export function EmergencyRequestDetail({
       {/* ─── 1. Request Info Header ─── */}
       <RequestInfo request={request} />
 
-      {/* ─── 2. Impact Stats ─── */}
-      <ImpactStats inProgressCount={inProgressCount} totalCount={affectedTasks.length} />
+      {/* ─── 2. Impact Stats (Only for Pending or if there are tasks) ─── */}
+      {isPending && affectedTasks.length > 0 && (
+        <ImpactStats inProgressCount={inProgressCount} totalCount={affectedTasks.length} />
+      )}
 
       {/* ─── 3. Task List ─── */}
       <div className="space-y-4">
@@ -88,7 +93,7 @@ export function EmergencyRequestDetail({
               <ShieldAlert className="h-4.5 w-4.5" />
             </div>
             <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
-              Danh sách Task bị ảnh hưởng
+              {isPending ? "Danh sách Task bị ảnh hưởng" : "Thông tin Task liên quan"}
             </h4>
           </div>
           
@@ -119,6 +124,33 @@ export function EmergencyRequestDetail({
             <Loader2 className="h-8 w-8 animate-spin text-primary/40" />
             <p className="text-sm font-medium text-slate-400">Đang phân tích dữ liệu task...</p>
           </div>
+        ) : !isPending ? (
+          // Display for non-pending requests
+          <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-6 space-y-4">
+            <div className="flex items-start gap-4">
+              <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-primary shadow-sm border border-slate-100">
+                <ShieldAlert className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Tên Task</p>
+                <p className="text-base font-semibold text-slate-900">
+                  {request.taskName || "Thông tin task không khả dụng"}
+                </p>
+                <div className="flex items-center gap-4 mt-2">
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
+                    isApproved ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
+                  }`}>
+                    {isApproved ? "Đã chấp thuận" : "Đã từ chối"}
+                  </span>
+                  {request.approvedAt && (
+                    <span className="text-[10px] text-slate-400 font-medium italic">
+                      Xử lý lúc: {new Date(request.approvedAt).toLocaleString('vi-VN')}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         ) : affectedTasks.length === 0 ? (
           <EmptyState 
             title="Không tìm thấy task" 
@@ -146,18 +178,20 @@ export function EmergencyRequestDetail({
         )}
       </div>
 
-      {/* ─── 4. Action Bar ─── */}
-      <ActionBar
-        isPending={isPending}
-        hasFailures={hasFailures}
-        submitting={submitting}
-        canApprove={canApprove}
-        pendingActionsCount={affectedTasks.length - affectedTasks.filter((t) => decisions[t.id]?.action).length}
-        reassignMissingWorkerCount={reassignMissingWorker.length}
-        onApprove={onApprove}
-        onReject={onReject}
-        onRetryFailed={onRetryFailed}
-      />
+      {/* ─── 4. Action Bar (Only for Pending) ─── */}
+      {isPending && (
+        <ActionBar
+          isPending={isPending}
+          hasFailures={hasFailures}
+          submitting={submitting}
+          canApprove={canApprove}
+          pendingActionsCount={affectedTasks.length - affectedTasks.filter((t) => decisions[t.id]?.action).length}
+          reassignMissingWorkerCount={reassignMissingWorker.length}
+          onApprove={onApprove}
+          onReject={onReject}
+          onRetryFailed={onRetryFailed}
+        />
+      )}
 
       {/* ─── 5. Results ─── */}
       <ProcessingResults results={results} affectedTasks={affectedTasks} />

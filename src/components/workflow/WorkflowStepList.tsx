@@ -279,7 +279,7 @@ export function WorkflowStepList({
                   {/* Right side controls */}
                   <div className="flex items-center gap-2">
                     {/* JSON Preview Button */}
-                    <Button
+                    {/* <Button
                       variant="outline"
                       size="sm"
                       onClick={(e) => {
@@ -289,7 +289,7 @@ export function WorkflowStepList({
                       className="text-xs text-gray-600 px-2 py-1 h-7 hover:text-gray-900 font-bold"
                     >
                       JSON Preview
-                    </Button>
+                    </Button> */}
 
                     {/* Drag Handle */}
                     <div className="cursor-move text-gray-400 hover:text-gray-600">

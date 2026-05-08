@@ -1,5 +1,5 @@
 import { createSearchableApi } from "./api-crud-factory";
-import { parseArrayResponse } from "./api-response-parser";
+import { parseArrayResponse, parsePaginatedResponse } from "./api-response-parser";
 import { api } from "./api";
 import type {
   SLA,
@@ -24,6 +24,34 @@ export const {
   getPaginated: getSLAsPaginated,
   search: searchSLAs,
 } = slaApi;
+
+/**
+ * Filter SLAs by contract and other parameters
+ */
+export async function getSLAsFiltered(
+  pageNumber: number = 1,
+  pageSize: number = 10,
+  params: {
+    contractId?: string;
+    search?: string;
+    serviceType?: string;
+  } = {},
+) {
+  // Clean up params to remove undefined or "all" values
+  const cleanParams: Record<string, any> = {};
+  if (params.contractId && params.contractId !== "all") cleanParams.contractId = params.contractId;
+  if (params.search) cleanParams.search = params.search;
+  if (params.serviceType && params.serviceType !== "all") cleanParams.serviceType = params.serviceType;
+
+  const response = await api.get<any>("/Slas/filter", {
+    params: {
+      pageNumber,
+      pageSize,
+      ...cleanParams,
+    },
+  });
+  return parsePaginatedResponse<SLA>(response, pageNumber, pageSize);
+}
 
 // SLA Shift API using CRUD factory with consistent endpoint casing
 const slaShiftApi = createSearchableApi<
