@@ -54,16 +54,16 @@ export default function WorkflowListPage() {
       <div className="space-y-8 pb-10">
         <PageHeader
           title="Thiết lập quy trình"
-          description="Quản lý các quy trình SOP theo hướng rõ ràng, dễ xem và dễ mở chi tiết."
+          description="Quản lý các quy trình theo hướng rõ ràng, dễ xem và dễ mở chi tiết."
           action={
             <Button 
-              onClick={() => startLoading("Đang chuẩn bị trình tạo SOP...")}
+              onClick={() => startLoading("Đang chuẩn bị trình tạo...")}
               asChild 
               className="rounded-xl"
             >
               <Link href="/manager/workflow/create">
                 <Plus className="h-4 w-4 mr-2" />
-                Tạo SOP mới
+                Tạo quy trình mới
               </Link>
             </Button>
           }
@@ -97,9 +97,9 @@ export default function WorkflowListPage() {
           />
         ) : sops.length === 0 ? (
           <EmptyState
-            title={searchQuery ? "Không tìm thấy SOP nào" : "Chưa có SOP nào"}
-            description="Hãy tạo SOP mới để bắt đầu chuẩn hóa quy trình vận hành."
-            actionLabel="Tạo SOP mới"
+            title={searchQuery ? "Không tìm thấy quy trình nào" : "Chưa có quy trình nào"}
+            description="Hãy tạo quy trình mới để bắt đầu chuẩn hóa quy trình vận hành."
+            actionLabel="Tạo quy trình mới"
             onAction={() => window.location.assign("/manager/workflow/create")}
             icon={<WorkflowIcon className="h-10 w-10" />}
           />
@@ -135,9 +135,9 @@ export default function WorkflowListPage() {
                       asChild 
                       size="sm" 
                       className="flex-1 rounded-lg"
-                      onClick={() => startLoading("Đang tải chi tiết SOP...")}
+                      onClick={() => startLoading("Đang tải chi tiết...")}
                     >
-                      <Link href={`/manager/workflow/${sop.id}`}>Mở SOP</Link>
+                      <Link href={`/manager/workflow/${sop.id}`}>Mở quy trình</Link>
                     </Button>
                   </div>
                 </div>
@@ -164,7 +164,7 @@ export default function WorkflowListPage() {
               <DialogHeader>
                 <DialogTitle className="text-xl font-bold text-slate-900">{selected.name}</DialogTitle>
                 <DialogDescription className="text-xs font-medium text-slate-400">
-                  SOP version {selected.version} · {translateServiceType(selected.serviceType)}
+                  Phiên bản {selected.version} · {translateServiceType(selected.serviceType)}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-6 pt-4">
@@ -186,7 +186,7 @@ export default function WorkflowListPage() {
                   <Button 
                     asChild 
                     className="rounded-xl px-6"
-                    onClick={() => startLoading("Đang tải chi tiết SOP...")}
+                    onClick={() => startLoading("Đang tải chi tiết ...")}
                   >
                     <Link href={`/manager/workflow/${selected.id}`}>Mở trang chi tiết</Link>
                   </Button>

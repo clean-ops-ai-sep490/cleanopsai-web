@@ -103,17 +103,17 @@ export function WorkflowForm({ formData, onChange }: WorkflowFormProps) {
 
   return (
     <Card className="bg-[#f9fafb] rounded-[5px] p-6">
-      <h2 className="text-[15px] font-medium text-black mb-6">Thông tin SOP</h2>
+      <h2 className="text-[15px] font-medium text-black mb-6">Thông tin quy trình</h2>
       <div className="grid grid-cols-2 gap-x-8 gap-y-6">
         <div>
           <Label className="text-sm font-medium text-black mb-2 block">
-            Tên SOP *
+            Tên quy trình *
           </Label>
           <Input
             className="bg-[#f5f5f5] border-[#e5e5e5] h-[30px]"
             value={formData.name}
             onChange={(e) => handleChange("name", e.target.value)}
-            placeholder="Nhập tên SOP"
+            placeholder="Nhập tên quy trình"
           />
         </div>
         <div>
@@ -295,13 +295,13 @@ export function WorkflowForm({ formData, onChange }: WorkflowFormProps) {
         </div>
         <div className="col-span-2">
           <Label className="text-sm font-medium text-black mb-2 block">
-            Mô tả SOP
+            Mô tả về quy trình
           </Label>
           <Textarea
             className="bg-[#f5f5f5] border-[#e5e5e5] min-h-[60px]"
             value={formData.description}
             onChange={(e) => handleChange("description", e.target.value)}
-            placeholder="Mô tả chi tiết về SOP này"
+            placeholder="Mô tả chi tiết về quy trình này"
           />
         </div>
       </div>

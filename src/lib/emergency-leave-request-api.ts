@@ -12,6 +12,7 @@ export interface EmergencyLeaveRequest {
   workerId: string;
   workerName: string;
   taskAssignmentId: string | null;
+  taskName?: string | null;
   leaveDateFrom: string;
   leaveDateTo: string;
   audioUrl: string | null;
@@ -51,6 +52,12 @@ export async function getEmergencyLeaveRequestsPaginated(
     pageNumber,
     pageSize,
   );
+}
+
+export async function getEmergencyLeaveRequestById(
+  id: string,
+): Promise<EmergencyLeaveRequest> {
+  return api.get<EmergencyLeaveRequest>(`/EmergencyLeaveRequests/${id}`);
 }
 
 export async function reviewEmergencyLeaveRequest(

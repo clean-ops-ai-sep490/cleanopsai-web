@@ -37,7 +37,7 @@ const navigation = [
     title: "CẤU HÌNH",
     items: [
       {
-        name: "Bộ kích hoạt SLA",
+        name: "Điều khoản công việc",
         href: "/manager/sla-trigger",
         icon: Zap,
         roles: [UserRole.Manager],

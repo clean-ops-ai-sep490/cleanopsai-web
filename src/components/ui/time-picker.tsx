@@ -134,14 +134,14 @@ function TimePicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <div className="relative group">
+        <div className="relative group w-full">
           <Input
             readOnly
             disabled={disabled}
             value={displayValue}
             placeholder={placeholder}
             className={cn(
-              "cursor-pointer pr-10 transition-all duration-200",
+              "cursor-pointer pr-8 pl-2 transition-all duration-200 text-xs",
               "hover:shadow-sm",
               className,
             )}
