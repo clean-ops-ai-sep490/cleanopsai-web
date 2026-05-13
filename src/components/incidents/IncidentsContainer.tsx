@@ -13,8 +13,14 @@ import {
 import { getEmergencyLeaveRequestsPaginated } from "@/lib/emergency-leave-request-api";
 import { useStartTask } from "@/hooks/useTaskActions";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { PageHeader } from "@/components/ui/page-header";
+import { createPortal } from "react-dom";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { IssueReportDetailPanel } from "./IssueReportDetailPanel";
+import { IssueReport, getIssueReportById } from "@/lib/issue-report-api";
+import { useEffect } from "react";
 
 type TabKey = "issues" | "requests";
 
@@ -23,6 +29,13 @@ export function IncidentsContainer() {
   const [processingIssueId, setProcessingIssueId] = useState<string | null>(
     null,
   );
+  const [selectedIssue, setSelectedIssue] = useState<IssueReport | null>(null);
+  const [isIssueSheetOpen, setIsIssueSheetOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const startTaskMutation = useStartTask(() => {
     refetchIssueReports();
@@ -96,6 +109,17 @@ export function IncidentsContainer() {
       id: taskAssignmentId,
       data: { workerId: "current-user-id" },
     });
+  };
+
+  const handleViewIssueDetail = async (issue: IssueReport) => {
+    setIsIssueSheetOpen(true);
+    setSelectedIssue(issue);
+    try {
+      const fullIssue = await getIssueReportById(issue.id);
+      setSelectedIssue(fullIssue);
+    } catch (error) {
+      console.error("Error fetching full issue details:", error);
+    }
   };
 
   /* ── Loading ── */
@@ -218,11 +242,63 @@ export function IncidentsContainer() {
             onApprove={handleApproveIssue}
             onReject={handleRejectIssue}
             onUpdateTaskStatus={handleUpdateTaskStatus}
+            onViewDetail={handleViewIssueDetail}
             isLoading={processingIssueId !== null}
           />
         )}
         {activeTab === "requests" && <EmergencyLeaveDashboard />}
       </div>
+
+      {/* ─── Issue Detail SlideOver ─── */}
+      {mounted && createPortal(
+        <AnimatePresence>
+          {isIssueSheetOpen && (
+            <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 50 }}>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-slate-900/10 pointer-events-auto"
+                onClick={() => setIsIssueSheetOpen(false)}
+              />
+
+              {/* Panel */}
+              <motion.div
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "tween", duration: 0.3, ease: "easeOut" }}
+                className="fixed inset-y-0 right-0 w-full sm:max-w-2xl bg-white border-l border-slate-200 flex flex-col shadow-2xl pointer-events-auto"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100 bg-white">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">Chi tiết báo cáo sự cố</h2>
+                    <p className="text-sm text-slate-400 mt-1">Xem thông tin chi tiết và lịch sử xử lý</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full hover:bg-slate-100 transition-colors"
+                    onClick={() => setIsIssueSheetOpen(false)}
+                  >
+                    <X className="h-5 w-5 text-slate-400" />
+                  </Button>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto px-8 py-8 scrollbar-hide">
+                  {selectedIssue && (
+                    <IssueReportDetailPanel issue={selectedIssue} />
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

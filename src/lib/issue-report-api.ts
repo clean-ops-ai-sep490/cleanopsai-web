@@ -4,14 +4,17 @@ import { api } from "./api";
 export interface IssueReport {
   id: string;
   taskAssignmentId: string;
+  taskName?: string;
   reportedByWorkerId: string;
   reportedByWorkerName: string;
   description: string;
   status: string;
-  resolvedByWorkerId: string | null;
+  resolvedByUserId?: string | null;
+  resolvedByUserName?: string | null;
   resolvedAt: string | null;
   created: string;
   lastModified: string;
+  displayLocation?: string | null;
 }
 
 // Response structure từ API
@@ -52,4 +55,9 @@ export async function resolveIssueReport(
   return api.patch<IssueReport>(`/IssueReports/${id}/resolve`, {
     status,
   });
+}
+
+// Get issue report by ID
+export async function getIssueReportById(id: string): Promise<IssueReport> {
+  return api.get<IssueReport>(`/IssueReports/${id}`);
 }
