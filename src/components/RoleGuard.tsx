@@ -3,6 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
+import { useHasMounted } from "@/hooks/use-has-mounted";
 
 // Role enum matching API
 export enum UserRole {
@@ -73,10 +74,11 @@ export default function RoleGuard({
   fallbackPath = "/unauthorized",
 }: RoleGuardProps) {
   const { user, isLoading } = useAuth();
+  const hasMounted = useHasMounted();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && user) {
+    if (hasMounted && !isLoading && user) {
       const normalizedRole = normalizeRole(user.role);
 
       // Debug logging
@@ -103,7 +105,7 @@ export default function RoleGuard({
     }
   }, [user, isLoading, allowedRoles, fallbackPath, router]);
 
-  if (isLoading) {
+  if (!hasMounted || isLoading) {
     return <FullPageLoading label="Đang kiểm tra quyền truy cập..." />;
   }
 

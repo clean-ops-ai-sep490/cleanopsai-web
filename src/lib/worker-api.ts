@@ -31,8 +31,8 @@ export interface WorkerFilterResult extends Worker {
 // Worker filter parameters based on API spec
 export interface WorkerFilterParams {
   address?: string;
-  skillCategories?: string[];
-  certificateCategories?: string[];
+  skillIds?: string[];
+  certificateIds?: string[];
   startAt?: string; // time format HH:MM:SS
   endAt?: string; // time format HH:MM:SS
   search?: string; // Search by name or other criteria
@@ -50,14 +50,14 @@ export async function filterWorkers(
   const queryParams = new URLSearchParams();
 
   if (params.address) queryParams.append("address", params.address);
-  if (params.skillCategories?.length) {
-    params.skillCategories.forEach((skill) =>
-      queryParams.append("skillCategories", skill),
+  if (params.skillIds?.length) {
+    params.skillIds.forEach((skill) =>
+      queryParams.append("skillIds", skill),
     );
   }
-  if (params.certificateCategories?.length) {
-    params.certificateCategories.forEach((cert) =>
-      queryParams.append("certificateCategories", cert),
+  if (params.certificateIds?.length) {
+    params.certificateIds.forEach((cert) =>
+      queryParams.append("certificateIds", cert),
     );
   }
   if (params.startAt) queryParams.append("startAt", params.startAt);
