@@ -635,6 +635,7 @@ export function TaskScheduleForm({
               formData={formData}
               updateField={updateField}
               errors={errors}
+              times={times}
             />
           </SectionCard>
 

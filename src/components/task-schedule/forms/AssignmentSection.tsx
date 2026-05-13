@@ -8,17 +8,20 @@ import { filterWorkers, getWorkerById } from "@/lib/worker-api";
 import { getSLAShiftsBySLA } from "@/lib/sla-api";
 import { useQuery } from "@tanstack/react-query";
 import { getSOPById } from "@/lib/sop-api";
+import { RequirementComparison } from "./RequirementComparison";
 
 interface AssignmentSectionProps {
   formData: any;
   errors: Record<string, string>;
   updateField: (field: string, value: any) => void;
+  times?: string[];
 }
 
 export function AssignmentSection({
   formData,
   errors,
   updateField,
+  times = [],
 }: AssignmentSectionProps) {
   const sopId = formData.sopId;
   const slaId = formData.slaId;
@@ -90,7 +93,9 @@ export function AssignmentSection({
                   "infinite", 
                   sopId, 
                   slaShiftId, 
-                  locationAddress
+                  locationAddress,
+                  times,
+                  formData.durationMinutes
                 ]}
                 queryFn={(page, pageSize, search) => {
                   const params: any = {
@@ -99,10 +104,25 @@ export function AssignmentSection({
                     search: search,
                     address: locationAddress,
                   };
-                  if (selectedShift?.startTime) params.startAt = selectedShift.startTime;
-                  if (selectedShift?.endTime) params.endAt = selectedShift.endTime;
-                  if (sopData?.requiredSkillIds?.length) params.skillCategories = sopData.requiredSkillIds;
-                  if (sopData?.requiredCertificationIds?.length) params.certificateCategories = sopData.requiredCertificationIds;
+
+                  // Calculate startAt and endAt based on selected time and duration
+                  const baseDate = formData.contractStartDate || new Date().toISOString().split("T")[0];
+                  const startTime = times[0] || selectedShift?.startTime;
+                  
+                  if (startTime) {
+                    const normalizedStartTime = startTime.length === 5 ? `${startTime}:00` : startTime;
+                    const startAtISO = `${baseDate.split("T")[0]}T${normalizedStartTime}Z`;
+                    params.startAt = startAtISO;
+
+                    if (formData.durationMinutes) {
+                      const startDate = new Date(startAtISO);
+                      const endDate = new Date(startDate.getTime() + formData.durationMinutes * 60000);
+                      params.endAt = endDate.toISOString().split(".")[0] + "Z";
+                    }
+                  }
+
+                  if (sopData?.requiredSkillIds?.length) params.skillIds = sopData.requiredSkillIds;
+                  if (sopData?.requiredCertificationIds?.length) params.certificateIds = sopData.requiredCertificationIds;
                   
                   return filterWorkers(params).then(res => ({
                     ...res,
@@ -126,6 +146,12 @@ export function AssignmentSection({
               {errors.assigneeId && (
                 <p className="text-sm text-red-500">{errors.assigneeId}</p>
               )}
+
+              <RequirementComparison 
+                requiredSkillIds={sopData?.requiredSkillIds || []}
+                requiredCertificationIds={sopData?.requiredCertificationIds || []}
+                workerId={formData.assigneeId}
+              />
             </div>
 
             {/* Selection Context Info */}

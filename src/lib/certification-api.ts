@@ -93,3 +93,26 @@ export async function getCertificationsByWorkerId(workerId: string): Promise<Cer
   const response = await api.get<any>(`/Certifications/worker/${encodeURIComponent(workerId)}/certifications`);
   return parseArrayResponse<Certification>(response);
 }
+
+// Get both skills and certifications by a list of ids
+export async function getRequirementsByIds(params: {
+  skillIds?: string[];
+  certificationIds?: string[];
+}): Promise<{ skills: Skill[]; certifications: Certification[] }> {
+  const { skillIds = [], certificationIds = [] } = params;
+  
+  if (skillIds.length === 0 && certificationIds.length === 0) {
+    return { skills: [], certifications: [] };
+  }
+
+  const queryParams = new URLSearchParams();
+  skillIds.forEach(id => {
+    if (id) queryParams.append("skillIds", id);
+  });
+  certificationIds.forEach(id => {
+    if (id) queryParams.append("certificationIds", id);
+  });
+
+  const response = await api.get<any>(`/Certifications/by-ids?${queryParams.toString()}`);
+  return response || { skills: [], certifications: [] };
+}
