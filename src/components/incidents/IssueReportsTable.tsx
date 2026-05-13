@@ -14,8 +14,14 @@ import {
   ChevronRight,
   Filter,
   Inbox,
+  AlertTriangle,
+  Clock,
+  Briefcase,
+  Eye,
 } from "lucide-react";
 import { IssueReport } from "./types";
+import { formatDistanceToNow } from "date-fns";
+import { vi } from "date-fns/locale";
 import {
   Table,
   TableBody,
@@ -37,6 +43,7 @@ interface IssueReportsTableProps {
   onApprove?: (id: string) => void;
   onReject?: (id: string) => void;
   onUpdateTaskStatus?: (taskAssignmentId: string) => void;
+  onViewDetail?: (issue: IssueReport) => void;
   isLoading?: boolean;
 }
 
@@ -47,6 +54,7 @@ export function IssueReportsTable({
   onApprove,
   onReject,
   onUpdateTaskStatus,
+  onViewDetail,
   isLoading = false,
 }: IssueReportsTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -60,6 +68,7 @@ export function IssueReportsTable({
       const matchesSearch = 
         issue.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         issue.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        issue.taskName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (issue.reportedByWorkerName || issue.worker || "").toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchesStatus = statusFilter === "ALL" || issue.status === statusFilter;
@@ -123,18 +132,19 @@ export function IssueReportsTable({
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50/30">
-              <TableHead className="w-[200px] pl-6">Sự cố</TableHead>
+              <TableHead className="w-[200px] pl-6">Nội dung sự cố</TableHead>
+              <TableHead className="w-[200px]">Công việc liên quan</TableHead>
               <TableHead className="w-[180px]">Người báo cáo</TableHead>
-              <TableHead>Vị trí</TableHead>
+              <TableHead>Vị trí hiện trường</TableHead>
               <TableHead className="w-[120px] text-center">Trạng thái</TableHead>
-              <TableHead className="w-[100px] text-center">Ngày</TableHead>
-              <TableHead className="w-[120px] pr-6 text-right">Hành động</TableHead>
+              <TableHead className="w-[150px] text-center">Thời gian</TableHead>
+              <TableHead className="w-[100px] pr-6 text-right">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedIssues.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-slate-400 italic">
+                <TableCell colSpan={7} className="h-32 text-center text-slate-400 italic">
                   Không tìm thấy sự cố phù hợp
                 </TableCell>
               </TableRow>
@@ -146,12 +156,20 @@ export function IssueReportsTable({
                   <TableRow key={issue.id} className="group hover:bg-slate-50/30 transition-colors">
                     {/* Issue Info */}
                     <TableCell className="pl-6">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-bold text-slate-900">
-                          #{issue.id?.slice(-6) || "N/A"}
-                        </span>
-                        <span className="text-[11px] text-slate-400 line-clamp-1 italic">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
+                        <span className="text-sm font-bold text-slate-900 line-clamp-2">
                           {issue.description || "Không có mô tả"}
+                        </span>
+                      </div>
+                    </TableCell>
+
+                    {/* Task Info */}
+                    <TableCell>
+                      <div className="flex items-center gap-1.5 text-[12px] text-slate-600 bg-blue-50/50 px-2 py-1 rounded-md border border-blue-100/50 w-fit max-w-full">
+                        <Briefcase className="h-3 w-3 text-blue-400 shrink-0" />
+                        <span className="line-clamp-1 font-medium">
+                          {issue.taskName || "Công việc không xác định"}
                         </span>
                       </div>
                     </TableCell>
@@ -159,20 +177,22 @@ export function IssueReportsTable({
                     {/* Reporter */}
                     <TableCell>
                       <div className="flex items-center gap-2.5">
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-[10px] font-bold text-slate-400 border border-slate-100">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-500 border border-slate-200">
                           {(issue.reportedByWorkerName || issue.worker || "?").charAt(0).toUpperCase()}
                         </div>
-                        <span className="truncate text-sm text-slate-600 font-semibold">
-                          {issue.reportedByWorkerName || issue.worker || "Không rõ"}
-                        </span>
+                        <div className="flex flex-col">
+                           <span className="truncate text-sm text-slate-700 font-bold">
+                             {issue.reportedByWorkerName || issue.worker || "Không rõ"}
+                           </span>
+                        </div>
                       </div>
                     </TableCell>
 
                     {/* Location */}
                     <TableCell>
-                      <div className="flex items-start gap-2 text-[13px] text-slate-500">
-                        <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-300 mt-0.5" />
-                        <span className="line-clamp-1">
+                      <div className="flex items-start gap-2 text-[13px] text-slate-600 bg-slate-50/50 p-2 rounded-lg border border-slate-100/50">
+                        <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400 mt-0.5" />
+                        <span className="line-clamp-2 leading-relaxed">
                           {issue.displayLocation || "Chưa xác định"}
                         </span>
                       </div>
@@ -180,21 +200,36 @@ export function IssueReportsTable({
 
                     {/* Status */}
                     <TableCell className="text-center">
-                        <StatusBadge status={issue.status} className="rounded-md px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider" />
+                        <StatusBadge status={issue.status} className="rounded-full px-2.5 py-0.5 text-[10px] uppercase font-bold tracking-wider" />
                     </TableCell>
 
-                    {/* Date */}
+                    {/* Time */}
                     <TableCell className="text-center">
-                      <span className="text-sm font-medium text-slate-500 tabular-nums">
-                        {issue.created
-                          ? new Date(issue.created).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })
-                          : issue.createdAt?.split(' ')[0] || "—"}
-                      </span>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <div className="flex items-center gap-1.5 text-sm font-bold text-slate-700">
+                          <Clock className="h-3.5 w-3.5 text-primary/70" />
+                          <span>
+                            {issue.created ? formatDistanceToNow(new Date(issue.created), { addSuffix: true, locale: vi }) : "—"}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-slate-400 tabular-nums">
+                           {issue.created ? new Date(issue.created).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) + " - " + new Date(issue.created).toLocaleDateString("vi-VN") : "—"}
+                        </span>
+                      </div>
                     </TableCell>
 
                     {/* Actions */}
                     <TableCell className="pr-6">
                       <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-slate-400 hover:text-primary hover:bg-slate-50 rounded-lg"
+                          onClick={() => onViewDetail?.(issue)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+
                         {issue.status === "Pending" || issue.status === "Open" ? (
                           <>
                             <Button

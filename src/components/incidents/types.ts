@@ -1,11 +1,13 @@
 export interface IssueReport {
   id: string;
   taskAssignmentId?: string;
+  taskName?: string;
   reportedByWorkerId?: string;
   reportedByWorkerName?: string;
   description: string;
   status: string;
-  resolvedByWorkerId?: string | null;
+  resolvedByUserId?: string | null;
+  resolvedByUserName?: string | null;
   resolvedAt?: string | null;
   created?: string;
   lastModified?: string;
