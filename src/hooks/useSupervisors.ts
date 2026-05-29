@@ -7,6 +7,8 @@ import {
   getAvailableSupervisors,
   getWorkAreaSupervisorsByWorkArea,
   getAuthSupervisors,
+  updateSupervisorAssignment,
+  getSupervisorWorkAreas,
 } from "@/lib/supervisor-api";
 import type { PaginatedRequest } from "@/types/common";
 import type { AssignSupervisorToWorkAreaData } from "@/types/supervisor";
@@ -98,3 +100,39 @@ export function useUnassignSupervisorFromWorkArea() {
     },
   });
 }
+
+export function useUpdateSupervisorAssignment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateSupervisorAssignment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["workAreaSupervisorAssignments"],
+      });
+      queryClient.invalidateQueries({ queryKey: ["availableSupervisors"] });
+      queryClient.invalidateQueries({ queryKey: ["workAreaSupervisors"] });
+      queryClient.invalidateQueries({ queryKey: ["authSupervisors"] });
+      toastUtils.success("Điều chuyển giám sát viên thành công!");
+    },
+    onError: (error: any) => {
+      toastUtils.error(
+        error?.message ||
+          "Không thể điều chuyển giám sát viên. Vui lòng thử lại.",
+      );
+    },
+  });
+}
+
+export function useSupervisorWorkAreas(
+  supervisorId: string,
+  params: PaginatedRequest = {},
+) {
+  return useQuery({
+    queryKey: ["supervisorWorkAreas", supervisorId, params],
+    queryFn: () => getSupervisorWorkAreas(supervisorId, params),
+    enabled: !!supervisorId,
+  });
+}
+
+

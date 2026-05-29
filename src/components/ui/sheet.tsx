@@ -2,13 +2,30 @@
 
 import * as React from "react"
 import { Dialog as SheetPrimitive } from "radix-ui"
+import { motion, AnimatePresence } from "framer-motion"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 
-function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
-  return <SheetPrimitive.Root data-slot="sheet" {...props} />
+const SheetContext = React.createContext<{ open: boolean }>({ open: false })
+
+function Sheet({ open, onOpenChange, ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
+  const [isOpen, setIsOpen] = React.useState(props.defaultOpen || false)
+  const activeOpen = open !== undefined ? open : isOpen
+
+  const handleOpenChange = (val: boolean) => {
+    if (open === undefined) {
+      setIsOpen(val)
+    }
+    onOpenChange?.(val)
+  }
+
+  return (
+    <SheetContext.Provider value={{ open: activeOpen }}>
+      <SheetPrimitive.Root data-slot="sheet" open={activeOpen} onOpenChange={handleOpenChange} {...props} />
+    </SheetContext.Provider>
+  )
 }
 
 function SheetTrigger({
@@ -37,12 +54,60 @@ function SheetOverlay({
     <SheetPrimitive.Overlay
       data-slot="sheet-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-black/10 duration-100 data-ending-style:opacity-0 data-starting-style:opacity-0 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 z-50 bg-black/10 supports-backdrop-filter:backdrop-blur-xs",
         className
       )}
+      asChild
       {...props}
-    />
+    >
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+      />
+    </SheetPrimitive.Overlay>
   )
+}
+
+const getMotionProps = (side: "top" | "right" | "bottom" | "left") => {
+  const transitions = {
+    type: "spring",
+    damping: 30,
+    stiffness: 300,
+  } as const
+
+  switch (side) {
+    case "left":
+      return {
+        initial: { x: "-100%" },
+        animate: { x: 0 },
+        exit: { x: "-100%" },
+        transition: transitions,
+      }
+    case "top":
+      return {
+        initial: { y: "-100%" },
+        animate: { y: 0 },
+        exit: { y: "-100%" },
+        transition: transitions,
+      }
+    case "bottom":
+      return {
+        initial: { y: "100%" },
+        animate: { y: 0 },
+        exit: { y: "100%" },
+        transition: transitions,
+      }
+    case "right":
+    default:
+      return {
+        initial: { x: "100%" },
+        animate: { x: 0 },
+        exit: { x: "100%" },
+        transition: transitions,
+      }
+  }
 }
 
 function SheetContent({
@@ -55,34 +120,46 @@ function SheetContent({
   side?: "top" | "right" | "bottom" | "left"
   showCloseButton?: boolean
 }) {
+  const { open } = React.useContext(SheetContext)
+  const motionProps = getMotionProps(side)
+  const isHorizontal = side === "left" || side === "right"
+
   return (
-    <SheetPortal>
-      <SheetOverlay />
-      <SheetPrimitive.Content
-        data-slot="sheet-content"
-        data-side={side}
-        className={cn(
-          "fixed z-50 flex flex-col gap-4 bg-background bg-clip-padding text-sm shadow-lg transition duration-200 ease-in-out data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:border-t data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:border-b data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-[side=bottom]:data-open:slide-in-from-bottom-10 data-[side=left]:data-open:slide-in-from-left-10 data-[side=right]:data-open:slide-in-from-right-10 data-[side=top]:data-open:slide-in-from-top-10 data-closed:animate-out data-closed:fade-out-0 data-[side=bottom]:data-closed:slide-out-to-bottom-10 data-[side=left]:data-closed:slide-out-to-left-10 data-[side=right]:data-closed:slide-out-to-right-10 data-[side=top]:data-closed:slide-out-to-top-10",
-          className
-        )}
-        {...props}
-      >
-        {children}
-        {showCloseButton && (
-          <SheetPrimitive.Close data-slot="sheet-close" asChild>
-            <Button
-              variant="ghost"
-              className="absolute top-3 right-3"
-              size="icon-sm"
-            >
-              <XIcon
-              />
-              <span className="sr-only">Close</span>
-            </Button>
-          </SheetPrimitive.Close>
-        )}
-      </SheetPrimitive.Content>
-    </SheetPortal>
+    <AnimatePresence>
+      {open && (
+        <SheetPortal forceMount>
+          <SheetOverlay forceMount />
+          <SheetPrimitive.Content
+            data-slot="sheet-content"
+            data-side={side}
+            className={cn(
+              "fixed z-50 flex flex-col gap-4 bg-background bg-clip-padding text-sm shadow-lg data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:border-t data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:border-b",
+              isHorizontal && "sm:max-w-md",
+              className
+            )}
+            forceMount
+            asChild
+            {...props}
+          >
+            <motion.div {...motionProps} className="h-full flex flex-col">
+              {children}
+              {showCloseButton && (
+                <SheetPrimitive.Close data-slot="sheet-close" asChild>
+                  <Button
+                    variant="ghost"
+                    className="absolute top-3 right-3 rounded-full hover:bg-slate-100 transition-colors h-8 w-8 p-0"
+                    size="icon-sm"
+                  >
+                    <XIcon className="h-4 w-4 text-slate-400" />
+                    <span className="sr-only">Close</span>
+                  </Button>
+                </SheetPrimitive.Close>
+              )}
+            </motion.div>
+          </SheetPrimitive.Content>
+        </SheetPortal>
+      )}
+    </AnimatePresence>
   )
 }
 

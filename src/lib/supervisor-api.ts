@@ -132,3 +132,76 @@ export async function getAvailableSupervisors(): Promise<Supervisor[]> {
     throw error;
   }
 }
+
+export async function updateSupervisorAssignment(data: {
+  workAreaId: string;
+  supervisorId: string;
+}): Promise<void> {
+  try {
+    await api.put<void>("/WorkAreaSupervisors/update-assignments", data);
+  } catch (error) {
+    console.error("Failed to update supervisor assignment:", error);
+    throw error;
+  }
+}
+
+export async function getSupervisorWorkAreas(
+  supervisorId: string,
+  params: PaginatedRequest = {},
+): Promise<PaginatedResponse<any>> {
+  const queryParams = new URLSearchParams({
+    pageNumber: (params.pageNumber || 1).toString(),
+    pageSize: (params.pageSize || 10).toString(),
+  });
+
+  try {
+    const response = await api.get<PaginatedResponse<any>>(
+      `/WorkAreaSupervisors/workareas/${supervisorId}?${queryParams.toString()}`,
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to load supervisor work areas:", error);
+    throw error;
+  }
+}
+
+export async function getAssignedWorkAreas(
+  params: PaginatedRequest = {},
+): Promise<PaginatedResponse<any>> {
+  const queryParams = new URLSearchParams({
+    pageNumber: (params.pageNumber || 1).toString(),
+    pageSize: (params.pageSize || 10).toString(),
+  });
+
+  try {
+    const response = await api.get<PaginatedResponse<any>>(
+      `/WorkAreaSupervisors/workareas/assigned?${queryParams.toString()}`,
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to load assigned work areas:", error);
+    throw error;
+  }
+}
+
+export async function getUnassignedWorkAreas(
+  params: PaginatedRequest = {},
+): Promise<PaginatedResponse<any>> {
+  const queryParams = new URLSearchParams({
+    pageNumber: (params.pageNumber || 1).toString(),
+    pageSize: (params.pageSize || 10).toString(),
+  });
+
+  try {
+    const response = await api.get<PaginatedResponse<any>>(
+      `/WorkAreaSupervisors/workareas/unassigned?${queryParams.toString()}`,
+    );
+    return response;
+  } catch (error) {
+    console.error("Failed to load unassigned work areas:", error);
+    throw error;
+  }
+}
+
+
+
