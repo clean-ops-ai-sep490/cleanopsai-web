@@ -42,6 +42,7 @@ interface SearchableSelectProps<T extends SearchableSelectItem> {
   filters?: Record<string, any>;
   pageSize?: number;
   useInfiniteLoading?: boolean;
+  showSearch?: boolean;
 }
 
 export function SearchableSelect<T extends SearchableSelectItem>({
@@ -60,6 +61,7 @@ export function SearchableSelect<T extends SearchableSelectItem>({
   filters = {},
   pageSize = 20,
   useInfiniteLoading = false,
+  showSearch = true,
 }: SearchableSelectProps<T>) {
   const [open, setOpen] = React.useState(false);
   const [selectedIndex, setSelectedIndex] = React.useState(-1);
@@ -355,18 +357,20 @@ export function SearchableSelect<T extends SearchableSelectItem>({
       >
         <div className="flex flex-col bg-white min-w-0">
           {/* Search Input */}
-          <div className="flex items-center border-b border-gray-200 px-3 bg-white">
-            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50 text-gray-500" />
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder={searchPlaceholder}
-              value={currentSearchQuery}
-              onChange={(e) => setCurrentSearchQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="flex h-11 w-full rounded-[var(--app-radius-sm)] bg-white py-3 text-sm text-black outline-none placeholder:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
-            />
-          </div>
+          {showSearch && (
+            <div className="flex items-center border-b border-gray-200 px-3 bg-white">
+              <Search className="mr-2 h-4 w-4 shrink-0 opacity-50 text-gray-500" />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder={searchPlaceholder}
+                value={currentSearchQuery}
+                onChange={(e) => setCurrentSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="flex h-11 w-full rounded-[var(--app-radius-sm)] bg-white py-3 text-sm text-black outline-none placeholder:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+          )}
 
           {/* Items List */}
           <div

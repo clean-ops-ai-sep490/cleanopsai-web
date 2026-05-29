@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   Eye,
-  Headphones,
   Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -90,63 +89,60 @@ export function EmergencyRequestsListPanel({
       header: "Worker",
       className: "pl-6",
       cell: (req: EmergencyLeaveRequest) => (
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-[11px] font-bold text-slate-400 border border-slate-100">
-            {req.workerName?.charAt(0)?.toUpperCase() || "?"}
-          </div>
-          <span className="text-sm font-semibold text-slate-700">{req.workerName}</span>
-        </div>
+        <span className="text-sm font-semibold text-slate-700">{req.workerName}</span>
       )
     },
     {
       header: "Mô tả (Lý do)",
       cell: (req: EmergencyLeaveRequest) => (
-        <div className="flex flex-col gap-1 max-w-[320px]">
-          {req.transcription ? (
-            <p className="text-xs text-slate-500 line-clamp-1 italic">
-              &quot;{req.transcription}&quot;
-            </p>
-          ) : (
-            <span className="text-[11px] text-slate-300 italic">Không có bản dịch</span>
-          )}
-          {req.audioUrl && (
-            <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-bold uppercase tracking-widest">
-              <Headphones className="h-2.5 w-2.5" />
-              Voice Record
-            </div>
-          )}
-        </div>
+        <span className="text-xs text-slate-500 font-medium italic truncate max-w-[320px] block" title={req.transcription || undefined}>
+          {req.transcription ? `"${req.transcription}"` : "Không có lý do"}
+        </span>
       )
     },
     {
       header: "Khung giờ nghỉ",
       headerClassName: "text-center",
       className: "text-center",
-      cell: (req: EmergencyLeaveRequest) => (
-        <div className="flex flex-col items-center gap-0.5">
-          <span className="text-[11px] font-bold text-slate-700 tabular-nums">
-            {formatFullDateTime(req.leaveDateFrom).split(' ')[1]} - {formatFullDateTime(req.leaveDateTo).split(' ')[1]}
-          </span>
-          <span className="text-[10px] text-slate-400 font-medium">
-            {formatFullDateTime(req.leaveDateFrom).split(' ')[0]}
-          </span>
-        </div>
-      )
+      cell: (req: EmergencyLeaveRequest) => {
+        const fromDateStr = formatFullDateTime(req.leaveDateFrom);
+        const toDateStr = formatFullDateTime(req.leaveDateTo);
+        if (fromDateStr === "—" || toDateStr === "—") {
+          return <span className="text-sm text-slate-400 font-medium">—</span>;
+        }
+        const fromParts = fromDateStr.split(" ");
+        const toParts = toDateStr.split(" ");
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm font-semibold text-slate-700 tabular-nums">
+              {(fromParts[1] || "") + " - " + (toParts[1] || "")}
+            </span>
+            <span className="text-[11px] text-slate-400 font-medium">
+              {fromParts[0] || ""}
+            </span>
+          </div>
+        );
+      }
     },
     {
       header: "Ngày gửi",
       headerClassName: "text-center",
       className: "text-center",
-      cell: (req: EmergencyLeaveRequest) => (
-        <div className="flex flex-col items-center">
-          <span className="text-sm font-medium text-slate-600 tabular-nums">
-            {formatFullDateTime(req.created).split(' ')[0]}
-          </span>
-          <span className="text-[10px] text-slate-400 font-medium">
-            {formatFullDateTime(req.created).split(' ')[1]}
-          </span>
-        </div>
-      )
+      cell: (req: EmergencyLeaveRequest) => {
+        const dateStr = formatFullDateTime(req.created);
+        if (dateStr === "—") return <span className="text-sm text-slate-400 font-medium">—</span>;
+        const parts = dateStr.split(" ");
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm font-semibold text-slate-600 tabular-nums">
+              {parts[0]}
+            </span>
+            <span className="text-[11px] text-slate-400 font-medium">
+              {parts[1]}
+            </span>
+          </div>
+        );
+      }
     },
     {
       header: "Trạng thái",

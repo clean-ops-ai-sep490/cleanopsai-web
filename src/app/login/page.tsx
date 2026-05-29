@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { useHasMounted } from "@/hooks/use-has-mounted";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function LoginPage() {
 
   const { login, isAuthenticated, isLoading, user } = useAuth();
+  const hasMounted = useHasMounted();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,7 +50,7 @@ export default function LoginPage() {
     }
   }
 
-  if (isLoading || isAuthenticated) {
+  if (!hasMounted || isLoading || isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] px-4">
         <LoadingSpinner 

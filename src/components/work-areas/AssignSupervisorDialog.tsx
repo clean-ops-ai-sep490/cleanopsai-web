@@ -17,7 +17,7 @@ import {
 } from "@/hooks/useSupervisors";
 import { useTaskSchedulesByWorkArea } from "@/hooks/useTaskSchedules";
 import { getWorkAreasPaginatedNew, getWorkAreaById } from "@/lib/work-area-api";
-import { getAuthSupervisors } from "@/lib/supervisor-api";
+import { getAuthSupervisors, getUnassignedWorkAreas } from "@/lib/supervisor-api";
 import { Loader2, Users, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -143,15 +143,16 @@ export function AssignSupervisorDialog({
               onValueChange={setSelectedWorkAreaId}
               placeholder="Chọn khu vực làm việc"
               useInfiniteLoading={true}
+              showSearch={false}
               pageSize={10}
-              queryKey={["work-areas", "infinite"]}
-              queryFn={(page, pageSize, search) => 
-                getWorkAreasPaginatedNew(page, pageSize, { search }).then(res => ({
+              queryKey={["unassigned-work-areas", "infinite"]}
+              queryFn={(page, pageSize) => 
+                getUnassignedWorkAreas({ pageNumber: page, pageSize }).then(res => ({
                   ...res,
                   content: res.content.map(item => ({
                     ...item,
-                    id: item.id || "",
-                    name: item.name || ""
+                    id: item.workAreaId || item.id || "",
+                    name: item.workAreaName || item.name || ""
                   }))
                 }))
               }

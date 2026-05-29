@@ -99,38 +99,29 @@ export default function TaskScheduleListPage() {
     {
       header: "Người thực hiện",
       cell: (s: any) => (
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-[10px] font-bold text-slate-400 border border-slate-100">
-            <User className="h-3.5 w-3.5" />
-          </div>
-          <span className="text-sm font-semibold text-slate-600">{s.assigneeName || "Chưa phân công"}</span>
-        </div>
+        <span className="text-sm font-semibold text-slate-600">{s.assigneeName || "Chưa phân công"}</span>
       )
     },
     {
       header: "Địa điểm",
       cell: (s: any) => (
-        <div className="flex items-center gap-2 text-slate-500 max-w-[200px]">
-          <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-300" />
-          <span className="text-xs truncate">{s.displayLocation}</span>
-        </div>
+        <span className="text-xs text-slate-500 font-medium truncate max-w-[200px] block" title={s.displayLocation}>
+          {s.displayLocation || "—"}
+        </span>
       )
     },
     {
       header: "Tần suất",
       cell: (s: any) => (
-        <Badge variant="outline" className="rounded-md px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider text-slate-400 border-slate-200">
+        <span className="text-xs text-slate-500 font-medium">
           {FREQUENCY_LABELS[s.recurrenceType] || s.recurrenceType}
-        </Badge>
+        </span>
       )
     },
     {
       header: "Thời lượng",
       cell: (s: any) => (
-        <div className="flex items-center gap-1.5 text-slate-500">
-          <Clock className="h-3.5 w-3.5 text-slate-300" />
-          <span className="text-xs font-medium">{s.durationMinutes} phút</span>
-        </div>
+        <span className="text-xs text-slate-500 font-medium">{s.durationMinutes} phút</span>
       )
     },
     {
