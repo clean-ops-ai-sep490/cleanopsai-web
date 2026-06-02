@@ -18,9 +18,9 @@ export type AnnotationLabelName = "stain_or_water" | "wet_surface";
 
 export interface AnnotationLabel {
   label: AnnotationLabelName;
-  shapeType: "rectangle";
+  shapeType: "rectangle" | "polygon";
   source?: string;
-  points: [[number, number], [number, number]];
+  points: Array<[number, number]>;
 }
 
 export interface PendingScoringReviewItem {

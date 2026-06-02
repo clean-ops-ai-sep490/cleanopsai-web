@@ -10,7 +10,7 @@ export function SupervisorSidebar() {
   const pathname = usePathname();
 
   const items = [
-    { name: "AI Retrain Flow", href: "/supervisor/ai-retrain", icon: GitBranch },
+    { name: "AI Evaluation", href: "/supervisor/ai-retrain", icon: GitBranch },
   ];
 
   return (

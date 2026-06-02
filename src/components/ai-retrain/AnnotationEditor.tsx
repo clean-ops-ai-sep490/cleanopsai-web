@@ -42,6 +42,8 @@ interface Point {
   y: number;
 }
 
+type ShapeMode = "rectangle" | "polygon";
+
 function safeJsonParse<T>(raw: string | undefined | null, fallback: T): T {
   if (!raw) return fallback;
   try {
@@ -65,26 +67,45 @@ function normalizeLabels(raw: unknown): AnnotationLabel[] {
 
       const record = item as {
         label?: unknown;
+        shapeType?: unknown;
         points?: unknown;
         source?: unknown;
       };
       const label: AnnotationLabelName =
         record.label === "wet_surface" ? "wet_surface" : "stain_or_water";
+      const shapeType: ShapeMode =
+        String(record.shapeType || "").toLowerCase() === "polygon"
+          ? "polygon"
+          : "rectangle";
       const points = record.points;
       if (!Array.isArray(points) || points.length < 2) return null;
-      const first = points[0];
-      const second = points[1];
-      if (!Array.isArray(first) || !Array.isArray(second)) return null;
+
+      const normalizedPoints = points
+        .map((point) => {
+          if (!Array.isArray(point) || point.length < 2) return null;
+          return [Number(point[0]) || 0, Number(point[1]) || 0] as [
+            number,
+            number,
+          ];
+        })
+        .filter(Boolean) as Array<[number, number]>;
+
+      if (
+        (shapeType === "rectangle" && normalizedPoints.length < 2) ||
+        (shapeType === "polygon" && normalizedPoints.length < 3)
+      ) {
+        return null;
+      }
 
       return {
         label,
-        shapeType: "rectangle" as const,
+        shapeType,
         source:
           typeof record.source === "string" ? record.source : undefined,
-        points: [
-          [Number(first[0]) || 0, Number(first[1]) || 0],
-          [Number(second[0]) || 0, Number(second[1]) || 0],
-        ],
+        points:
+          shapeType === "rectangle"
+            ? [normalizedPoints[0], normalizedPoints[1]]
+            : normalizedPoints,
       };
     })
     .filter(Boolean) as AnnotationLabel[];
@@ -100,6 +121,10 @@ function labelsFromCandidate(candidate: ScoringAnnotationCandidateDetail) {
 
 function labelColor(label: AnnotationLabelName) {
   return label === "wet_surface" ? "#2563eb" : "#dc2626";
+}
+
+function shapeLabel(shapeType: AnnotationLabel["shapeType"]) {
+  return shapeType === "polygon" ? "polygon" : "rectangle";
 }
 
 function statusBadgeClass(status: string) {
@@ -136,12 +161,14 @@ function AnnotationCanvas({
   imageUrl,
   labels,
   activeLabel,
+  shapeMode,
   readOnly,
   onChange,
 }: {
   imageUrl: string;
   labels: AnnotationLabel[];
   activeLabel: AnnotationLabelName;
+  shapeMode: ShapeMode;
   readOnly: boolean;
   onChange: (labels: AnnotationLabel[]) => void;
 }) {
@@ -151,6 +178,7 @@ function AnnotationCanvas({
   const [displaySize, setDisplaySize] = useState({ width: 1, height: 1 });
   const [draftStart, setDraftStart] = useState<Point | null>(null);
   const [draftEnd, setDraftEnd] = useState<Point | null>(null);
+  const [polygonDraft, setPolygonDraft] = useState<Point[]>([]);
 
   const toImagePoint = (event: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -194,22 +222,52 @@ function AnnotationCanvas({
     const scaleX = displaySize.width / imageSize.width;
     const scaleY = displaySize.height / imageSize.height;
 
+    const drawPolygon = (
+      points: Array<[number, number]>,
+      label: AnnotationLabelName,
+      dashed = false,
+    ) => {
+      if (points.length < 2) return;
+      const scaled = points.map(([x, y]) => [x * scaleX, y * scaleY]);
+      const [firstX, firstY] = scaled[0];
+      context.strokeStyle = labelColor(label);
+      context.fillStyle = `${labelColor(label)}22`;
+      context.lineWidth = 2;
+      context.setLineDash(dashed ? [6, 4] : []);
+      context.beginPath();
+      context.moveTo(firstX, firstY);
+      scaled.slice(1).forEach(([x, y]) => context.lineTo(x, y));
+      if (!dashed && points.length > 2) {
+        context.closePath();
+        context.fill();
+      }
+      context.stroke();
+      context.setLineDash([]);
+      context.fillStyle = labelColor(label);
+      context.font = "12px sans-serif";
+      context.fillText(label, firstX + 4, Math.max(14, firstY + 14));
+    };
+
     const drawLabel = (label: AnnotationLabel, dashed = false) => {
-      const [[x1, y1], [x2, y2]] = label.points;
-      const left = Math.min(x1, x2) * scaleX;
-      const top = Math.min(y1, y2) * scaleY;
-      const width = Math.abs(x2 - x1) * scaleX;
-      const height = Math.abs(y2 - y1) * scaleY;
       context.strokeStyle = labelColor(label.label);
       context.fillStyle = `${labelColor(label.label)}22`;
       context.lineWidth = 2;
       context.setLineDash(dashed ? [6, 4] : []);
-      context.fillRect(left, top, width, height);
-      context.strokeRect(left, top, width, height);
-      context.setLineDash([]);
-      context.fillStyle = labelColor(label.label);
-      context.font = "12px sans-serif";
-      context.fillText(label.label, left + 4, Math.max(14, top + 14));
+      if (label.shapeType === "polygon") {
+        drawPolygon(label.points, label.label, dashed);
+      } else {
+        const [[x1, y1], [x2, y2]] = label.points;
+        const left = Math.min(x1, x2) * scaleX;
+        const top = Math.min(y1, y2) * scaleY;
+        const width = Math.abs(x2 - x1) * scaleX;
+        const height = Math.abs(y2 - y1) * scaleY;
+        context.fillRect(left, top, width, height);
+        context.strokeRect(left, top, width, height);
+        context.setLineDash([]);
+        context.fillStyle = labelColor(label.label);
+        context.font = "12px sans-serif";
+        context.fillText(label.label, left + 4, Math.max(14, top + 14));
+      }
     };
 
     labels.forEach((label) => drawLabel(label));
@@ -226,10 +284,48 @@ function AnnotationCanvas({
         true,
       );
     }
-  }, [activeLabel, displaySize, draftEnd, draftStart, imageSize, labels]);
+    if (polygonDraft.length > 0) {
+      drawPolygon(
+        polygonDraft.map((point) => [point.x, point.y] as [number, number]),
+        activeLabel,
+        true,
+      );
+    }
+  }, [
+    activeLabel,
+    displaySize,
+    draftEnd,
+    draftStart,
+    imageSize,
+    labels,
+    polygonDraft,
+  ]);
+
+  useEffect(() => {
+    setDraftStart(null);
+    setDraftEnd(null);
+    setPolygonDraft([]);
+  }, [readOnly, shapeMode]);
+
+  const finishPolygon = () => {
+    if (readOnly || polygonDraft.length < 3) return;
+    onChange([
+      ...labels,
+      {
+        label: activeLabel,
+        shapeType: "polygon",
+        points: polygonDraft.map((point) => [point.x, point.y] as [
+          number,
+          number,
+        ]),
+      },
+    ]);
+    setPolygonDraft([]);
+  };
 
   return (
-    <div className="relative overflow-hidden rounded-lg border bg-gray-50">
+    <div className="space-y-2">
+      <div className="relative overflow-hidden rounded-lg border bg-gray-50">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         ref={imageRef}
@@ -243,17 +339,17 @@ function AnnotationCanvas({
         className="absolute inset-0 cursor-crosshair"
         style={{ width: displaySize.width, height: displaySize.height }}
         onMouseDown={(event) => {
-          if (readOnly) return;
+          if (readOnly || shapeMode !== "rectangle") return;
           const point = toImagePoint(event);
           setDraftStart(point);
           setDraftEnd(point);
         }}
         onMouseMove={(event) => {
-          if (readOnly || !draftStart) return;
+          if (readOnly || shapeMode !== "rectangle" || !draftStart) return;
           setDraftEnd(toImagePoint(event));
         }}
         onMouseUp={(event) => {
-          if (readOnly || !draftStart) return;
+          if (readOnly || shapeMode !== "rectangle" || !draftStart) return;
           const end = toImagePoint(event);
           const width = Math.abs(end.x - draftStart.x);
           const height = Math.abs(end.y - draftStart.y);
@@ -273,11 +369,46 @@ function AnnotationCanvas({
           setDraftStart(null);
           setDraftEnd(null);
         }}
+        onClick={(event) => {
+          if (readOnly || shapeMode !== "polygon") return;
+          const point = toImagePoint(event);
+          setPolygonDraft((current) => [...current, point]);
+        }}
+        onDoubleClick={(event) => {
+          event.preventDefault();
+          finishPolygon();
+        }}
         onMouseLeave={() => {
           setDraftStart(null);
           setDraftEnd(null);
         }}
       />
+      </div>
+      {shapeMode === "polygon" && !readOnly && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+          <span>
+            Đã chọn {polygonDraft.length} điểm. Bấm đúp lên ảnh hoặc bấm hoàn tất
+            khi polygon có ít nhất 3 điểm.
+          </span>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={polygonDraft.length < 3}
+              onClick={finishPolygon}
+            >
+              Hoàn tất polygon
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setPolygonDraft([])}
+            >
+              Xóa điểm nháp
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -297,6 +428,7 @@ export function AnnotationEditor() {
   const [labels, setLabels] = useState<AnnotationLabel[]>([]);
   const [activeLabel, setActiveLabel] =
     useState<AnnotationLabelName>("stain_or_water");
+  const [shapeMode, setShapeMode] = useState<ShapeMode>("rectangle");
   const [note, setNote] = useState("");
 
   useEffect(() => {
@@ -419,6 +551,7 @@ export function AnnotationEditor() {
                 imageUrl={imageUrl}
                 labels={labels}
                 activeLabel={activeLabel}
+                shapeMode={shapeMode}
                 readOnly={readOnly}
                 onChange={setLabels}
               />
@@ -455,6 +588,31 @@ export function AnnotationEditor() {
                   {readOnlyMessage}
                 </div>
               )}
+
+              <div>
+                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                  Rectangle là weak region annotation: phù hợp để tạo pseudo-mask
+                  retrain nhanh, nhưng không phải mask segmentation chính xác theo
+                  pixel. Với vết loang hoặc vùng ướt không đều, hãy dùng polygon.
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium">Kiểu vùng</label>
+                <Select
+                  value={shapeMode}
+                  disabled={readOnly}
+                  onValueChange={(value) => setShapeMode(value as ShapeMode)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="rectangle">Rectangle nhanh</SelectItem>
+                    <SelectItem value="polygon">Polygon sát biên hơn</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div>
                 <label className="mb-2 block text-sm font-medium">Loại nhãn</label>
@@ -496,7 +654,7 @@ export function AnnotationEditor() {
                       className="flex items-center justify-between rounded border p-2 text-sm"
                     >
                       <span>
-                        {label.label} #{index + 1}
+                        {label.label} / {shapeLabel(label.shapeType)} #{index + 1}
                       </span>
                       {!readOnly && (
                         <Button

@@ -39,6 +39,8 @@ import type {
   TriggerScoringRetrainRequest,
 } from "@/types/scoring";
 import {
+  BarChart3,
+  Boxes,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -59,7 +61,7 @@ const statusLabels: Record<string, string> = {
   REJECTED: "Đã từ chối",
   RUNNING: "Đang chạy",
   FAILED: "Thất bại",
-  PROMOTED: "Đã đưa vào sử dụng",
+  PROMOTED: "Đã promote",
 };
 
 const trainingConfigLabels: Record<string, string> = {
@@ -74,10 +76,15 @@ const trainingConfigLabels: Record<string, string> = {
   lr: "Learning rate",
 };
 
-type RetrainTab = "reviews" | "annotations" | "runs";
+type RetrainTab = "reviews" | "annotations" | "benchmark" | "runs" | "models";
 
 function parseRetrainTab(value?: string | null): RetrainTab {
-  if (value === "annotations" || value === "runs") {
+  if (
+    value === "annotations" ||
+    value === "benchmark" ||
+    value === "runs" ||
+    value === "models"
+  ) {
     return value;
   }
 
@@ -138,10 +145,6 @@ function formatMetric(value?: number | null) {
   return value.toFixed(4);
 }
 
-function formatQualityScore(value: number) {
-  return `${value.toFixed(2)}%`;
-}
-
 function translatePromotionReason(reason?: string | null) {
   if (!reason) {
     return "Chưa có";
@@ -154,11 +157,25 @@ function translatePromotionReason(reason?: string | null) {
     return `Bị từ chối: YOLO mAP đạt ${rejectedMatch[1]} / yêu cầu ${rejectedMatch[2]}, U-Net mIoU đạt ${rejectedMatch[3]} / yêu cầu ${rejectedMatch[4]}.`;
   }
 
+  const rejectedUnetMatch = reason.match(
+    /^Rejected:\s*unet_miou\s*([0-9.]+)\/([0-9.]+)\.\s*YOLO frozen\.?$/i,
+  );
+  if (rejectedUnetMatch) {
+    return `Bị từ chối: U-Net mIoU đạt ${rejectedUnetMatch[1]} / yêu cầu ${rejectedUnetMatch[2]}. YOLO được giữ cố định.`;
+  }
+
   const promotedMatch = reason.match(
     /^Promoted:\s*yolo_map\s*([0-9.]+)\s*>=\s*([0-9.]+)\s*and\s*unet_miou\s*([0-9.]+)\s*>=\s*([0-9.]+)\.?$/i,
   );
   if (promotedMatch) {
     return `Đã đưa vào sử dụng: YOLO mAP ${promotedMatch[1]} >= ${promotedMatch[2]} và U-Net mIoU ${promotedMatch[3]} >= ${promotedMatch[4]}.`;
+  }
+
+  const promotedUnetMatch = reason.match(
+    /^Promoted:\s*unet_miou\s*([0-9.]+)\s*>=\s*([0-9.]+)\.\s*YOLO frozen\.?$/i,
+  );
+  if (promotedUnetMatch) {
+    return `Đã promote: U-Net mIoU ${promotedUnetMatch[1]} >= ${promotedUnetMatch[2]}. YOLO được giữ cố định.`;
   }
 
   if (reason.includes("No complete baseline metrics found")) {
@@ -286,7 +303,7 @@ function TrainingConfigPanel({ logs }: { logs?: string | null }) {
 
   return (
     <div className="grid gap-3 lg:grid-cols-3">
-      {renderConfig("YOLOv8", yolo)}
+      {renderConfig("YOLOv8 (cố định)", yolo)}
       {renderConfig("U-Net", unet)}
       <div className="rounded-md border border-gray-200 bg-white p-3">
         <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -365,10 +382,6 @@ function ReviewDialog({
               <div>
                 <p className="text-gray-500">Môi trường</p>
                 <p className="font-medium">{item.environmentKey}</p>
-              </div>
-              <div>
-                <p className="text-gray-500">Điểm chất lượng</p>
-                <p className="font-medium">{formatQualityScore(item.qualityScore)}</p>
               </div>
               <div>
                 <p className="text-gray-500">Mã yêu cầu</p>
@@ -450,7 +463,6 @@ function ReviewQueue() {
                 <TableHead>Ảnh</TableHead>
                 <TableHead>Người lao động</TableHead>
                 <TableHead>Môi trường</TableHead>
-                <TableHead>Điểm</TableHead>
                 <TableHead>Ngày tạo</TableHead>
                 <TableHead className="text-right">Thao tác</TableHead>
               </TableRow>
@@ -470,7 +482,6 @@ function ReviewQueue() {
                   </TableCell>
                   <TableCell>{item.workerName || "Chưa có"}</TableCell>
                   <TableCell>{item.environmentKey}</TableCell>
-                  <TableCell>{formatQualityScore(item.qualityScore)}</TableCell>
                   <TableCell>{formatDate(item.createdAt)}</TableCell>
                   <TableCell className="text-right">
                     {canReview ? (
@@ -635,6 +646,126 @@ function AnnotationQueue() {
   );
 }
 
+function BenchmarkOverview() {
+  const coreMetrics = [
+    ["verdict_accuracy", "Tỷ lệ PASS/PENDING/FAIL khớp ground truth"],
+    ["false_pass_rate", "Rủi ro model cho PASS khi thực tế không đạt"],
+    ["false_fail_rate", "Rủi ro model cho FAIL khi thực tế đạt"],
+    ["pending_review_rate", "Tỷ lệ ảnh cần supervisor can thiệp"],
+    ["average_latency_ms", "Độ trễ suy luận trung bình"],
+    ["mIoU", "Chỉ dùng cho ảnh benchmark có mask/polygon đủ tốt"],
+  ];
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Benchmark AI scoring</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            Benchmark là điều kiện trước khi promote model. Không dùng smoke metric,
+            log demo hoặc rectangle-only labels để claim segmentation chính xác cao.
+          </div>
+          <div className="grid gap-3 md:grid-cols-4">
+            <div className="rounded-md border border-gray-200 bg-white p-3">
+              <div className="text-xs font-semibold uppercase text-gray-500">
+                Pilot set
+              </div>
+              <div className="mt-1 text-lg font-semibold">50-100 ảnh thật</div>
+            </div>
+            <div className="rounded-md border border-gray-200 bg-white p-3">
+              <div className="text-xs font-semibold uppercase text-gray-500">
+                Golden masks
+              </div>
+              <div className="mt-1 text-lg font-semibold">30-50 ảnh</div>
+            </div>
+            <div className="rounded-md border border-gray-200 bg-white p-3">
+              <div className="text-xs font-semibold uppercase text-gray-500">
+                Ground truth
+              </div>
+              <div className="mt-1 text-lg font-semibold">Supervisor verdict</div>
+            </div>
+            <div className="rounded-md border border-gray-200 bg-white p-3">
+              <div className="text-xs font-semibold uppercase text-gray-500">
+                Promote gate
+              </div>
+              <div className="mt-1 text-lg font-semibold">Chưa có report</div>
+            </div>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Metric</TableHead>
+                <TableHead>Ý nghĩa</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {coreMetrics.map(([metric, meaning]) => (
+                <TableRow key={metric}>
+                  <TableCell className="font-mono text-xs">{metric}</TableCell>
+                  <TableCell>{meaning}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function ModelVersions() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Model versions & promotion policy</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-md border border-gray-200 bg-white p-3">
+            <div className="text-xs font-semibold uppercase text-gray-500">
+              YOLO
+            </div>
+            <div className="mt-1 font-semibold text-gray-900">
+              Cố định trong scope retrain
+            </div>
+            <p className="mt-1 text-sm text-gray-500">
+              Chỉ dùng smoke/inference sanity check nếu cần.
+            </p>
+          </div>
+          <div className="rounded-md border border-gray-200 bg-white p-3">
+            <div className="text-xs font-semibold uppercase text-gray-500">
+              U-Net active
+            </div>
+            <div className="mt-1 font-semibold text-gray-900">
+              Model đang phục vụ production
+            </div>
+            <p className="mt-1 text-sm text-gray-500">
+              Baseline để so sánh candidate trên cùng benchmark.
+            </p>
+          </div>
+          <div className="rounded-md border border-gray-200 bg-white p-3">
+            <div className="text-xs font-semibold uppercase text-gray-500">
+              U-Net candidate
+            </div>
+            <div className="mt-1 font-semibold text-gray-900">
+              Chỉ promote sau benchmark gate
+            </div>
+            <p className="mt-1 text-sm text-gray-500">
+              Không auto-promote nếu thiếu baseline hoặc report.
+            </p>
+          </div>
+        </div>
+        <div className="rounded-md border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
+          Candidate đạt yêu cầu khi không tăng false pass rate, không giảm
+          verdict accuracy, mIoU không thấp hơn baseline và latency vẫn đạt.
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function RetrainRuns() {
   const { hasRole } = useRole();
   const canTrigger = hasRole([
@@ -666,18 +797,18 @@ function RetrainRuns() {
   const handleTrigger = async () => {
     try {
       await triggerMutation.mutateAsync(form);
-      toastUtils.success("Đã kích hoạt phiên retrain");
+      toastUtils.success("Đã kích hoạt phiên retrain U-Net");
       setDialogOpen(false);
     } catch (error) {
-      console.error("Không thể kích hoạt retrain:", error);
-      toastUtils.error("Không thể kích hoạt retrain");
+      console.error("Không thể kích hoạt retrain U-Net:", error);
+      toastUtils.error("Không thể kích hoạt retrain U-Net");
     }
   };
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Lịch sử huấn luyện lại</CardTitle>
+        <CardTitle>Lịch sử retrain U-Net</CardTitle>
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -693,7 +824,7 @@ function RetrainRuns() {
               onClick={() => setDialogOpen(true)}
             >
               <Play className="mr-2 h-4 w-4" />
-              Kích hoạt huấn luyện lại
+              Kích hoạt retrain U-Net
             </Button>
           )}
         </div>
@@ -703,7 +834,7 @@ function RetrainRuns() {
           <LoadingSpinner />
         ) : data.length === 0 ? (
           <div className="py-8 text-center text-gray-500">
-            Chưa có phiên retrain nào.
+            Chưa có phiên retrain U-Net nào.
           </div>
         ) : (
           <Table>
@@ -713,7 +844,7 @@ function RetrainRuns() {
                 <TableHead>Phiên</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead>Mẫu dữ liệu</TableHead>
-                <TableHead>Kết quả đưa vào sử dụng</TableHead>
+                <TableHead>Kết quả promotion gate</TableHead>
                 <TableHead>Thời điểm tạo</TableHead>
                 <TableHead>Lượt chạy</TableHead>
               </TableRow>
@@ -775,7 +906,6 @@ function RetrainRuns() {
                     <TableCell>{batch.runCount}</TableCell>
                   </TableRow>
                   {expandedBatches[batch.batchId] && batch.runs?.map((run) => {
-                    const candidateYoloMap = extractLastNumericMetric(run.logs, "map");
                     const candidateUnetMiou = extractLastNumericMetric(run.logs, "miou");
 
                     return (
@@ -850,13 +980,13 @@ function RetrainRuns() {
                               </div>
                               <div className="rounded-md border border-gray-200 bg-white p-3">
                                 <div className="text-xs font-semibold uppercase text-gray-500">
-                                  Metric model ứng viên
+                                  Metric U-Net ứng viên
                                 </div>
                                 <div className="mt-1 text-sm text-gray-700">
-                                  YOLO mAP: <strong>{formatMetric(candidateYoloMap)}</strong>
-                                </div>
-                                <div className="text-sm text-gray-700">
                                   U-Net mIoU: <strong>{formatMetric(candidateUnetMiou)}</strong>
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  YOLO được giữ cố định; chỉ dùng sanity check khi cần.
                                 </div>
                               </div>
                             </div>
@@ -891,7 +1021,7 @@ function RetrainRuns() {
       <StandardDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        title="Kích hoạt retrain"
+        title="Kích hoạt retrain U-Net"
       >
         <div className="space-y-4">
           <div className="grid gap-3">
@@ -908,7 +1038,7 @@ function RetrainRuns() {
               }
             />
             <label className="text-sm font-medium">
-              Số nhãn đã duyệt tối thiểu
+              Số nhãn vùng bẩn đã duyệt tối thiểu
             </label>
             <Input
               type="number"
@@ -945,7 +1075,7 @@ function RetrainRuns() {
                   }))
                 }
               />
-              Cho phép dùng lại mẫu từng bị từ chối
+              Cho phép dùng lại mẫu từng bị từ chối khi tạo dataset U-Net
             </label>
           </div>
           <div className="flex justify-end gap-2">
@@ -960,7 +1090,7 @@ function RetrainRuns() {
               {triggerMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Kích hoạt
+              Kích hoạt U-Net retrain
             </Button>
           </div>
         </div>
@@ -996,10 +1126,10 @@ export function AiRetrainContainer() {
       <div>
         <div className="max-w-3xl">
           <h1 className="text-2xl font-semibold text-black">
-            Quy trình huấn luyện lại AI
+            AI Evaluation & U-Net Retrain
           </h1>
           <p className="mt-1 text-gray-600">
-            Duyệt kết quả AI, gán nhãn dữ liệu và kích hoạt huấn luyện lại model
+            Đánh giá benchmark, duyệt ground truth và retrain U-Net từ vùng bẩn đã duyệt
           </p>
         </div>
       </div>
@@ -1035,12 +1165,32 @@ export function AiRetrainContainer() {
               </span>
             </TabsTrigger>
             <TabsTrigger
+              value="benchmark"
+              className={browserTabTriggerClass}
+            >
+              <span
+                className={browserTabInnerClass(activeTab === "benchmark")}
+              >
+                <BarChart3 className="h-4 w-4" />
+                Benchmark
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
               value="runs"
               className={browserTabTriggerClass}
             >
               <span className={browserTabInnerClass(activeTab === "runs")}>
                 <GitBranch className="h-4 w-4" />
-                Lịch sử huấn luyện lại
+                U-Net retrain runs
+              </span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="models"
+              className={browserTabTriggerClass}
+            >
+              <span className={browserTabInnerClass(activeTab === "models")}>
+                <Boxes className="h-4 w-4" />
+                Model versions
               </span>
             </TabsTrigger>
           </TabsList>
@@ -1051,8 +1201,14 @@ export function AiRetrainContainer() {
         <TabsContent value="annotations" className="mt-5">
           <AnnotationQueue />
         </TabsContent>
+        <TabsContent value="benchmark" className="mt-5">
+          <BenchmarkOverview />
+        </TabsContent>
         <TabsContent value="runs" className="mt-5">
           <RetrainRuns />
+        </TabsContent>
+        <TabsContent value="models" className="mt-5">
+          <ModelVersions />
         </TabsContent>
       </Tabs>
     </div>
