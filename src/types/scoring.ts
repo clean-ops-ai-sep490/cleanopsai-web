@@ -14,7 +14,7 @@ export type RetrainBatchStatus =
   | "PROMOTED"
   | "REJECTED";
 
-export type AnnotationLabelName = "stain_or_water" | "wet_surface";
+export type AnnotationLabelName = "dirty_area" | "wet_surface";
 
 export interface AnnotationLabel {
   label: AnnotationLabelName;
