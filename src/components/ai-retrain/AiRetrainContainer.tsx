@@ -1,19 +1,12 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { StandardDialog } from "@/components/ui/standard-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -25,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { segmentationBenchmarkDataset } from "@/lib/ai-benchmark-data";
 import { toastUtils } from "@/lib/utils/toast-utils";
 import { UserRole, useRole } from "@/hooks/useRole";
 import {
@@ -36,13 +30,14 @@ import {
 } from "@/hooks/useScoringRetrain";
 import type {
   PendingScoringReviewItem,
+  ScoringAnnotationCandidateListItem,
   TriggerScoringRetrainRequest,
 } from "@/types/scoring";
 import {
   BarChart3,
-  Boxes,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Edit2,
   Eye,
@@ -79,30 +74,90 @@ const trainingConfigLabels: Record<string, string> = {
   lr: "Tốc độ học",
 };
 
-type RetrainTab = "reviews" | "annotations" | "benchmark" | "runs" | "models";
+type RetrainTab = "data" | "training" | "quality";
+type DataQueueStatusFilter =
+  | "all"
+  | "action-needed"
+  | "submitted"
+  | "approved"
+  | "rejected";
+
+const DATA_QUEUE_PAGE_SIZE = 5;
+const BENCHMARK_GALLERY_PAGE_SIZE = 6;
+
+type UnifiedDataQueueItem =
+  | {
+      key: string;
+      type: "review";
+      imageUrl: string;
+      environmentKey: string;
+      createdAt: string;
+      review: PendingScoringReviewItem;
+    }
+  | {
+      key: string;
+      type: "annotation";
+      imageUrl: string;
+      environmentKey: string;
+      createdAt: string;
+      annotation: ScoringAnnotationCandidateListItem;
+    };
+
+const dataQueueStatusFilters: Array<{
+  value: DataQueueStatusFilter;
+  label: string;
+}> = [
+  { value: "all", label: "Tất cả" },
+  { value: "action-needed", label: "Cần xử lý" },
+  { value: "submitted", label: "Đã gửi" },
+  { value: "approved", label: "Đã duyệt" },
+  { value: "rejected", label: "Đã từ chối" },
+];
 
 function parseRetrainTab(value?: string | null): RetrainTab {
-  if (
-    value === "annotations" ||
-    value === "benchmark" ||
-    value === "runs" ||
-    value === "models"
-  ) {
-    return value;
+  if (value === "training" || value === "runs") {
+    return "training";
   }
 
-  return "reviews";
+  if (value === "quality" || value === "benchmark" || value === "models") {
+    return "quality";
+  }
+
+  return "data";
 }
 
-const browserTabTriggerClass =
-  "h-12 flex-none cursor-pointer rounded-none border-0 bg-transparent p-0 text-current after:hidden hover:bg-transparent data-active:!bg-transparent data-active:shadow-none focus-visible:ring-0";
+const workflowSteps: Array<{
+  value: RetrainTab;
+  title: string;
+  description: string;
+  icon: React.ElementType;
+}> = [
+  {
+    value: "data",
+    title: "Dữ liệu",
+    description: "Duyệt ảnh và chuẩn bị nhãn chuẩn",
+    icon: CheckCircle2,
+  },
+  {
+    value: "training",
+    title: "Huấn luyện",
+    description: "Kích hoạt và theo dõi phiên chạy",
+    icon: GitBranch,
+  },
+  {
+    value: "quality",
+    title: "Đánh giá",
+    description: "Kiểm tra chất lượng trước khi sử dụng",
+    icon: BarChart3,
+  },
+];
 
-function browserTabInnerClass(isActive: boolean) {
+function workflowTabClass(isActive: boolean) {
   return [
-    "flex h-11 items-center gap-2 rounded-t-lg border border-b-0 px-5 text-sm font-medium transition-colors",
+    "flex h-full items-center gap-2 rounded-md border px-3 py-2 text-left transition-colors",
     isActive
-      ? "border-[#1a80a2] bg-[#1a80a2] text-white shadow-sm"
-      : "border-gray-200 bg-white text-gray-700 hover:border-[#a8d8e7] hover:bg-[#eaf6fa] hover:text-[#0f6680]",
+      ? "border-[#1a80a2] bg-[#eaf6fa] text-[#0f6680] shadow-sm"
+      : "border-gray-200 bg-white text-gray-600 hover:border-[#a8d8e7] hover:bg-gray-50 hover:text-gray-900",
   ].join(" ");
 }
 
@@ -148,6 +203,10 @@ function formatMetric(value?: number | null) {
   return value.toFixed(4);
 }
 
+function formatBenchmarkPercent(value: number) {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
 function translatePromotionReason(reason?: string | null) {
   if (!reason) {
     return "Chưa có";
@@ -157,28 +216,28 @@ function translatePromotionReason(reason?: string | null) {
     /^Rejected:\s*yolo_map\s*([0-9.]+)\/([0-9.]+),\s*unet_miou\s*([0-9.]+)\/([0-9.]+)\.?$/i,
   );
   if (rejectedMatch) {
-    return `Bị từ chối: YOLO mAP đạt ${rejectedMatch[1]} / yêu cầu ${rejectedMatch[2]}, U-Net mIoU đạt ${rejectedMatch[3]} / yêu cầu ${rejectedMatch[4]}.`;
+    return `Bị từ chối: điểm phát hiện đạt ${rejectedMatch[1]} / yêu cầu ${rejectedMatch[2]}, độ chính xác vùng đạt ${rejectedMatch[3]} / yêu cầu ${rejectedMatch[4]}.`;
   }
 
   const rejectedUnetMatch = reason.match(
     /^Rejected:\s*unet_miou\s*([0-9.]+)\/([0-9.]+)\.\s*YOLO frozen\.?$/i,
   );
   if (rejectedUnetMatch) {
-    return `Bị từ chối: U-Net mIoU đạt ${rejectedUnetMatch[1]} / yêu cầu ${rejectedUnetMatch[2]}. YOLO được giữ cố định.`;
+    return `Bị từ chối: độ chính xác vùng đạt ${rejectedUnetMatch[1]} / yêu cầu ${rejectedUnetMatch[2]}. Bộ phát hiện được giữ cố định.`;
   }
 
   const promotedMatch = reason.match(
     /^Promoted:\s*yolo_map\s*([0-9.]+)\s*>=\s*([0-9.]+)\s*and\s*unet_miou\s*([0-9.]+)\s*>=\s*([0-9.]+)\.?$/i,
   );
   if (promotedMatch) {
-    return `Đã đưa vào sử dụng: YOLO mAP ${promotedMatch[1]} >= ${promotedMatch[2]} và U-Net mIoU ${promotedMatch[3]} >= ${promotedMatch[4]}.`;
+    return `Đã đưa vào sử dụng: điểm phát hiện ${promotedMatch[1]} >= ${promotedMatch[2]} và độ chính xác vùng ${promotedMatch[3]} >= ${promotedMatch[4]}.`;
   }
 
   const promotedUnetMatch = reason.match(
     /^Promoted:\s*unet_miou\s*([0-9.]+)\s*>=\s*([0-9.]+)\.\s*YOLO frozen\.?$/i,
   );
   if (promotedUnetMatch) {
-    return `Đã đưa vào sử dụng: U-Net mIoU ${promotedUnetMatch[1]} >= ${promotedUnetMatch[2]}. YOLO được giữ cố định.`;
+    return `Đã đưa vào sử dụng: độ chính xác vùng ${promotedUnetMatch[1]} >= ${promotedUnetMatch[2]}. Bộ phát hiện được giữ cố định.`;
   }
 
   if (reason.includes("No complete baseline metrics found")) {
@@ -306,8 +365,8 @@ function TrainingConfigPanel({ logs }: { logs?: string | null }) {
 
   return (
     <div className="grid gap-3 lg:grid-cols-3">
-      {renderConfig("YOLOv8 (cố định)", yolo)}
-      {renderConfig("U-Net", unet)}
+      {renderConfig("Bộ phát hiện cố định", yolo)}
+      {renderConfig("Mô hình phân vùng", unet)}
       <div className="rounded-md border border-gray-200 bg-white p-3">
         <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
           Phân chia dữ liệu
@@ -329,30 +388,258 @@ function TrainingConfigPanel({ logs }: { logs?: string | null }) {
   );
 }
 
-function ReviewDialog({
-  item,
-  open,
-  onOpenChange,
+function getAnnotationQueryStatus(status: DataQueueStatusFilter) {
+  if (status === "submitted") return "Submitted";
+  if (status === "approved") return "Approved";
+  if (status === "rejected") return "Rejected";
+  return "all";
+}
+
+function matchesDataQueueStatus(
+  item: UnifiedDataQueueItem,
+  status: DataQueueStatusFilter,
+) {
+  if (status === "all") return true;
+  if (item.type === "review") return status === "action-needed";
+
+  const candidateStatus = item.annotation.candidateStatus;
+  if (status === "action-needed") {
+    return ["QUEUED", "INPROGRESS"].includes(candidateStatus);
+  }
+  if (status === "submitted") return candidateStatus === "SUBMITTED";
+  if (status === "approved") return candidateStatus === "APPROVED";
+  if (status === "rejected") return candidateStatus === "REJECTED";
+
+  return true;
+}
+
+function isActionNeededDataQueueItem(item: UnifiedDataQueueItem) {
+  if (item.type === "review") return true;
+
+  return ["QUEUED", "INPROGRESS"].includes(item.annotation.candidateStatus);
+}
+
+function dataQueueTypeLabel(item: UnifiedDataQueueItem) {
+  return item.type === "review" ? "Duyệt kết quả" : "Gán nhãn";
+}
+
+function dataQueueStatusLabel(item: UnifiedDataQueueItem) {
+  return item.type === "review"
+    ? "Cần xử lý"
+    : statusLabels[item.annotation.candidateStatus] ||
+        item.annotation.candidateStatus;
+}
+
+function dataQueueStatusClass(item: UnifiedDataQueueItem) {
+  return item.type === "review"
+    ? statusBadgeClass("PENDING")
+    : statusBadgeClass(item.annotation.candidateStatus);
+}
+
+function dataQueueDisplayName(item: UnifiedDataQueueItem) {
+  if (item.type === "review") {
+    return item.review.workerName || `Yêu cầu ${item.review.requestId.slice(0, 8)}`;
+  }
+
+  return `Mẫu ${item.annotation.requestId.slice(0, 8)}`;
+}
+
+function DataQueueList({
+  items,
+  selectedKey,
+  onSelect,
 }: {
-  item: PendingScoringReviewItem | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  items: UnifiedDataQueueItem[];
+  selectedKey: string | null;
+  onSelect: (key: string) => void;
+}) {
+  const [page, setPage] = useState(1);
+  const [isPageTransitioning, setIsPageTransitioning] = useState(false);
+  const pageTransitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const totalPages = Math.max(1, Math.ceil(items.length / DATA_QUEUE_PAGE_SIZE));
+  const normalizedPage = Math.min(page, totalPages);
+  const pageStart = (normalizedPage - 1) * DATA_QUEUE_PAGE_SIZE;
+  const visibleItems = items.slice(pageStart, pageStart + DATA_QUEUE_PAGE_SIZE);
+  const handlePageChange = (nextPage: number) => {
+    const safePage = Math.min(totalPages, Math.max(1, nextPage));
+    const nextItem = items[(safePage - 1) * DATA_QUEUE_PAGE_SIZE];
+
+    if (safePage === normalizedPage) return;
+
+    if (pageTransitionTimeoutRef.current) {
+      clearTimeout(pageTransitionTimeoutRef.current);
+    }
+
+    setIsPageTransitioning(true);
+    setPage(safePage);
+    if (nextItem) {
+      onSelect(nextItem.key);
+    }
+
+    pageTransitionTimeoutRef.current = setTimeout(() => {
+      setIsPageTransitioning(false);
+      pageTransitionTimeoutRef.current = null;
+    }, 180);
+  };
+
+  useEffect(() => {
+    if (!selectedKey) {
+      setPage(1);
+      return;
+    }
+
+    const selectedIndex = items.findIndex((item) => item.key === selectedKey);
+    if (selectedIndex === -1) {
+      setPage(1);
+      return;
+    }
+
+    setPage(Math.floor(selectedIndex / DATA_QUEUE_PAGE_SIZE) + 1);
+  }, [items, selectedKey]);
+
+  useEffect(
+    () => () => {
+      if (pageTransitionTimeoutRef.current) {
+        clearTimeout(pageTransitionTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
+  if (items.length === 0) {
+    return (
+      <div className="flex min-h-[320px] items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 px-6 text-center text-sm text-gray-500">
+        Không có dữ liệu cần xử lý phù hợp.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="relative">
+        <div
+          className={[
+            "space-y-2 transition-opacity duration-200 ease-out",
+            isPageTransitioning ? "opacity-45" : "opacity-100",
+          ].join(" ")}
+        >
+          {visibleItems.map((item) => {
+            const isActive = item.key === selectedKey;
+
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => onSelect(item.key)}
+                className={[
+                  "flex w-full cursor-pointer items-center gap-3 rounded-lg border bg-white p-3 text-left transition-colors",
+                  isActive
+                    ? "border-[#1a80a2] bg-[#eaf6fa] shadow-sm"
+                    : "border-gray-200 hover:border-[#a8d8e7] hover:bg-gray-50",
+                ].join(" ")}
+              >
+                <div className="h-[68px] w-[68px] flex-none overflow-hidden rounded-md border bg-gray-50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.imageUrl}
+                    alt={dataQueueTypeLabel(item)}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="flex min-h-[68px] min-w-0 flex-1 flex-col justify-center">
+                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                    <Badge
+                      variant="outline"
+                      className={
+                        item.type === "review"
+                          ? "border-blue-200 bg-blue-50 text-blue-700"
+                          : "border-purple-200 bg-purple-50 text-purple-700"
+                      }
+                    >
+                      {dataQueueTypeLabel(item)}
+                    </Badge>
+                    <Badge variant="outline" className={dataQueueStatusClass(item)}>
+                      {dataQueueStatusLabel(item)}
+                    </Badge>
+                  </div>
+                  <div className="mt-1.5 truncate text-sm font-semibold text-gray-950">
+                    {dataQueueDisplayName(item)}
+                  </div>
+                  <div className="mt-0.5 truncate text-xs text-gray-500">
+                    {item.environmentKey} · {formatDate(item.createdAt)}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        {isPageTransitioning && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-white/45">
+            <Loader2 className="h-5 w-5 animate-spin text-[#1a80a2]" />
+          </div>
+        )}
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-2 py-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 cursor-pointer px-2"
+            disabled={normalizedPage === 1}
+            onClick={() => handlePageChange(normalizedPage - 1)}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="text-xs font-medium text-gray-600">
+            {pageStart + 1}-
+            {Math.min(pageStart + DATA_QUEUE_PAGE_SIZE, items.length)} / {items.length}
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 cursor-pointer px-2"
+            disabled={normalizedPage === totalPages}
+            onClick={() => handlePageChange(normalizedPage + 1)}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReviewDetailPanel({
+  item,
+  onSaved,
+}: {
+  item: Extract<UnifiedDataQueueItem, { type: "review" }>;
+  onSaved: (handledKey: string) => Promise<void>;
 }) {
   const [verdict, setVerdict] = useState<"PASS" | "FAIL">("PASS");
   const [reason, setReason] = useState("");
   const reviewMutation = useReviewScoringResult();
 
+  useEffect(() => {
+    setVerdict("PASS");
+    setReason("");
+  }, [item.review.resultId]);
+
   const handleSubmit = async () => {
-    if (!item) return;
     try {
       await reviewMutation.mutateAsync({
-        resultId: item.resultId,
+        resultId: item.review.resultId,
         data: { verdict, reason: reason.trim() || undefined },
       });
       toastUtils.success("Đã lưu kết quả duyệt");
-      onOpenChange(false);
       setReason("");
       setVerdict("PASS");
+      await onSaved(item.key);
     } catch (error) {
       console.error("Không thể lưu kết quả duyệt:", error);
       toastUtils.error("Không thể lưu kết quả duyệt");
@@ -360,290 +647,650 @@ function ReviewDialog({
   };
 
   return (
-    <StandardDialog
-      open={open}
-      onOpenChange={onOpenChange}
-      title="Duyệt kết quả AI"
-      maxWidth="xl"
-    >
-      {item && (
-        <div className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_260px]">
-            <div className="overflow-hidden rounded-lg border bg-gray-50">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={item.source}
-                alt="Ảnh cần duyệt"
-                className="max-h-[420px] w-full object-contain"
-              />
-            </div>
-            <div className="space-y-3 text-sm">
-              <div>
-                <p className="text-gray-500">Người lao động</p>
-                <p className="font-medium">{item.workerName || "Chưa có"}</p>
-              </div>
-              <div>
-                <p className="text-gray-500">Môi trường</p>
-                <p className="font-medium">{item.environmentKey}</p>
-              </div>
-              <div>
-                <p className="text-gray-500">Mã yêu cầu</p>
-                <p className="break-all font-mono text-xs">{item.requestId}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-[180px_minmax(0,1fr)]">
-            <Select
-              value={verdict}
-              onValueChange={(value) => setVerdict(value as "PASS" | "FAIL")}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="PASS">Đạt</SelectItem>
-                <SelectItem value="FAIL">Không đạt</SelectItem>
-              </SelectContent>
-            </Select>
-            <Textarea
-              value={reason}
-              onChange={(event) => setReason(event.target.value)}
-              placeholder="Ghi chú duyệt"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Hủy
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={reviewMutation.isPending}
-              className="bg-[#1a80a2] hover:bg-[#1a80a2]/90"
-            >
-              {reviewMutation.isPending && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-              Lưu kết quả
-            </Button>
-          </div>
+    <div className="space-y-4">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge className="border-blue-200 bg-blue-50 text-blue-700">
+            Duyệt kết quả
+          </Badge>
+          <Badge variant="outline" className={statusBadgeClass("PENDING")}>
+            Cần xử lý
+          </Badge>
         </div>
-      )}
-    </StandardDialog>
+        <h2 className="mt-2 truncate text-lg font-semibold text-gray-950">
+          {dataQueueDisplayName(item)}
+        </h2>
+        <p className="mt-1 text-sm text-gray-500">
+          {item.review.environmentKey} · {formatDate(item.review.createdAt)}
+        </p>
+      </div>
+
+      <div className="overflow-hidden rounded-lg border bg-gray-50">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={item.review.source}
+          alt="Ảnh cần duyệt"
+          className="max-h-[320px] w-full object-contain"
+        />
+      </div>
+
+      <div className="grid gap-3 text-sm sm:grid-cols-3">
+        <div className="rounded-md bg-gray-50 p-3">
+          <p className="text-xs font-semibold uppercase text-gray-500">
+            Người lao động
+          </p>
+          <p className="mt-1 font-medium text-gray-950">
+            {item.review.workerName || "Chưa có"}
+          </p>
+        </div>
+        <div className="rounded-md bg-gray-50 p-3">
+          <p className="text-xs font-semibold uppercase text-gray-500">
+            Môi trường
+          </p>
+          <p className="mt-1 font-medium text-gray-950">
+            {item.review.environmentKey}
+          </p>
+        </div>
+        <div className="rounded-md bg-gray-50 p-3">
+          <p className="text-xs font-semibold uppercase text-gray-500">
+            Mã yêu cầu
+          </p>
+          <p className="mt-1 break-all font-mono text-xs font-medium text-gray-950">
+            {item.review.requestId}
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <div className="mb-3 text-sm font-semibold text-gray-950">
+          Kết quả duyệt
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {(["PASS", "FAIL"] as const).map((value) => (
+            <Button
+              key={value}
+              type="button"
+              variant={verdict === value ? "default" : "outline"}
+              className={
+                verdict === value
+                  ? "cursor-pointer bg-[#1a80a2] hover:bg-[#1a80a2]/90"
+                  : "cursor-pointer"
+              }
+              onClick={() => setVerdict(value)}
+            >
+              {value === "PASS" ? "Đạt" : "Không đạt"}
+            </Button>
+          ))}
+        </div>
+        <Textarea
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          placeholder="Ghi chú duyệt"
+          className="mt-3 min-h-[96px]"
+        />
+        <div className="mt-3 flex justify-end">
+          <Button
+            onClick={handleSubmit}
+            disabled={reviewMutation.isPending}
+            className="cursor-pointer bg-[#1a80a2] hover:bg-[#1a80a2]/90"
+          >
+            {reviewMutation.isPending && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            Lưu kết quả
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
-function ReviewQueue() {
-  const { hasRole } = useRole();
-  const canReview = hasRole([UserRole.Supervisor, UserRole.Admin]);
-  const [selectedItem, setSelectedItem] =
-    useState<PendingScoringReviewItem | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const { data = [], isLoading, refetch, isFetching } =
-    usePendingScoringReviews(100);
+function AnnotationDetailPanel({
+  item,
+  canEditAnnotations,
+}: {
+  item: Extract<UnifiedDataQueueItem, { type: "annotation" }>;
+  canEditAnnotations: boolean;
+}) {
+  const shouldEdit =
+    canEditAnnotations &&
+    !item.annotation.hasAnnotation &&
+    item.annotation.candidateStatus !== "APPROVED";
+  const actionHref = shouldEdit
+    ? `/supervisor/ai-retrain/annotations/${item.annotation.candidateId}?mode=edit`
+    : `/supervisor/ai-retrain/annotations/${item.annotation.candidateId}`;
+  const ActionIcon = shouldEdit ? Edit2 : Eye;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Hàng chờ duyệt ảnh AI</CardTitle>
-        <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
-          <RefreshIcon isFetching={isFetching} />
-          Tải lại
-        </Button>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <LoadingSpinner />
-        ) : data.length === 0 ? (
-          <div className="py-8 text-center text-gray-500">
-            Không có ảnh kết quả AI cần duyệt thuộc người lao động bạn quản lý.
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge className="border-purple-200 bg-purple-50 text-purple-700">
+              Gán nhãn
+            </Badge>
+            <Badge
+              variant="outline"
+              className={statusBadgeClass(item.annotation.candidateStatus)}
+            >
+              {statusLabels[item.annotation.candidateStatus] ||
+                item.annotation.candidateStatus}
+            </Badge>
           </div>
+          <h2 className="mt-2 truncate text-lg font-semibold text-gray-950">
+            {dataQueueDisplayName(item)}
+          </h2>
+          <p className="mt-1 text-sm text-gray-500">
+            {item.annotation.environmentKey} · {formatDate(item.annotation.createdAtUtc)}
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Link href={actionHref}>
+            <Button
+              variant={shouldEdit ? "default" : "outline"}
+              className={
+                shouldEdit
+                  ? "w-full cursor-pointer bg-[#1a80a2] hover:bg-[#1a80a2]/90 sm:w-auto"
+                  : "w-full cursor-pointer sm:w-auto"
+              }
+            >
+              <ActionIcon className="mr-2 h-4 w-4" />
+              {shouldEdit ? "Chỉnh sửa" : "Mở"}
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-lg border bg-gray-50">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={item.annotation.imageUrl}
+          alt="Ảnh chờ gán nhãn"
+          className="max-h-[320px] w-full object-contain"
+        />
+      </div>
+
+      <div className="grid gap-3 text-sm sm:grid-cols-2">
+        <div className="rounded-md bg-gray-50 p-3">
+          <p className="text-xs font-semibold uppercase text-gray-500">
+            Mã yêu cầu
+          </p>
+          <p className="mt-1 break-all font-mono text-xs font-medium text-gray-950">
+            {item.annotation.requestId}
+          </p>
+        </div>
+        <div className="rounded-md bg-gray-50 p-3">
+          <p className="text-xs font-semibold uppercase text-gray-500">
+            Nhãn
+          </p>
+          <p className="mt-1 font-medium text-gray-950">
+            {item.annotation.hasAnnotation
+              ? `v${item.annotation.annotationVersion ?? 1}`
+              : "Chưa có"}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DataQueueDetailPanel({
+  item,
+  canEditAnnotations,
+  onReviewSaved,
+}: {
+  item: UnifiedDataQueueItem | undefined;
+  canEditAnnotations: boolean;
+  onReviewSaved: (handledKey: string) => Promise<void>;
+}) {
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        {!item ? (
+          <div className="flex min-h-[440px] items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 px-6 text-center text-sm text-gray-500">
+            Chọn một dữ liệu để xem chi tiết.
+          </div>
+        ) : item.type === "review" ? (
+          <ReviewDetailPanel item={item} onSaved={onReviewSaved} />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ảnh</TableHead>
-                <TableHead>Người lao động</TableHead>
-                <TableHead>Môi trường</TableHead>
-                <TableHead>Ngày tạo</TableHead>
-                <TableHead className="text-right">Thao tác</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((item) => (
-                <TableRow key={item.resultId}>
-                  <TableCell>
-                    <div className="h-16 w-24 overflow-hidden rounded border bg-gray-50">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.source}
-                        alt="Ảnh cần duyệt"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  </TableCell>
-                  <TableCell>{item.workerName || "Chưa có"}</TableCell>
-                  <TableCell>{item.environmentKey}</TableCell>
-                  <TableCell>{formatDate(item.createdAt)}</TableCell>
-                  <TableCell className="text-right">
-                    {canReview ? (
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          setSelectedItem(item);
-                          setDialogOpen(true);
-                        }}
-                      >
-                        Duyệt
-                      </Button>
-                    ) : (
-                      <span className="text-sm text-gray-500">Chỉ xem</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <AnnotationDetailPanel
+            item={item}
+            canEditAnnotations={canEditAnnotations}
+          />
         )}
       </CardContent>
-      <ReviewDialog
-        item={selectedItem}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-      />
     </Card>
   );
 }
 
-function AnnotationQueue() {
+function UnifiedDataQueue() {
   const { hasRole } = useRole();
   const canEditAnnotations = hasRole([UserRole.Supervisor, UserRole.Admin]);
-  const [status, setStatus] = useState("all");
+  const [selectedQueueKey, setSelectedQueueKey] = useState<string | null>(null);
+  const [handledReviewKeys, setHandledReviewKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [status, setStatus] = useState<DataQueueStatusFilter>("all");
   const [environmentKey, setEnvironmentKey] = useState("");
+  const environmentFilter = environmentKey.trim().toLowerCase();
   const filters = useMemo(
     () => ({
-      status,
+      status: getAnnotationQueryStatus(status),
       environmentKey: environmentKey.trim() || undefined,
       take: 100,
     }),
     [environmentKey, status],
   );
-  const { data = [], isLoading, refetch, isFetching } =
-    useAnnotationCandidates(filters);
+  const {
+    data: pendingReviews = [],
+    isLoading: reviewsLoading,
+    refetch: refetchReviews,
+    isFetching: reviewsFetching,
+  } = usePendingScoringReviews(100);
+  const {
+    data: candidates = [],
+    isLoading: candidatesLoading,
+    refetch: refetchCandidates,
+    isFetching: candidatesFetching,
+  } = useAnnotationCandidates(filters);
+  const visiblePendingReviews = useMemo(
+    () =>
+      pendingReviews.filter(
+        (item) => !handledReviewKeys.has(`review-${item.resultId}`),
+      ),
+    [handledReviewKeys, pendingReviews],
+  );
+
+  const queueItems = useMemo(() => {
+    const reviewItems: UnifiedDataQueueItem[] = visiblePendingReviews
+      .filter((item) =>
+        environmentFilter
+          ? item.environmentKey.toLowerCase().includes(environmentFilter)
+          : true,
+      )
+      .map((item) => ({
+        key: `review-${item.resultId}`,
+        type: "review",
+        imageUrl: item.source,
+        environmentKey: item.environmentKey,
+        createdAt: item.createdAt,
+        review: item,
+      }));
+
+    const annotationItems: UnifiedDataQueueItem[] = candidates.map((candidate) => ({
+      key: `annotation-${candidate.candidateId}`,
+      type: "annotation",
+      imageUrl: candidate.imageUrl,
+      environmentKey: candidate.environmentKey,
+      createdAt: candidate.createdAtUtc,
+      annotation: candidate,
+    }));
+
+    return [...reviewItems, ...annotationItems]
+      .filter((item) => matchesDataQueueStatus(item, status))
+      .sort((a, b) => {
+        if (status === "all") {
+          const priorityDiff =
+            Number(isActionNeededDataQueueItem(b)) -
+            Number(isActionNeededDataQueueItem(a));
+
+          if (priorityDiff !== 0) return priorityDiff;
+        }
+
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+  }, [candidates, environmentFilter, status, visiblePendingReviews]);
+
+  useEffect(() => {
+    if (reviewsLoading || candidatesLoading) return;
+
+    if (queueItems.length === 0) {
+      if (selectedQueueKey !== null) {
+        setSelectedQueueKey(null);
+      }
+      return;
+    }
+
+    if (
+      !selectedQueueKey ||
+      !queueItems.some((item) => item.key === selectedQueueKey)
+    ) {
+      setSelectedQueueKey(queueItems[0].key);
+    }
+  }, [candidatesLoading, queueItems, reviewsLoading, selectedQueueKey]);
+
+  const selectedQueueItem = queueItems.find(
+    (item) => item.key === selectedQueueKey,
+  );
+
+  const waitingAnnotations = candidates.filter((candidate) =>
+    ["QUEUED", "INPROGRESS"].includes(candidate.candidateStatus),
+  ).length;
+  const submittedAnnotations = candidates.filter(
+    (candidate) => candidate.candidateStatus === "SUBMITTED",
+  ).length;
+  const approvedAnnotations = candidates.filter(
+    (candidate) => candidate.candidateStatus === "APPROVED",
+  ).length;
+  const isLoading = reviewsLoading || candidatesLoading;
+  const isFetching = reviewsFetching || candidatesFetching;
+  const stats = [
+    {
+      label: "Cần duyệt",
+      value: reviewsLoading ? "..." : visiblePendingReviews.length,
+    },
+    {
+      label: "Cần gán nhãn",
+      value: candidatesLoading ? "..." : waitingAnnotations,
+    },
+    {
+      label: "Đã gửi",
+      value: candidatesLoading ? "..." : submittedAnnotations,
+    },
+    {
+      label: "Đã duyệt",
+      value: candidatesLoading ? "..." : approvedAnnotations,
+    },
+  ];
+
+  const handleRefresh = () => {
+    refetchReviews();
+    refetchCandidates();
+  };
+
+  const handleReviewSaved = async (handledKey: string) => {
+    const currentIndex = queueItems.findIndex((item) => item.key === handledKey);
+    const remainingItems = queueItems.filter((item) => item.key !== handledKey);
+    const nextItem =
+      queueItems.find(
+        (item, index) => item.key !== handledKey && index > currentIndex,
+      ) ??
+      remainingItems[0];
+
+    setHandledReviewKeys((previous) => {
+      const next = new Set(previous);
+      next.add(handledKey);
+      return next;
+    });
+    setSelectedQueueKey(nextItem?.key ?? null);
+    await Promise.all([refetchReviews(), refetchCandidates()]);
+  };
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
+        <Card>
+          <CardHeader className="space-y-3 pb-3">
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle>Dữ liệu cần xử lý</CardTitle>
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={isFetching}
+                className="cursor-pointer"
+              >
+                <RefreshIcon isFetching={isFetching} />
+                Tải lại
+              </Button>
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {stats.map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1.5"
+                >
+                  <div className="text-[10px] font-semibold uppercase leading-4 text-gray-500">
+                    {stat.label}
+                  </div>
+                  <div className="text-base font-semibold leading-5 text-gray-950">
+                    {stat.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="grid gap-2">
+              <div className="flex flex-wrap gap-1.5">
+                {dataQueueStatusFilters.map((filter) => {
+                  const isActive = status === filter.value;
+
+                  return (
+                    <button
+                      key={filter.value}
+                      type="button"
+                      onClick={() => setStatus(filter.value)}
+                      className={[
+                        "cursor-pointer rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors",
+                        isActive
+                          ? "border-[#1a80a2] bg-[#eaf6fa] text-[#0f6680]"
+                          : "border-gray-200 bg-white text-gray-600 hover:border-[#a8d8e7] hover:bg-gray-50",
+                      ].join(" ")}
+                    >
+                      {filter.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <Input
+                value={environmentKey}
+                onChange={(event) => setEnvironmentKey(event.target.value)}
+                placeholder="Mã môi trường"
+              />
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {isLoading ? (
+              <LoadingSpinner />
+            ) : (
+              <DataQueueList
+                items={queueItems}
+                selectedKey={selectedQueueKey}
+                onSelect={setSelectedQueueKey}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <DataQueueDetailPanel
+          item={selectedQueueItem}
+          canEditAnnotations={canEditAnnotations}
+          onReviewSaved={handleReviewSaved}
+        />
+    </div>
+  );
+}
+
+function DataWorkflow() {
+  return <UnifiedDataQueue />;
+}
+
+function BenchmarkSampleCard({
+  sample,
+  imageMode,
+}: {
+  sample: (typeof segmentationBenchmarkDataset.samples)[number];
+  imageMode: "overlay" | "original";
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const imageSrc = imageMode === "overlay" ? sample.overlayPath : sample.imagePath;
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [imageSrc]);
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+      <div className="flex aspect-[4/3] items-center justify-center bg-gray-50">
+        {imageFailed ? (
+          <div className="px-4 text-center text-sm text-gray-500">
+            Không tải được ảnh benchmark
+          </div>
+        ) : (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={imageSrc}
+            alt={sample.title}
+            className="h-full w-full object-cover"
+            onError={() => setImageFailed(true)}
+          />
+        )}
+      </div>
+      <div className="space-y-2 p-3">
+        <div className="truncate text-sm font-semibold text-gray-950">
+          {sample.title}
+        </div>
+        <div className="grid grid-cols-3 gap-1.5 text-xs">
+          <div className="rounded-md bg-gray-50 px-2 py-1">
+            <div className="font-semibold text-gray-950">
+              {formatBenchmarkPercent(sample.pixelAccuracy)}
+            </div>
+            <div className="text-gray-500">Pixel</div>
+          </div>
+          <div className="rounded-md bg-gray-50 px-2 py-1">
+            <div className="font-semibold text-gray-950">
+              {formatBenchmarkPercent(sample.meanIou)}
+            </div>
+            <div className="text-gray-500">Vùng</div>
+          </div>
+          <div className="rounded-md bg-gray-50 px-2 py-1">
+            <div className="font-semibold text-gray-950">
+              {formatBenchmarkPercent(sample.meanDiceF1)}
+            </div>
+            <div className="text-gray-500">Dice/F1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BenchmarkDatasetOverview() {
+  const [imageMode, setImageMode] = useState<"overlay" | "original">("overlay");
+  const [page, setPage] = useState(1);
+  const samples = segmentationBenchmarkDataset.samples;
+  const totalPages = Math.max(
+    1,
+    Math.ceil(samples.length / BENCHMARK_GALLERY_PAGE_SIZE),
+  );
+  const normalizedPage = Math.min(page, totalPages);
+  const pageStart = (normalizedPage - 1) * BENCHMARK_GALLERY_PAGE_SIZE;
+  const visibleSamples = samples.slice(
+    pageStart,
+    pageStart + BENCHMARK_GALLERY_PAGE_SIZE,
+  );
+  const stats = [
+    {
+      label: "Ảnh benchmark",
+      value: segmentationBenchmarkDataset.imageCount,
+    },
+    {
+      label: "Mask chuẩn",
+      value: segmentationBenchmarkDataset.maskCount,
+    },
+    {
+      label: "Độ chính xác pixel",
+      value: formatBenchmarkPercent(segmentationBenchmarkDataset.pixelAccuracy),
+    },
+    {
+      label: "Độ trùng khớp vùng",
+      value: formatBenchmarkPercent(segmentationBenchmarkDataset.meanIou),
+    },
+    {
+      label: "Dice/F1",
+      value: formatBenchmarkPercent(segmentationBenchmarkDataset.meanDiceF1),
+    },
+  ];
 
   return (
     <Card>
-      <CardHeader className="space-y-4">
-        <div className="flex items-center justify-between">
-          <CardTitle>Hàng chờ gán nhãn</CardTitle>
-          <Button
-            variant="outline"
-            onClick={() => refetch()}
-            disabled={isFetching}
-          >
-            <RefreshIcon isFetching={isFetching} />
-            Tải lại
-          </Button>
+      <CardHeader className="space-y-3">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <CardTitle>Bộ ảnh benchmark mô hình phân vùng</CardTitle>
+            <p className="mt-2 max-w-3xl text-sm text-gray-500">
+              Đây là tập ảnh cố định, không dùng để huấn luyện. Bộ này dùng để
+              so sánh mô hình hiện tại và mô hình ứng viên trên cùng bằng chứng.
+            </p>
+          </div>
+          <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+            {[
+              ["overlay", "Overlay"],
+              ["original", "Ảnh gốc"],
+            ].map(([value, label]) => {
+              const isActive = imageMode === value;
+
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setImageMode(value as "overlay" | "original")}
+                  className={[
+                    "cursor-pointer rounded-md px-3 py-1.5 text-sm font-semibold transition-colors",
+                    isActive
+                      ? "bg-white text-[#0f6680] shadow-sm"
+                      : "text-gray-600 hover:text-gray-950",
+                  ].join(" ")}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-[190px]">
-              <SelectValue placeholder="Trạng thái" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả trạng thái</SelectItem>
-              <SelectItem value="Queued">Đang chờ</SelectItem>
-              <SelectItem value="InProgress">Đang xử lý</SelectItem>
-              <SelectItem value="Submitted">Đã gửi</SelectItem>
-              <SelectItem value="Approved">Đã duyệt</SelectItem>
-              <SelectItem value="Rejected">Đã từ chối</SelectItem>
-            </SelectContent>
-          </Select>
-          <Input
-            value={environmentKey}
-            onChange={(event) => setEnvironmentKey(event.target.value)}
-            placeholder="Mã môi trường"
-            className="w-[220px]"
-          />
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="rounded-md border border-gray-200 bg-gray-50 p-3"
+            >
+              <div className="text-xs font-semibold uppercase text-gray-500">
+                {stat.label}
+              </div>
+              <div className="mt-1 text-lg font-semibold text-gray-950">
+                {stat.value}
+              </div>
+            </div>
+          ))}
         </div>
       </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <LoadingSpinner />
-        ) : data.length === 0 ? (
-          <div className="py-8 text-center text-gray-500">
-            Không có dữ liệu gán nhãn nào phù hợp.
+      <CardContent className="space-y-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {visibleSamples.map((sample) => (
+            <BenchmarkSampleCard
+              key={sample.id}
+              sample={sample}
+              imageMode={imageMode}
+            />
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-2 py-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 cursor-pointer px-2"
+            disabled={normalizedPage === 1}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="text-xs font-medium text-gray-600">
+            {pageStart + 1}-
+            {Math.min(pageStart + BENCHMARK_GALLERY_PAGE_SIZE, samples.length)} /{" "}
+            {samples.length}
           </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Ảnh</TableHead>
-                <TableHead>Trạng thái</TableHead>
-                <TableHead>Môi trường</TableHead>
-                <TableHead>Nhãn</TableHead>
-                <TableHead>Ngày tạo</TableHead>
-                <TableHead className="text-right">Thao tác</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((candidate) => (
-                <TableRow key={candidate.candidateId}>
-                  <TableCell>
-                    <div className="h-16 w-24 overflow-hidden rounded border bg-gray-50">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={candidate.imageUrl}
-                        alt="Ảnh chờ gán nhãn"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={statusBadgeClass(candidate.candidateStatus)}
-                    >
-                      {statusLabels[candidate.candidateStatus] ||
-                        candidate.candidateStatus}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{candidate.environmentKey}</TableCell>
-                  <TableCell>
-                    {candidate.hasAnnotation
-                      ? `v${candidate.annotationVersion ?? 1}`
-                      : "Chưa có"}
-                  </TableCell>
-                  <TableCell>{formatDate(candidate.createdAtUtc)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Link
-                        href={`/supervisor/ai-retrain/annotations/${candidate.candidateId}`}
-                      >
-                        <Button size="sm" variant="outline">
-                          <Eye className="mr-2 h-4 w-4" />
-                          Mở
-                        </Button>
-                      </Link>
-                      {canEditAnnotations &&
-                        candidate.candidateStatus !== "APPROVED" && (
-                          <Link
-                            href={`/supervisor/ai-retrain/annotations/${candidate.candidateId}?mode=edit`}
-                          >
-                            <Button size="sm">
-                              <Edit2 className="mr-2 h-4 w-4" />
-                              Chỉnh sửa
-                            </Button>
-                          </Link>
-                        )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 cursor-pointer px-2"
+            disabled={normalizedPage === totalPages}
+            onClick={() =>
+              setPage((current) => Math.min(totalPages, current + 1))
+            }
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
@@ -676,25 +1323,25 @@ function BenchmarkOverview() {
               <div className="text-xs font-semibold uppercase text-gray-500">
                 Bộ ảnh thử nghiệm
               </div>
-              <div className="mt-1 text-lg font-semibold">50-100 ảnh thật</div>
+              <div className="mt-1 text-lg font-semibold">46 ảnh thật</div>
             </div>
             <div className="rounded-md border border-gray-200 bg-white p-3">
               <div className="text-xs font-semibold uppercase text-gray-500">
-                Vùng nhãn chuẩn
+                Mask chuẩn
               </div>
-              <div className="mt-1 text-lg font-semibold">30-50 ảnh</div>
+              <div className="mt-1 text-lg font-semibold">46 mask</div>
             </div>
             <div className="rounded-md border border-gray-200 bg-white p-3">
               <div className="text-xs font-semibold uppercase text-gray-500">
                 Dữ liệu chuẩn
               </div>
-              <div className="mt-1 text-lg font-semibold">Kết luận giám sát viên</div>
+              <div className="mt-1 text-lg font-semibold">Mask đã đối chiếu</div>
             </div>
             <div className="rounded-md border border-gray-200 bg-white p-3">
               <div className="text-xs font-semibold uppercase text-gray-500">
                 Điều kiện đưa vào sử dụng
               </div>
-              <div className="mt-1 text-lg font-semibold">Chưa có báo cáo</div>
+              <div className="mt-1 text-lg font-semibold">Có benchmark cố định</div>
             </div>
           </div>
           <Table>
@@ -729,7 +1376,7 @@ function ModelVersions() {
         <div className="grid gap-3 md:grid-cols-3">
           <div className="rounded-md border border-gray-200 bg-white p-3">
             <div className="text-xs font-semibold uppercase text-gray-500">
-              YOLO
+              Bộ phát hiện cố định
             </div>
             <div className="mt-1 font-semibold text-gray-900">
               Cố định trong phạm vi huấn luyện lại
@@ -740,7 +1387,7 @@ function ModelVersions() {
           </div>
           <div className="rounded-md border border-gray-200 bg-white p-3">
             <div className="text-xs font-semibold uppercase text-gray-500">
-              U-Net đang dùng
+              Mô hình hiện tại
             </div>
             <div className="mt-1 font-semibold text-gray-900">
               Mô hình đang phục vụ hệ thống
@@ -751,7 +1398,7 @@ function ModelVersions() {
           </div>
           <div className="rounded-md border border-gray-200 bg-white p-3">
             <div className="text-xs font-semibold uppercase text-gray-500">
-              U-Net ứng viên
+              Mô hình ứng viên
             </div>
             <div className="mt-1 font-semibold text-gray-900">
               Chỉ đưa vào sử dụng sau khi đạt bộ đánh giá
@@ -763,22 +1410,30 @@ function ModelVersions() {
         </div>
         <div className="rounded-md border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
           Mô hình ứng viên đạt yêu cầu khi không làm tăng tỷ lệ đạt sai, không
-          làm giảm độ chính xác kết luận, mIoU không thấp hơn mốc hiện tại và độ
-          trễ vẫn đạt yêu cầu.
+          làm giảm độ chính xác kết luận, độ chính xác vùng không thấp hơn mốc
+          hiện tại và độ trễ vẫn đạt yêu cầu.
         </div>
       </CardContent>
     </Card>
   );
 }
 
-function RetrainRuns() {
+function RetrainRuns({
+  dialogOpen,
+  onDialogOpenChange,
+}: {
+  dialogOpen?: boolean;
+  onDialogOpenChange?: (open: boolean) => void;
+}) {
   const { hasRole } = useRole();
   const canTrigger = hasRole([
     UserRole.Supervisor,
     UserRole.Manager,
     UserRole.Admin,
   ]);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [internalDialogOpen, setInternalDialogOpen] = useState(false);
+  const isDialogOpen = dialogOpen ?? internalDialogOpen;
+  const setDialogOpen = onDialogOpenChange ?? setInternalDialogOpen;
   const [expandedBatches, setExpandedBatches] = useState<Record<string, boolean>>({});
   const [form, setForm] = useState<TriggerScoringRetrainRequest>({
     lookbackDays: 7,
@@ -802,34 +1457,35 @@ function RetrainRuns() {
   const handleTrigger = async () => {
     try {
       await triggerMutation.mutateAsync(form);
-      toastUtils.success("Đã kích hoạt phiên huấn luyện lại U-Net");
+      toastUtils.success("Đã kích hoạt phiên huấn luyện mô hình");
       setDialogOpen(false);
     } catch (error) {
-      console.error("Không thể kích hoạt huấn luyện lại U-Net:", error);
-      toastUtils.error("Không thể kích hoạt huấn luyện lại U-Net");
+      console.error("Không thể kích hoạt huấn luyện mô hình:", error);
+      toastUtils.error("Không thể kích hoạt huấn luyện mô hình");
     }
   };
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Lịch sử huấn luyện lại U-Net</CardTitle>
+        <CardTitle>Lịch sử huấn luyện mô hình</CardTitle>
         <div className="flex gap-2">
           <Button
             variant="outline"
             onClick={() => refetch()}
             disabled={isFetching}
+            className="cursor-pointer"
           >
             <RefreshIcon isFetching={isFetching} />
             Tải lại
           </Button>
           {canTrigger && (
             <Button
-              className="bg-[#1a80a2] hover:bg-[#1a80a2]/90"
+              className="cursor-pointer bg-[#1a80a2] hover:bg-[#1a80a2]/90"
               onClick={() => setDialogOpen(true)}
             >
               <Play className="mr-2 h-4 w-4" />
-              Kích hoạt huấn luyện lại U-Net
+              Kích hoạt huấn luyện mô hình
             </Button>
           )}
         </div>
@@ -839,10 +1495,11 @@ function RetrainRuns() {
           <LoadingSpinner />
         ) : data.length === 0 ? (
           <div className="py-8 text-center text-gray-500">
-            Chưa có phiên huấn luyện lại U-Net nào.
+            Chưa có phiên huấn luyện mô hình nào.
           </div>
         ) : (
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[40px]"></TableHead>
@@ -938,7 +1595,7 @@ function RetrainRuns() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="ml-auto"
+                                className="ml-auto cursor-pointer"
                                 onClick={(event) => {
                                   event.stopPropagation();
                                   refetch();
@@ -985,13 +1642,13 @@ function RetrainRuns() {
                               </div>
                               <div className="rounded-md border border-gray-200 bg-white p-3">
                                 <div className="text-xs font-semibold uppercase text-gray-500">
-                                  Chỉ số U-Net ứng viên
+                                  Độ chính xác vùng
                                 </div>
                                 <div className="mt-1 text-sm text-gray-700">
-                                  U-Net mIoU: <strong>{formatMetric(candidateUnetMiou)}</strong>
+                                  Mô hình ứng viên: <strong>{formatMetric(candidateUnetMiou)}</strong>
                                 </div>
                                 <div className="text-xs text-gray-500">
-                                  YOLO được giữ cố định; chỉ dùng sanity check khi cần.
+                                  Bộ phát hiện được giữ cố định; chỉ dùng kiểm tra nhanh khi cần.
                                 </div>
                               </div>
                             </div>
@@ -1007,7 +1664,7 @@ function RetrainRuns() {
                                   </span>
                                 )}
                               </div>
-                              <div className="max-h-[480px] overflow-y-auto whitespace-pre-wrap p-4 font-mono text-[13px] leading-5 text-green-400">
+                              <div className="whitespace-pre-wrap p-4 font-mono text-[13px] leading-5 text-green-400">
                                 {run.logs || "Bộ huấn luyện chưa gửi nhật ký."}
                               </div>
                             </div>
@@ -1019,14 +1676,15 @@ function RetrainRuns() {
                 </React.Fragment>
               ))}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
         )}
       </CardContent>
 
       <StandardDialog
-        open={dialogOpen}
+        open={isDialogOpen}
         onOpenChange={setDialogOpen}
-        title="Kích hoạt huấn luyện lại U-Net"
+        title="Kích hoạt huấn luyện mô hình"
       >
         <div className="space-y-4">
           <div className="grid gap-3">
@@ -1080,22 +1738,26 @@ function RetrainRuns() {
                   }))
                 }
               />
-              Cho phép dùng lại mẫu từng bị từ chối khi tạo dataset U-Net
+              Cho phép dùng lại mẫu từng bị từ chối khi tạo dữ liệu huấn luyện
             </label>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              className="cursor-pointer"
+            >
               Hủy
             </Button>
             <Button
-              className="bg-[#1a80a2] hover:bg-[#1a80a2]/90"
+              className="cursor-pointer bg-[#1a80a2] hover:bg-[#1a80a2]/90"
               onClick={handleTrigger}
               disabled={triggerMutation.isPending}
             >
               {triggerMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Kích hoạt huấn luyện lại U-Net
+              Kích hoạt huấn luyện mô hình
             </Button>
           </div>
         </div>
@@ -1108,13 +1770,20 @@ export function AiRetrainContainer() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { hasRole } = useRole();
+  const canTriggerTraining = hasRole([
+    UserRole.Supervisor,
+    UserRole.Manager,
+    UserRole.Admin,
+  ]);
+  const [trainingDialogOpen, setTrainingDialogOpen] = useState(false);
   const activeTab = parseRetrainTab(searchParams.get("tab"));
 
   const handleTabChange = (value: string) => {
     const nextTab = parseRetrainTab(value);
     const params = new URLSearchParams(searchParams.toString());
 
-    if (nextTab === "reviews") {
+    if (nextTab === "data") {
       params.delete("tab");
     } else {
       params.set("tab", nextTab);
@@ -1127,93 +1796,86 @@ export function AiRetrainContainer() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="space-y-3">
+      <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-3xl">
-          <h1 className="text-2xl font-semibold text-black">
-            Đánh giá AI và huấn luyện lại U-Net
+          <h1 className="text-xl font-semibold text-black">
+            Huấn luyện mô hình AI
           </h1>
-          <p className="mt-1 text-gray-600">
-            Đánh giá chất lượng, duyệt dữ liệu chuẩn và huấn luyện lại U-Net từ
-            vùng bẩn đã duyệt
+          <p className="mt-0.5 text-sm text-gray-600">
+            Duyệt dữ liệu chuẩn, huấn luyện và đánh giá mô hình trước khi đưa vào sử dụng.
           </p>
         </div>
+        {canTriggerTraining && (
+          <Button
+            className="w-full cursor-pointer bg-[#1a80a2] hover:bg-[#1a80a2]/90 sm:w-auto"
+            onClick={() => {
+              handleTabChange("training");
+              setTrainingDialogOpen(true);
+            }}
+          >
+            <Play className="mr-2 h-4 w-4" />
+            Kích hoạt huấn luyện mô hình
+          </Button>
+        )}
       </div>
 
       <Tabs
         value={activeTab}
         onValueChange={handleTabChange}
-        className="flex flex-col gap-0"
+        className="flex flex-col gap-3"
       >
-        <div className="border-b border-gray-200">
+        <div className="rounded-lg border border-gray-200 bg-white p-1.5 shadow-sm">
           <TabsList
-            variant="line"
-            className="h-11 w-full justify-start gap-1 overflow-x-auto rounded-none bg-transparent p-0"
+            className="grid h-auto w-full grid-cols-1 gap-1.5 bg-transparent p-0 md:grid-cols-3"
           >
-            <TabsTrigger
-              value="reviews"
-              className={browserTabTriggerClass}
-            >
-              <span className={browserTabInnerClass(activeTab === "reviews")}>
-                <CheckCircle2 className="h-4 w-4" />
-                Hàng chờ duyệt
-              </span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="annotations"
-              className={browserTabTriggerClass}
-            >
-              <span
-                className={browserTabInnerClass(activeTab === "annotations")}
-              >
-                <Eye className="h-4 w-4" />
-                Hàng chờ gán nhãn
-              </span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="benchmark"
-              className={browserTabTriggerClass}
-            >
-              <span
-                className={browserTabInnerClass(activeTab === "benchmark")}
-              >
-                <BarChart3 className="h-4 w-4" />
-                Bộ đánh giá
-              </span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="runs"
-              className={browserTabTriggerClass}
-            >
-              <span className={browserTabInnerClass(activeTab === "runs")}>
-                <GitBranch className="h-4 w-4" />
-                Lượt huấn luyện U-Net
-              </span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="models"
-              className={browserTabTriggerClass}
-            >
-              <span className={browserTabInnerClass(activeTab === "models")}>
-                <Boxes className="h-4 w-4" />
-                Phiên bản mô hình
-              </span>
-            </TabsTrigger>
+            {workflowSteps.map((step) => {
+              const Icon = step.icon;
+              const isActive = activeTab === step.value;
+
+              return (
+                <TabsTrigger
+                  key={step.value}
+                  value={step.value}
+                  className="h-auto min-w-0 cursor-pointer rounded-lg border-0 bg-transparent p-0 text-current after:hidden data-active:bg-transparent data-active:shadow-none focus-visible:ring-0"
+                >
+                  <span className={workflowTabClass(isActive)}>
+                    <span
+                      className={[
+                        "flex h-8 w-8 flex-none items-center justify-center rounded-md",
+                        isActive
+                          ? "bg-[#1a80a2] text-white"
+                          : "bg-gray-100 text-gray-500",
+                      ].join(" ")}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold">
+                        {step.title}
+                      </span>
+                      <span className="hidden whitespace-normal text-xs leading-4 text-gray-500 xl:block">
+                        {step.description}
+                      </span>
+                    </span>
+                  </span>
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
         </div>
-        <TabsContent value="reviews" className="mt-5">
-          <ReviewQueue />
+        <TabsContent value="data">
+          <DataWorkflow />
         </TabsContent>
-        <TabsContent value="annotations" className="mt-5">
-          <AnnotationQueue />
+        <TabsContent value="training">
+          <RetrainRuns
+            dialogOpen={trainingDialogOpen}
+            onDialogOpenChange={setTrainingDialogOpen}
+          />
         </TabsContent>
-        <TabsContent value="benchmark" className="mt-5">
+        <TabsContent value="quality" className="space-y-5">
+          <BenchmarkDatasetOverview />
           <BenchmarkOverview />
-        </TabsContent>
-        <TabsContent value="runs" className="mt-5">
-          <RetrainRuns />
-        </TabsContent>
-        <TabsContent value="models" className="mt-5">
           <ModelVersions />
         </TabsContent>
       </Tabs>

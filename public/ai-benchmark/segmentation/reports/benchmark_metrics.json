@@ -1,0 +1,333 @@
+{
+  "benchmark": "data\\processed\\benchmark",
+  "confusion_matrix": [
+    [
+      604141410,
+      115739,
+      0
+    ],
+    [
+      10712425,
+      4704497,
+      0
+    ],
+    [
+      14101657,
+      385601,
+      0
+    ]
+  ],
+  "image_dir": "data\\processed\\benchmark\\images",
+  "images_evaluated": 46,
+  "images_total": 46,
+  "mask_dir": "data\\processed\\benchmark\\masks",
+  "missing_masks": [],
+  "per_class": [
+    {
+      "class_id": 0,
+      "class_name": "background",
+      "dice_f1": 0.979785,
+      "iou": 0.96037,
+      "support_pixels": 604257149
+    },
+    {
+      "class_id": 1,
+      "class_name": "dirty_area",
+      "dice_f1": 0.456243,
+      "iou": 0.295541,
+      "support_pixels": 15416922
+    },
+    {
+      "class_id": 2,
+      "class_name": "wet_surface",
+      "dice_f1": 0.0,
+      "iou": 0.0,
+      "support_pixels": 14487258
+    }
+  ],
+  "per_image": [
+    {
+      "image": "own_mobile_benchmark_20260524_8a472d643f13942d2e79c054f141097f_e9936f3f00.jpg",
+      "mean_dice_f1": 0.495549,
+      "mean_iou": 0.491177,
+      "pixel_accuracy": 0.982354
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_b8fcbb3d9cbd7164a8715807f91def53_48b8aa163b.jpg",
+      "mean_dice_f1": 0.493366,
+      "mean_iou": 0.486905,
+      "pixel_accuracy": 0.973811
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_20260519_162305_14f9359823.jpg",
+      "mean_dice_f1": 0.499842,
+      "mean_iou": 0.499683,
+      "pixel_accuracy": 0.999367
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_20260521_202618_070eb084dc.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_20260521_202641_a82bf4edaa.jpg",
+      "mean_dice_f1": 0.964046,
+      "mean_iou": 0.93289,
+      "pixel_accuracy": 0.999611
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_20260521_202701_c6f5b71a94.jpg",
+      "mean_dice_f1": 0.498522,
+      "mean_iou": 0.497052,
+      "pixel_accuracy": 0.994105
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_20260521_202725_99f9c46e07.jpg",
+      "mean_dice_f1": 0.616112,
+      "mean_iou": 0.547241,
+      "pixel_accuracy": 0.945115
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_20260521_202739_86cbc94de4.jpg",
+      "mean_dice_f1": 0.740487,
+      "mean_iou": 0.643173,
+      "pixel_accuracy": 0.946057
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_5800_98828627eb.jpg",
+      "mean_dice_f1": 0.479995,
+      "mean_iou": 0.461529,
+      "pixel_accuracy": 0.923058
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_5801_c162edc5de.jpg",
+      "mean_dice_f1": 0.499977,
+      "mean_iou": 0.499954,
+      "pixel_accuracy": 0.999909
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_5802_a8a58add28.jpg",
+      "mean_dice_f1": 0.649044,
+      "mean_iou": 0.633192,
+      "pixel_accuracy": 0.899579
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_5803_7bf3c9d086.jpg",
+      "mean_dice_f1": 0.299629,
+      "mean_iou": 0.272114,
+      "pixel_accuracy": 0.816023
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_5804_1a437ec857.jpg",
+      "mean_dice_f1": 0.249846,
+      "mean_iou": 0.199803,
+      "pixel_accuracy": 0.580685
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_5805_ddfc56f11b.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_5806_473abc27a5.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_5807_4119f7aa40.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_5808_51a86a71ad.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_5814_3f41cb2835.jpg",
+      "mean_dice_f1": 0.499699,
+      "mean_iou": 0.499398,
+      "pixel_accuracy": 0.998796
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6033_5ca9e5b41d.jpg",
+      "mean_dice_f1": 0.41386,
+      "mean_iou": 0.353038,
+      "pixel_accuracy": 0.706077
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6034_a0eb857905.jpg",
+      "mean_dice_f1": 0.451158,
+      "mean_iou": 0.410888,
+      "pixel_accuracy": 0.821675
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6035_240764b24b.jpg",
+      "mean_dice_f1": 0.477793,
+      "mean_iou": 0.457475,
+      "pixel_accuracy": 0.914951
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6036_cba7b42e0e.jpg",
+      "mean_dice_f1": 0.48844,
+      "mean_iou": 0.477402,
+      "pixel_accuracy": 0.954803
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6037_829a088993.jpg",
+      "mean_dice_f1": 0.483883,
+      "mean_iou": 0.468772,
+      "pixel_accuracy": 0.937545
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6038_e01de536e6.jpg",
+      "mean_dice_f1": 0.477214,
+      "mean_iou": 0.456414,
+      "pixel_accuracy": 0.912829
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6039_4048ce23db.jpg",
+      "mean_dice_f1": 0.491089,
+      "mean_iou": 0.48249,
+      "pixel_accuracy": 0.96498
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6040_a746f5a86e.jpg",
+      "mean_dice_f1": 0.462446,
+      "mean_iou": 0.430139,
+      "pixel_accuracy": 0.860279
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6041_0e9206437a.jpg",
+      "mean_dice_f1": 0.498449,
+      "mean_iou": 0.496908,
+      "pixel_accuracy": 0.993816
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6043_c5d9a7e0dd.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6045_59fbfb2ebb.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6046_7d445b4481.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6047_90a06909f7.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6048_b67e6aadba.jpg",
+      "mean_dice_f1": 0.579353,
+      "mean_iou": 0.533072,
+      "pixel_accuracy": 0.971378
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6049_7ddbe58f9a.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6050_12dedea3f6.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6051_9e7b68d35f.jpg",
+      "mean_dice_f1": 0.49989,
+      "mean_iou": 0.499779,
+      "pixel_accuracy": 0.999559
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6063_4437aedfa5.jpg",
+      "mean_dice_f1": 0.499443,
+      "mean_iou": 0.498888,
+      "pixel_accuracy": 0.997776
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6064_89c5c5a175.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6065_94819336b5.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6066_a54be1c31f.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6067_99a21a77c2.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6068_1eeae59d8e.jpg",
+      "mean_dice_f1": 0.973166,
+      "mean_iou": 0.949041,
+      "pixel_accuracy": 0.999494
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6069_05941e3d0c.jpg",
+      "mean_dice_f1": 0.666664,
+      "mean_iou": 0.666662,
+      "pixel_accuracy": 0.999986
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_IMG_6070_719650554d.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_z7835592886208_cd6a319a6f4c0dca33d13e8c9fd512a7_a9f10fcc45.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_z7835592916869_1456ec2f516a666d7c3068a7ad72a2df_10b8d556b8.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    },
+    {
+      "image": "own_mobile_benchmark_20260524_z7835592932071_a48ab61a58f332a564fafba2ad7fedc6_1c557d5850.jpg",
+      "mean_dice_f1": 1.0,
+      "mean_iou": 1.0,
+      "pixel_accuracy": 1.0
+    }
+  ],
+  "split": null,
+  "summary": {
+    "mean_dice_f1": 0.478676,
+    "mean_iou": 0.418637,
+    "pixel_accuracy": 0.96008
+  },
+  "weights": "E:\\capstone\\train_train_train\\cleanops-ai\\outputs\\unet\\runs\\unet_resnet34_20260518_200957\\best.pt"
+}

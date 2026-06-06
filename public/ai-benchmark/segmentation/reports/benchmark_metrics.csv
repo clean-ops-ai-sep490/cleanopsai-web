@@ -1,0 +1,4 @@
+class_id,class_name,support_pixels,iou,dice_f1
+0,background,604257149,0.96037,0.979785
+1,dirty_area,15416922,0.295541,0.456243
+2,wet_surface,14487258,0.0,0.0
