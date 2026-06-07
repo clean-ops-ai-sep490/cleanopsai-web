@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Building2, Award, Star, ClipboardList } from "lucide-react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLoading } from "@/contexts/LoadingContext";
 
@@ -27,8 +28,8 @@ export function SupportSidebar() {
     <aside className="fixed left-0 top-0 z-20 flex h-screen w-[var(--app-sidebar-width)] flex-col border-r border-slate-200/70 bg-white/85 backdrop-blur-2xl">
       <div className="flex h-[var(--app-header-height)] flex-shrink-0 items-center border-b border-slate-200/70 px-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/20">
-            <span className="text-[18px] font-bold text-white">S</span>
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center">
+            <Image src="/logo.png" alt="CleanOps AI" width={48} height={48} className="rounded-xl object-contain" />
           </div>
           <div className="leading-tight">
             <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">

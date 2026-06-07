@@ -7,6 +7,7 @@ import {
   getPendingScoringReviews,
   getRetrainBatch,
   getRetrainBatches,
+  getTrainingSamplesPreview,
   rejectAnnotationCandidate,
   reviewScoringResult,
   triggerRetrainBatch,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/scoring-api";
 import type {
   ReviewScoringResultRequest,
+  TrainingSamplesPreviewFilters,
   TriggerScoringRetrainRequest,
   UpsertScoringAnnotationRequest,
 } from "@/types/scoring";
@@ -30,6 +32,8 @@ export const scoringKeys = {
     ["scoring", "retrain", "batches", filters] as const,
   retrainBatch: (batchId: string) =>
     ["scoring", "retrain", "batches", batchId] as const,
+  trainingSamplesPreview: (filters: TrainingSamplesPreviewFilters) =>
+    ["scoring", "retrain", "training-samples-preview", filters] as const,
 };
 
 export function usePendingScoringReviews(take = 100) {
@@ -160,6 +164,15 @@ export function useRetrainBatch(batchId: string) {
     queryKey: scoringKeys.retrainBatch(batchId),
     queryFn: () => getRetrainBatch(batchId),
     enabled: Boolean(batchId),
+  });
+}
+
+export function useTrainingSamplesPreview(
+  filters: TrainingSamplesPreviewFilters,
+) {
+  return useQuery({
+    queryKey: scoringKeys.trainingSamplesPreview(filters),
+    queryFn: () => getTrainingSamplesPreview(filters),
   });
 }
 

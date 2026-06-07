@@ -7,6 +7,8 @@ import type {
   ScoringResultReviewResponse,
   ScoringRetrainBatchDetail,
   ScoringRetrainBatchListItem,
+  ScoringRetrainTrainingSamplesPreview,
+  TrainingSamplesPreviewFilters,
   TriggerScoringRetrainRequest,
   UpsertScoringAnnotationRequest,
 } from "@/types/scoring";
@@ -117,6 +119,21 @@ export async function getRetrainBatches(filters: RetrainBatchFilters = {}) {
 export async function getRetrainBatch(batchId: string) {
   return api.get<ScoringRetrainBatchDetail>(
     `/scoring/retrain/batches/${batchId}`,
+  );
+}
+
+export async function getTrainingSamplesPreview(
+  filters: TrainingSamplesPreviewFilters,
+) {
+  return api.get<ScoringRetrainTrainingSamplesPreview>(
+    "/scoring/retrain/batches/training-samples/preview",
+    {
+      params: cleanParams({
+        lookbackDays: String(filters.lookbackDays),
+        maxSamples: String(filters.maxSamples),
+        useLastBatchTime: filters.useLastBatchTime ? "true" : undefined,
+      }),
+    },
   );
 }
 

@@ -145,11 +145,50 @@ export interface ScoringRetrainRun {
   logs?: string | null;
 }
 
+export interface TrainingSamplesPreviewFilters {
+  lookbackDays: number;
+  maxSamples: number;
+  useLastBatchTime?: boolean;
+}
+
+export interface ScoringRetrainTrainingSamplesPreview {
+  sourceWindowFromUtc: string;
+  approvedAnnotationCount: number;
+  reviewedSampleCount: number;
+  maxSamples: number;
+  trainingSamples: ScoringRetrainTrainingSamplePreviewItem[];
+  calibrationSamples: ScoringRetrainCalibrationSamplePreviewItem[];
+}
+
+export interface ScoringRetrainTrainingSamplePreviewItem {
+  candidateId: string;
+  resultId: string;
+  jobId: string;
+  requestId: string;
+  environmentKey: string;
+  imageUrl: string;
+  visualizationBlobUrl?: string | null;
+  approvedAtUtc?: string | null;
+  annotationVersion?: number | null;
+  snapshotBlobKey?: string | null;
+  metadataBlobKey?: string | null;
+}
+
+export interface ScoringRetrainCalibrationSamplePreviewItem {
+  resultId: string;
+  jobId: string;
+  requestId: string;
+  environmentKey: string;
+  source: string;
+  reviewedVerdict: string;
+  reviewedAtUtc: string;
+  reviewedByEmail?: string | null;
+}
+
 export interface TriggerScoringRetrainRequest {
   lookbackDays: number;
   minReviewedSamples: number;
   minApprovedAnnotations: number;
   maxSamplesPerBatch: number;
-  includeRejectedTrainingSamples?: boolean;
   useLastBatchTime?: boolean;
 }
