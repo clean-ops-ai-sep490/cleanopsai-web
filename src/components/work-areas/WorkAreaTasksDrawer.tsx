@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import {
   Sheet,
   SheetContent,
@@ -13,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { useTaskSchedulesByWorkArea, useDeleteTaskSchedule } from "@/hooks/useTaskSchedules";
 import { useQueryClient } from "@tanstack/react-query";
 import { ClipboardList, User, MapPin, Loader2, AlertCircle, Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface WorkAreaTasksDrawerProps {
   open: boolean;
@@ -37,18 +40,19 @@ export function WorkAreaTasksDrawer({
   const schedules = data?.content || [];
   const deleteMutation = useDeleteTaskSchedule();
   const queryClient = useQueryClient();
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
-  const handleDeleteSchedule = async (scheduleId: string) => {
-    if (confirm("Bạn có chắc chắn muốn hủy phân công công việc này không?")) {
-      try {
-        await deleteMutation.mutateAsync(scheduleId);
-        // Invalidate relevant queries to update supervisor work areas and list
-        queryClient.invalidateQueries({ queryKey: ["supervisorWorkAreas"] });
-        queryClient.invalidateQueries({ queryKey: ["authSupervisors"] });
-        queryClient.invalidateQueries({ queryKey: ["taskSchedules"] });
-      } catch (err) {
-        console.error(err);
-      }
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteMutation.mutateAsync(deleteTarget);
+      queryClient.invalidateQueries({ queryKey: ["supervisorWorkAreas"] });
+      queryClient.invalidateQueries({ queryKey: ["authSupervisors"] });
+      queryClient.invalidateQueries({ queryKey: ["taskSchedules"] });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -146,7 +150,7 @@ export function WorkAreaTasksDrawer({
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-slate-100 hover:border-rose-100"
-                          onClick={() => handleDeleteSchedule(schedule.id)}
+                          onClick={() => setDeleteTarget(schedule.id)}
                           disabled={deleteMutation.isPending}
                           title="Hủy phân công công việc"
                         >
@@ -171,6 +175,16 @@ export function WorkAreaTasksDrawer({
           </Button>
         </div>
       </SheetContent>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Hủy phân công công việc?"
+        description="Thao tác này sẽ xóa lịch trình khỏi khu vực. Bạn có chắc chắn muốn tiếp tục?"
+        confirmLabel="Xóa"
+        onConfirm={handleConfirmDelete}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        isLoading={deleteMutation.isPending}
+      />
     </Sheet>
   );
 }
