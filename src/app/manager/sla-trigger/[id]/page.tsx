@@ -14,10 +14,10 @@ import {
   CheckCircle2,
   Activity,
   Building,
-  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { useSLAWithDetails, useDeleteSLA } from "@/hooks/useSLAQuery";
+import { SLADetailPageSkeleton } from "@/components/ui/page-skeleton";
 import { translateServiceType } from "@/lib/utils/translate";
 
 export default function SLADetailPage() {
@@ -58,14 +58,7 @@ export default function SLADetailPage() {
   };
 
   if (isLoading) {
-    return (
-      <>
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          <span className="ml-2 text-[#70808f]">Đang tải SLA...</span>
-        </div>
-      </>
-    );
+    return <SLADetailPageSkeleton />;
   }
 
   if (error || !sla) {
