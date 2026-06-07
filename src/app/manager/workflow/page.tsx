@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PaginationWithInfo } from "@/components/ui/pagination";
-import { ListPageSkeleton } from "@/components/ui/page-skeleton";
+import { CardGridSkeleton } from "@/components/ui/page-skeleton";
 import { Search, Plus, Workflow as WorkflowIcon } from "lucide-react";
 import { useSOPs } from "@/hooks/useSOPs";
 import { usePagination } from "@/hooks/usePagination";
@@ -88,7 +88,7 @@ export default function WorkflowListPage() {
         </div>
 
         {isLoading ? (
-          <ListPageSkeleton cards={3} rows={6} />
+          <CardGridSkeleton cards={9} />
         ) : error ? (
           <ErrorState
             title="Không thể tải workflow"

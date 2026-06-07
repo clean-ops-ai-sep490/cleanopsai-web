@@ -43,6 +43,7 @@ interface SearchableSelectProps<T extends SearchableSelectItem> {
   pageSize?: number;
   useInfiniteLoading?: boolean;
   showSearch?: boolean;
+  renderHoverCard?: (item: T) => React.ReactNode;
 }
 
 export function SearchableSelect<T extends SearchableSelectItem>({
@@ -62,9 +63,11 @@ export function SearchableSelect<T extends SearchableSelectItem>({
   pageSize = 20,
   useInfiniteLoading = false,
   showSearch = true,
+  renderHoverCard,
 }: SearchableSelectProps<T>) {
   const [open, setOpen] = React.useState(false);
   const [selectedIndex, setSelectedIndex] = React.useState(-1);
+  const [hoveredItem, setHoveredItem] = React.useState<T | null>(null);
   const [popoverWidth, setPopoverWidth] = React.useState<number | undefined>();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);
@@ -181,6 +184,13 @@ export function SearchableSelect<T extends SearchableSelectItem>({
       setCachedSelectedItem(null);
     }
   }, [value]);
+
+  // Clear hovered item when popover closes
+  React.useEffect(() => {
+    if (!open) {
+      setHoveredItem(null);
+    }
+  }, [open]);
 
   // Reset items when loadItems function changes (legacy mode)
   React.useEffect(() => {
@@ -355,7 +365,7 @@ export function SearchableSelect<T extends SearchableSelectItem>({
         collisionPadding={8}
         style={{ width: popoverWidth }}
       >
-        <div className="flex flex-col bg-white min-w-0">
+        <div className="relative flex flex-col bg-white min-w-0">
           {/* Search Input */}
           {showSearch && (
             <div className="flex items-center border-b border-gray-200 px-3 bg-white">
@@ -404,8 +414,14 @@ export function SearchableSelect<T extends SearchableSelectItem>({
                           : "text-black hover:bg-primary-soft hover:text-primary",
                       )}
                       onClick={() => handleItemClick(item)}
-                      onMouseEnter={() => handleItemMouseEnter(index)}
-                      onMouseLeave={() => setSelectedIndex(-1)}
+                      onMouseEnter={() => {
+                        handleItemMouseEnter(index);
+                        setHoveredItem(item);
+                      }}
+                      onMouseLeave={() => {
+                        setSelectedIndex(-1);
+                        setHoveredItem(null);
+                      }}
                     >
                       <Check
                         className={cn(
@@ -430,6 +446,13 @@ export function SearchableSelect<T extends SearchableSelectItem>({
               </>
             )}
           </div>
+
+          {/* Hover Details Card */}
+          {renderHoverCard && hoveredItem && (
+            <div className="absolute left-[calc(100%+8px)] top-0 w-80 bg-white border border-gray-200 shadow-xl rounded-[var(--app-radius-sm)] p-4 hidden md:block z-[60] max-h-[320px] overflow-y-auto pointer-events-none">
+              {renderHoverCard(hoveredItem)}
+            </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>
