@@ -10,6 +10,7 @@ import {
   Workflow,
   Calendar,
   MapPin,
+  Users,
 } from "lucide-react";
 import { useRole, UserRole } from "@/hooks/useRole";
 import { motion, AnimatePresence } from "framer-motion";
@@ -58,6 +59,12 @@ const navigation = [
         name: "Quản lý giám sát khu vực",
         href: "/manager/work-area-supervisors",
         icon: MapPin,
+        roles: [UserRole.Manager],
+      },
+      {
+        name: "Tìm kiếm công nhân",
+        href: "/manager/workers",
+        icon: Users,
         roles: [UserRole.Manager],
       },
     ],

@@ -17,6 +17,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { TaskSchedule } from "@/types/schedule";
 import { useUpdateTaskSchedule } from "@/hooks/useTaskSchedules";
 import { filterWorkers, getWorkerById } from "@/lib/worker-api";
+import { toastUtils } from "@/lib/utils/toast-utils";
 import { Loader2, User, Clock, MapPin, FileText } from "lucide-react";
 
 interface TaskScheduleEditDialogProps {
@@ -98,7 +99,13 @@ export function TaskScheduleEditDialog({
     if (!formData.assigneeId) newErrors.assigneeId = "Người thực hiện là bắt buộc";
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    if (Object.keys(newErrors).length > 0) {
+      const firstErrorKey = Object.keys(newErrors)[0];
+      const firstErrorMessage = newErrors[firstErrorKey];
+      toastUtils.error("Thông tin nhập vào chưa hợp lệ", firstErrorMessage);
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async () => {
