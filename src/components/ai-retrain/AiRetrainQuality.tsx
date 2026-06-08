@@ -9,9 +9,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useRetrainBatches } from "@/hooks/useScoringRetrain";
 import { segmentationBenchmarkDataset } from "@/lib/ai-benchmark-data";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { formatBenchmarkPercent } from "./ai-retrain-shared";
+import { formatBenchmarkPercent, formatMetric } from "./ai-retrain-shared";
 
 const BENCHMARK_GALLERY_PAGE_SIZE = 6;
 function BenchmarkSampleCard({
@@ -77,6 +78,8 @@ function BenchmarkSampleCard({
 export function BenchmarkDatasetOverview() {
   const [imageMode, setImageMode] = useState<"overlay" | "original">("overlay");
   const [page, setPage] = useState(1);
+  const { data: recentBatches } = useRetrainBatches({ take: 1 });
+  const currentModelMiou = recentBatches?.[0]?.baselineMetric;
   const samples = segmentationBenchmarkDataset.samples;
   const totalPages = Math.max(
     1,
@@ -98,16 +101,8 @@ export function BenchmarkDatasetOverview() {
       value: segmentationBenchmarkDataset.maskCount,
     },
     {
-      label: "Độ chính xác pixel",
-      value: formatBenchmarkPercent(segmentationBenchmarkDataset.pixelAccuracy),
-    },
-    {
-      label: "Độ trùng khớp vùng",
-      value: formatBenchmarkPercent(segmentationBenchmarkDataset.meanIou),
-    },
-    {
-      label: "Dice/F1",
-      value: formatBenchmarkPercent(segmentationBenchmarkDataset.meanDiceF1),
+      label: "mIoU (model hiện tại)",
+      value: formatMetric(currentModelMiou),
     },
   ];
 
@@ -148,7 +143,7 @@ export function BenchmarkDatasetOverview() {
             })}
           </div>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-3">
           {stats.map((stat) => (
             <div
               key={stat.label}

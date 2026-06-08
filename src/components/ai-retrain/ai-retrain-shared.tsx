@@ -53,7 +53,7 @@ export function formatMetric(value?: number | null) {
     return "Chưa có";
   }
 
-  return value.toFixed(4);
+  return `${(value * 100).toFixed(1)}%`;
 }
 
 export function formatBenchmarkPercent(value: number) {

@@ -53,46 +53,48 @@ export function translatePromotionReason(reason?: string | null, candidateMetric
     return "Chưa có";
   }
 
+  const pct = (s: string) => `${(parseFloat(s) * 100).toFixed(1)}%`;
+
   const rejectedMatch = reason.match(
     /^Rejected:\s*yolo_map\s*([0-9.]+)\/([0-9.]+),\s*unet_miou\s*([0-9.]+)\/([0-9.]+)\.?$/i,
   );
   if (rejectedMatch) {
-    return `Bị từ chối: điểm phát hiện đạt ${rejectedMatch[1]} / yêu cầu ${rejectedMatch[2]}, độ chính xác vùng đạt ${rejectedMatch[3]} / yêu cầu ${rejectedMatch[4]}.`;
+    return `Bị từ chối: điểm phát hiện đạt ${pct(rejectedMatch[1])} / yêu cầu ${pct(rejectedMatch[2])}, độ chính xác vùng đạt ${pct(rejectedMatch[3])} / yêu cầu ${pct(rejectedMatch[4])}.`;
   }
 
   const rejectedUnetMatch = reason.match(
     /^Rejected:\s*unet_miou\s*([0-9.]+)\/([0-9.]+)\.\s*YOLO frozen\.?$/i,
   );
   if (rejectedUnetMatch) {
-    return `Bị từ chối: độ chính xác vùng đạt ${rejectedUnetMatch[1]} / yêu cầu ${rejectedUnetMatch[2]}. Bộ phát hiện được giữ cố định.`;
+    return `Bị từ chối: độ chính xác vùng đạt ${pct(rejectedUnetMatch[1])} / yêu cầu ${pct(rejectedUnetMatch[2])}. Bộ phát hiện được giữ cố định.`;
   }
 
   const promotedMatch = reason.match(
     /^Promoted:\s*yolo_map\s*([0-9.]+)\s*>=\s*([0-9.]+)\s*and\s*unet_miou\s*([0-9.]+)\s*>=\s*([0-9.]+)\.?$/i,
   );
   if (promotedMatch) {
-    return `Đã đưa vào sử dụng: điểm phát hiện ${promotedMatch[1]} >= ${promotedMatch[2]} và độ chính xác vùng ${promotedMatch[3]} >= ${promotedMatch[4]}.`;
+    return `Đã đưa vào sử dụng: điểm phát hiện ${pct(promotedMatch[1])} >= ${pct(promotedMatch[2])} và độ chính xác vùng ${pct(promotedMatch[3])} >= ${pct(promotedMatch[4])}.`;
   }
 
   const promotedUnetMatch = reason.match(
     /^Promoted:\s*unet_miou\s*([0-9.]+)\s*>=\s*([0-9.]+)\.\s*YOLO frozen\.?$/i,
   );
   if (promotedUnetMatch) {
-    return `Đã đưa vào sử dụng: độ chính xác vùng ${promotedUnetMatch[1]} >= ${promotedUnetMatch[2]}. Bộ phát hiện được giữ cố định.`;
+    return `Đã đưa vào sử dụng: độ chính xác vùng ${pct(promotedUnetMatch[1])} >= ${pct(promotedUnetMatch[2])}. Bộ phát hiện được giữ cố định.`;
   }
 
   const promotedBenchmarkMatch = reason.match(
     /^Promoted:\s*benchmark mIoU\s*([0-9.]+)\s*>=\s*([0-9.]+)\s*\(baseline\s*([0-9.]+)\s*\+\s*([0-9.]+)\)\.?$/i,
   );
   if (promotedBenchmarkMatch) {
-    return `Đã đưa vào sử dụng: benchmark mIoU ${promotedBenchmarkMatch[1]} >= mốc cần đạt ${promotedBenchmarkMatch[2]} (${promotedBenchmarkMatch[3]} + ${promotedBenchmarkMatch[4]}).`;
+    return `Đã đưa vào sử dụng: benchmark mIoU ${pct(promotedBenchmarkMatch[1])} >= mốc cần đạt ${pct(promotedBenchmarkMatch[2])} (${pct(promotedBenchmarkMatch[3])} + ${pct(promotedBenchmarkMatch[4])}).`;
   }
 
   const rejectedBenchmarkMatch = reason.match(
     /^Rejected:\s*benchmark mIoU\s*([0-9.]+)\s*<\s*([0-9.]+)\s*\(baseline\s*([0-9.]+)\s*\+\s*([0-9.]+)\)\.?$/i,
   );
   if (rejectedBenchmarkMatch) {
-    return `Bị từ chối: benchmark mIoU ${rejectedBenchmarkMatch[1]} < mốc cần đạt ${rejectedBenchmarkMatch[2]} (${rejectedBenchmarkMatch[3]} + ${rejectedBenchmarkMatch[4]}).`;
+    return `Bị từ chối: benchmark mIoU ${pct(rejectedBenchmarkMatch[1])} < mốc cần đạt ${pct(rejectedBenchmarkMatch[2])} (${pct(rejectedBenchmarkMatch[3])} + ${pct(rejectedBenchmarkMatch[4])}).`;
   }
 
   if (reason.includes("No complete baseline metrics found")) {
