@@ -23,6 +23,7 @@ import { DataTable } from "@/components/ui/data-table";
 
 interface IssueReportsTableProps {
   issues: IssueReport[];
+  taskStatuses?: Record<string, string>;
   onApprove?: (id: string) => void;
   onReject?: (id: string) => void;
   onUpdateTaskStatus?: (taskAssignmentId: string) => void;
@@ -32,6 +33,7 @@ interface IssueReportsTableProps {
 
 export function IssueReportsTable({
   issues,
+  taskStatuses = {},
   onApprove,
   onReject,
   onUpdateTaskStatus,
@@ -158,7 +160,9 @@ export function IssueReportsTable({
                 <XCircle className="h-4 w-4" />
               </Button>
             </>
-          ) : issue.status === "Approved" && issue.taskAssignmentId ? (
+          ) : issue.status === "Approved" && 
+              issue.taskAssignmentId && 
+              (taskStatuses[issue.taskAssignmentId] === undefined || taskStatuses[issue.taskAssignmentId] === "Block") ? (
             <Button
               size="sm"
               variant="ghost"

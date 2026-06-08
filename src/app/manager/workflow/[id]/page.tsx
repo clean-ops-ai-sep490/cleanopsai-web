@@ -9,8 +9,9 @@ import { ErrorState } from "@/components/ui/error-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Edit, Trash2, ArrowLeft, Workflow as WorkflowIcon } from "lucide-react";
+import { Loader2, Edit, Trash2, ArrowLeft, Workflow as WorkflowIcon, Award, Briefcase } from "lucide-react";
 import { useDeleteSOP, useSOP } from "@/hooks/useSOPs";
+import { useSOPRequirements } from "@/hooks/useSOPRequirements";
 import { translateServiceType } from "@/lib/utils/translate";
 import { useState } from "react";
 import { useLoading } from "@/contexts/LoadingContext";
@@ -33,6 +34,11 @@ export default function WorkflowDetailPage() {
   };
 
   const { data: sop, isLoading, error } = useSOP(sopId);
+  const { skills, certifications, isLoading: reqsLoading } = useSOPRequirements(
+    sop?.requiredSkillIds || [],
+    sop?.requiredCertificationIds || [],
+  );
+
   const deleteSOPMutation = useDeleteSOP(() => {
     startLoading("Đang cập nhật danh sách...");
     router.push("/manager/workflow");
@@ -59,14 +65,65 @@ export default function WorkflowDetailPage() {
           <ErrorState title="Không thể tải thông tin SOP" description="SOP có thể đã bị xóa hoặc bạn chưa có quyền truy cập." onAction={() => router.push("/manager/workflow")} />
         ) : (
           <div className="grid gap-6 lg:grid-cols-3">
-            <SectionCard title="Thông tin SOP" className="lg:col-span-1">
-              <div className="space-y-4 text-sm">
-                <div><p className="text-slate-500">Tên SOP</p><p className="font-medium text-slate-950">{sop.name}</p></div>
-                <div><p className="text-slate-500">Mô tả</p><p className="text-slate-700">{sop.description || "-"}</p></div>
-                <div><p className="text-slate-500">Loại dịch vụ</p><Badge>{translateServiceType(sop.serviceType) || "N/A"}</Badge></div>
-                <div><p className="text-slate-500">Phiên bản</p><p className="font-medium text-slate-950">{sop.version}</p></div>
-              </div>
-            </SectionCard>
+            <div className="space-y-6 lg:col-span-1">
+              <SectionCard title="Thông tin SOP">
+                <div className="space-y-4 text-sm">
+                  <div><p className="text-slate-500">Tên SOP</p><p className="font-medium text-slate-950">{sop.name}</p></div>
+                  <div><p className="text-slate-500">Mô tả</p><p className="text-slate-700">{sop.description || "-"}</p></div>
+                  <div><p className="text-slate-500">Loại dịch vụ</p><Badge>{translateServiceType(sop.serviceType) || "N/A"}</Badge></div>
+                  <div><p className="text-slate-500">Phiên bản</p><p className="font-medium text-slate-950">{sop.version}</p></div>
+                </div>
+              </SectionCard>
+
+              <SectionCard title="Yêu cầu">
+                {reqsLoading ? (
+                  <div className="flex items-center justify-center py-6 text-slate-500 text-sm">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin text-[var(--app-primary)]" />
+                    Đang tải yêu cầu...
+                  </div>
+                ) : (!sop.requiredSkillIds?.length && !sop.requiredCertificationIds?.length) ? (
+                  <p className="text-sm text-slate-500 italic">Không có yêu cầu đặc biệt về kỹ năng hoặc chứng chỉ.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Skills */}
+                    {skills && skills.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                          <Briefcase className="h-3.5 w-3.5 text-blue-600" /> Kỹ năng yêu cầu
+                        </h4>
+                        <div className="space-y-2">
+                          {skills.map((skill: any) => (
+                            <div key={skill.skillId || skill.id} className="rounded-lg bg-slate-50 p-2.5 border border-slate-100 flex flex-col gap-0.5">
+                              <span className="text-sm font-medium text-slate-950">{skill.name}</span>
+                              {skill.description && <span className="text-xs text-slate-500">{skill.description}</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Certifications */}
+                    {certifications && certifications.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                          <Award className="h-3.5 w-3.5 text-amber-600" /> Chứng chỉ yêu cầu
+                        </h4>
+                        <div className="space-y-2">
+                          {certifications.map((cert: any) => (
+                            <div key={cert.certificationId || cert.id} className="rounded-lg bg-slate-50 p-2.5 border border-slate-100 flex flex-col gap-0.5">
+                              <span className="text-sm font-medium text-slate-950">{cert.name}</span>
+                              {cert.issuingOrganization && (
+                                <span className="text-xs text-slate-500">Cấp bởi: {cert.issuingOrganization}</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </SectionCard>
+            </div>
 
             <SectionCard title={`Các bước thực hiện (${sop.sopSteps?.length || 0})`} className="lg:col-span-2">
               {!sop.sopSteps || sop.sopSteps.length === 0 ? (
@@ -100,3 +157,4 @@ export default function WorkflowDetailPage() {
     </>
   );
 }
+

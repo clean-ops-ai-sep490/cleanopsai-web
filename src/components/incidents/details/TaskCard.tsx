@@ -189,23 +189,31 @@ export function TaskCard({
                 <SelectItem value="REASSIGN_START">
                   <span className="flex items-center gap-2">
                     <Play className="h-4 w-4 text-emerald-500" />
-                    Giao tiếp
+                    Bàn giao & Làm tiếp
                   </span>
                 </SelectItem>
                 <SelectItem value="REASSIGN_LATER">
                   <span className="flex items-center gap-2">
                     <Pause className="h-4 w-4 text-blue-500" />
-                    Giao lại từ đầu
+                    Giao mới & Chờ làm
                   </span>
                 </SelectItem>
                 <SelectItem value="KEEP_CONTINUE">
                   <span className="flex items-center gap-2">
                     <ArrowRight className="h-4 w-4 text-slate-400" />
-                    Giữ nguyên & Tiếp tục
+                    Xử lý sau
                   </span>
                 </SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Warning block for KEEP_CONTINUE */}
+            {currentAction === "KEEP_CONTINUE" && (
+              <div className="flex items-start gap-2 text-[12px] text-amber-600 font-medium pl-1 leading-normal">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>Task này vẫn giao cho worker xin nghỉ. Bạn cần bố trí xử lý sau.</span>
+              </div>
+            )}
 
             {/* Worker picker */}
             {needsWorker && (

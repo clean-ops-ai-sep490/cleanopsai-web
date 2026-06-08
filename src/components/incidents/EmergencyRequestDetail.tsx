@@ -105,7 +105,7 @@ export function EmergencyRequestDetail({
                 className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-white hover:shadow-sm transition-all"
                 onClick={() => onBulkAction("REASSIGN_START")}
               >
-                Giao lại tất cả
+                Bàn giao tất cả
               </Button>
               <Button
                 size="sm"
@@ -113,7 +113,7 @@ export function EmergencyRequestDetail({
                 className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-white hover:shadow-sm transition-all"
                 onClick={() => onBulkAction("KEEP_CONTINUE")}
               >
-                Giữ tất cả
+                Xử lý sau tất cả
               </Button>
             </div>
           )}
