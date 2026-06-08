@@ -12,7 +12,11 @@ import {
 } from "./ai-retrain-shared";
 import {
   getBatchPublishedAt,
+  getMetricLabel,
   getModelVersionDescription,
+  getPromotionGateResultLabel,
+  getPromotionGateThreshold,
+  isBenchmarkGateBatch,
   modelVersionName,
 } from "./AiRetrainTrainingUtils";
 
@@ -69,14 +73,29 @@ export function TrainingModelOverview({
   currentModel?: ScoringRetrainBatchListItem;
   latestCandidate?: ScoringRetrainBatchListItem;
 }) {
-  const releasedCount = batches.filter((batch) => batch.promoted).length;
+  const benchmarkBatches = batches.filter(isBenchmarkGateBatch);
+  const releasedCount = benchmarkBatches.filter((batch) => batch.promoted).length;
+  const gateBatch =
+    latestCandidate?.candidateMetric != null ? latestCandidate : currentModel;
+  const gateMetricLabel = getMetricLabel(gateBatch?.metricKey);
+  const gateThreshold = getPromotionGateThreshold(gateBatch);
+  const gateHelper =
+    gateBatch && gateThreshold != null
+      ? `${gateMetricLabel}: ${formatMetric(gateBatch.baselineMetric)} + ${formatMetric(
+          gateBatch.minimumImprovement,
+        )} = ${formatMetric(gateThreshold)} cho ${modelVersionName(gateBatch.batchId)}`
+      : "Benchmark ứng viên >= Benchmark hiện tại + Mức cải thiện yêu cầu";
+  const gateValue =
+    gateBatch && gateThreshold != null
+      ? `Mốc cần đạt ${formatMetric(gateThreshold)}`
+      : gateMetricLabel;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Tổng quan mô hình</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         <ModelSummaryCard
           label="Mô hình hiện tại"
           value={modelVersionName(currentModel?.batchId)}
@@ -97,13 +116,18 @@ export function TrainingModelOverview({
         />
         <ModelSummaryCard
           label="Đã huấn luyện"
-          value={batches.length}
-          helper="Tổng số phiên đã tạo trong lịch sử gần đây"
+          value={benchmarkBatches.length}
+          helper="Số phiên có benchmark gate thật"
         />
         <ModelSummaryCard
           label="Đã đưa vào sử dụng"
           value={releasedCount}
-          helper="Các phiên bản đã qua điều kiện release"
+          helper="Các phiên bản đã vượt điều kiện đưa vào sử dụng"
+        />
+        <ModelSummaryCard
+          label="Điều kiện đưa vào sử dụng"
+          value={gateValue}
+          helper={gateHelper}
         />
       </CardContent>
     </Card>
@@ -117,15 +141,22 @@ export function ModelVersionHistory({
   versions: ScoringRetrainBatchListItem[];
   currentModelId?: string;
 }) {
+  const benchmarkVersions = versions.filter(isBenchmarkGateBatch);
   const [page, setPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(versions.length / MODEL_HISTORY_PAGE_SIZE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(benchmarkVersions.length / MODEL_HISTORY_PAGE_SIZE),
+  );
   const normalizedPage = Math.min(page, totalPages);
   const pageStart = (normalizedPage - 1) * MODEL_HISTORY_PAGE_SIZE;
-  const visibleVersions = versions.slice(pageStart, pageStart + MODEL_HISTORY_PAGE_SIZE);
+  const visibleVersions = benchmarkVersions.slice(
+    pageStart,
+    pageStart + MODEL_HISTORY_PAGE_SIZE,
+  );
 
   useEffect(() => {
     setPage(1);
-  }, [versions]);
+  }, [benchmarkVersions.length]);
 
   return (
     <Card>
@@ -133,9 +164,9 @@ export function ModelVersionHistory({
         <CardTitle>Lịch sử phiên bản mô hình</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {versions.length === 0 ? (
+        {benchmarkVersions.length === 0 ? (
           <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-6 py-8 text-center text-sm text-gray-500">
-            Chưa có phiên bản mô hình nào.
+            Chưa có phiên bản mô hình nào được đánh giá bằng benchmark thật.
           </div>
         ) : (
           <>
@@ -144,6 +175,8 @@ export function ModelVersionHistory({
                 const isCurrent = batch.batchId === currentModelId;
                 const publishedAt = getBatchPublishedAt(batch);
                 const badge = getModelVersionBadge(batch, isCurrent);
+                const metricLabel = getMetricLabel(batch.metricKey);
+                const requiredThreshold = getPromotionGateThreshold(batch);
 
                 return (
                   <div
@@ -190,7 +223,7 @@ export function ModelVersionHistory({
                       </div>
                       <div className="rounded-md bg-gray-50 p-2">
                         <div className="text-xs font-semibold uppercase text-gray-500">
-                          Điểm ứng viên
+                          {metricLabel} ứng viên
                         </div>
                         <div className="mt-1 font-medium text-gray-900">
                           {formatMetric(batch.candidateMetric)}
@@ -198,15 +231,24 @@ export function ModelVersionHistory({
                       </div>
                       <div className="rounded-md bg-gray-50 p-2">
                         <div className="text-xs font-semibold uppercase text-gray-500">
-                          Mốc hiện tại
+                          Mốc cần vượt
                         </div>
                         <div className="mt-1 font-medium text-gray-900">
-                          {formatMetric(batch.baselineMetric)}
+                          {formatMetric(requiredThreshold)}
                         </div>
                       </div>
                     </div>
 
+                    <div className="mt-2 text-xs text-gray-500">
+                      Yêu cầu: {formatMetric(batch.baselineMetric)} +{" "}
+                      {formatMetric(batch.minimumImprovement)} ={" "}
+                      {formatMetric(requiredThreshold)}
+                    </div>
+
                     <div className="mt-3 rounded-md border border-gray-100 bg-gray-50 p-3 text-sm text-gray-600">
+                      <div className="mb-1 font-semibold text-gray-800">
+                        {getPromotionGateResultLabel(batch)}
+                      </div>
                       {getModelVersionDescription(batch, isCurrent)}
                     </div>
                   </div>
@@ -228,8 +270,11 @@ export function ModelVersionHistory({
                 </Button>
                 <div className="text-xs font-medium text-gray-600">
                   {pageStart + 1}-
-                  {Math.min(pageStart + MODEL_HISTORY_PAGE_SIZE, versions.length)} /{" "}
-                  {versions.length}
+                  {Math.min(
+                    pageStart + MODEL_HISTORY_PAGE_SIZE,
+                    benchmarkVersions.length,
+                  )}{" "}
+                  / {benchmarkVersions.length}
                 </div>
                 <Button
                   type="button"

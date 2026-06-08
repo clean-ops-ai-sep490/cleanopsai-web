@@ -618,12 +618,15 @@ function UnifiedDataQueue() {
   );
 
   const queueItems = useMemo(() => {
+    const annotatedResultIds = new Set(candidates.map((c) => c.resultId));
+
     const reviewItems: UnifiedDataQueueItem[] = visiblePendingReviews
       .filter((item) =>
         environmentFilter
           ? item.environmentKey.toLowerCase().includes(environmentFilter)
           : true,
       )
+      .filter((item) => !annotatedResultIds.has(item.resultId))
       .map((item) => ({
         key: `review-${item.resultId}`,
         type: "review",

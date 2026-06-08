@@ -549,7 +549,7 @@ function labelsFromCandidate(candidate: ScoringAnnotationCandidateDetail) {
     return normalizeLabels(safeJsonParse(candidate.annotation.labelsJson, []));
   }
 
-  return normalizeLabels(safeJsonParse(candidate.preAnnotationJson, []));
+  return [];
 }
 
 function labelColor(label: AnnotationLabelName) {

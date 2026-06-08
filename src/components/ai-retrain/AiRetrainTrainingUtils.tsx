@@ -28,17 +28,27 @@ export function getModelVersionDescription(
   batch: ScoringRetrainBatchListItem,
   isCurrent: boolean,
 ) {
-  if (isCurrent) return "Mô hình hiện tại đang được sử dụng.";
-  if (batch.promoted) return "Phiên bản đã từng được đưa vào sử dụng.";
+  const translatedReason = translatePromotionReason(batch.promotionReason);
+
+  if (isCurrent) {
+    return batch.promotionReason
+      ? `Mô hình hiện tại đang được sử dụng. ${translatedReason}`
+      : "Mô hình hiện tại đang được sử dụng.";
+  }
+  if (batch.promoted) {
+    return batch.promotionReason
+      ? translatedReason
+      : "Phiên bản đã từng được đưa vào sử dụng.";
+  }
   if (batch.status === "RUNNING" || batch.status === "QUEUED") {
     return "Mô hình ứng viên đang được chuẩn bị.";
   }
   if (batch.status === "FAILED") return "Phiên huấn luyện không hoàn tất.";
-  if (batch.status === "REJECTED") return translatePromotionReason(batch.promotionReason);
+  if (batch.status === "REJECTED") return translatedReason;
   return "Mô hình ứng viên chưa được đưa vào sử dụng.";
 }
 
-export function translatePromotionReason(reason?: string | null) {
+export function translatePromotionReason(reason?: string | null, candidateMetric?: number | null) {
   if (!reason) {
     return "Chưa có";
   }
@@ -71,6 +81,20 @@ export function translatePromotionReason(reason?: string | null) {
     return `Đã đưa vào sử dụng: độ chính xác vùng ${promotedUnetMatch[1]} >= ${promotedUnetMatch[2]}. Bộ phát hiện được giữ cố định.`;
   }
 
+  const promotedBenchmarkMatch = reason.match(
+    /^Promoted:\s*benchmark mIoU\s*([0-9.]+)\s*>=\s*([0-9.]+)\s*\(baseline\s*([0-9.]+)\s*\+\s*([0-9.]+)\)\.?$/i,
+  );
+  if (promotedBenchmarkMatch) {
+    return `Đã đưa vào sử dụng: benchmark mIoU ${promotedBenchmarkMatch[1]} >= mốc cần đạt ${promotedBenchmarkMatch[2]} (${promotedBenchmarkMatch[3]} + ${promotedBenchmarkMatch[4]}).`;
+  }
+
+  const rejectedBenchmarkMatch = reason.match(
+    /^Rejected:\s*benchmark mIoU\s*([0-9.]+)\s*<\s*([0-9.]+)\s*\(baseline\s*([0-9.]+)\s*\+\s*([0-9.]+)\)\.?$/i,
+  );
+  if (rejectedBenchmarkMatch) {
+    return `Bị từ chối: benchmark mIoU ${rejectedBenchmarkMatch[1]} < mốc cần đạt ${rejectedBenchmarkMatch[2]} (${rejectedBenchmarkMatch[3]} + ${rejectedBenchmarkMatch[4]}).`;
+  }
+
   if (reason.includes("No complete baseline metrics found")) {
     return "Không tìm thấy đủ chỉ số của mô hình hiện tại nên không tự động đưa mô hình mới vào sử dụng.";
   }
@@ -79,7 +103,82 @@ export function translatePromotionReason(reason?: string | null) {
     return "Mô hình ứng viên thiếu chỉ số cần thiết nên không thể đánh giá.";
   }
 
+  if (reason.includes("Artifact sync mismatch")) {
+    return "Trainer đã tính benchmark nhưng artifact trên blob storage không khớp. Cần kiểm tra lại bước upload metrics.";
+  }
+
+  if (reason.includes("Benchmark metrics missing key")) {
+    if (candidateMetric != null && candidateMetric > 0) {
+      return "Không tìm thấy metric benchmark trong artifact của phiên này, dù phiên có ghi nhận chỉ số ứng viên. Cần kiểm tra đồng bộ metrics.";
+    }
+    return "Không tìm thấy metric benchmark trong artifact của phiên này nên không thể đánh giá điều kiện đưa vào sử dụng.";
+  }
+
+  if (reason.includes("Benchmark evaluation did not complete")) {
+    return "Benchmark chưa chạy hoàn tất nên không thể đưa mô hình vào sử dụng.";
+  }
+
+  if (reason.includes("No baseline benchmark metrics found")) {
+    return "Không tìm thấy benchmark của mô hình hiện tại nên không tự động đưa mô hình mới vào sử dụng.";
+  }
+
   return reason;
+}
+
+export function getMetricLabel(metricKey?: string | null): string {
+  if (!metricKey) return "Chỉ số tổng hợp";
+  const key = metricKey.toLowerCase();
+  if (key === "unet_miou" || key === "unet.miou") return "U-Net mIoU";
+  if (key === "yolo_map" || key === "yolo.map") return "YOLO mAP";
+  if (key === "benchmark.unet_mean_iou") return "Benchmark mIoU";
+  if (key === "composite") return "Điểm tổng hợp";
+  if (key.includes("yolo") && key.includes("unet")) return "Điểm tổng hợp";
+  return metricKey;
+}
+
+export function isBenchmarkGateBatch(batch?: ScoringRetrainBatchListItem | null) {
+  return batch?.metricKey === "benchmark.unet_mean_iou";
+}
+
+export function getPromotionGateThreshold(batch?: ScoringRetrainBatchListItem) {
+  if (!batch || batch.baselineMetric == null || batch.minimumImprovement == null) {
+    return null;
+  }
+
+  return batch.baselineMetric + batch.minimumImprovement;
+}
+
+export function getPromotionGateResultLabel(batch: ScoringRetrainBatchListItem) {
+  if (batch.status === "FAILED") {
+    if (isBenchmarkGateBatch(batch) && batch.candidateMetric != null && batch.candidateMetric > 0) {
+      return batch.promoted ? "Đạt benchmark gate" : "Chưa đạt benchmark gate";
+    }
+    return "Không đánh giá được do thiếu metric hoặc phiên train lỗi";
+  }
+
+  if (isBenchmarkGateBatch(batch)) {
+    if (batch.promoted) {
+      return "Đạt benchmark gate";
+    }
+
+    if (batch.status === "REJECTED") {
+      return "Chưa đạt benchmark gate";
+    }
+  }
+
+  if (batch.promoted) {
+    return "Đạt điều kiện";
+  }
+
+  if (batch.status === "REJECTED") {
+    return "Chưa đạt điều kiện";
+  }
+
+  if (batch.status === "RUNNING" || batch.status === "QUEUED") {
+    return "Đang đánh giá";
+  }
+
+  return "Không đánh giá được";
 }
 
 export function translateRunMode(mode: string) {

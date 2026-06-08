@@ -50,9 +50,12 @@ import {
 } from "./AiRetrainModelHistory";
 import { TrainingSamplesPreviewCard } from "./AiRetrainTrainingPreview";
 import {
-  extractLastNumericMetric,
   getBatchPublishedAt,
   getBatchTimestamp,
+  getMetricLabel,
+  getPromotionGateResultLabel,
+  getPromotionGateThreshold,
+  isBenchmarkGateBatch,
   TrainingConfigPanel,
   translatePromotionReason,
   translateRunMode,
@@ -179,7 +182,7 @@ export function RetrainRuns({
   const currentModel = useMemo(
     () =>
       data
-        .filter((batch) => batch.promoted)
+        .filter((batch) => batch.promoted && isBenchmarkGateBatch(batch))
         .sort(
           (a, b) =>
             getBatchTimestamp(getBatchPublishedAt(b)) -
@@ -190,7 +193,7 @@ export function RetrainRuns({
   const latestCandidate = useMemo(
     () =>
       data
-        .filter((batch) => !batch.promoted)
+        .filter((batch) => !batch.promoted && isBenchmarkGateBatch(batch))
         .sort(
           (a, b) =>
             getBatchTimestamp(b.requestedAtUtc) -
@@ -507,7 +510,16 @@ export function RetrainRuns({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visibleBatches.map((batch) => (
+              {visibleBatches.map((batch) => {
+                const metricLabel = getMetricLabel(batch.metricKey);
+                const requiredThreshold = getPromotionGateThreshold(batch);
+                const gateResultLabel = getPromotionGateResultLabel(batch);
+                const isBatchFailed = batch.status === "FAILED";
+                const isLegacyMetric = Boolean(
+                  batch.metricKey && !isBenchmarkGateBatch(batch),
+                );
+
+                return (
                 <React.Fragment key={batch.batchId}>
                   <TableRow className="cursor-pointer hover:bg-gray-50" onClick={() => toggleExpanded(batch.batchId)}>
                     <TableCell>
@@ -540,30 +552,64 @@ export function RetrainRuns({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        {batch.promoted ? (
-                          <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <XCircle className="h-4 w-4 text-gray-400" />
-                        )}
-                        <span className="line-clamp-2 text-sm">
-                          {translatePromotionReason(batch.promotionReason)}
-                        </span>
-                      </div>
-                      {(batch.candidateMetric !== null && batch.candidateMetric !== undefined) && (
-                        <div className="mt-1 text-xs text-gray-500">
-                          Ứng viên {formatMetric(batch.candidateMetric)}
-                          {batch.baselineMetric !== null && batch.baselineMetric !== undefined
-                            ? ` / Mốc hiện tại ${formatMetric(batch.baselineMetric)}`
-                            : " / Mốc hiện tại chưa có"}
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          {batch.promoted ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-gray-400" />
+                          )}
+                          <span
+                            className={[
+                              "font-semibold",
+                              batch.promoted
+                                ? "text-green-700"
+                                : isBatchFailed || batch.status === "REJECTED"
+                                ? "text-red-700"
+                                : "text-gray-700",
+                            ].join(" ")}
+                          >
+                            {gateResultLabel}
+                          </span>
                         </div>
-                      )}
+                        {isLegacyMetric && (
+                          <Badge
+                            variant="outline"
+                            className="border-amber-200 bg-amber-50 text-amber-800"
+                          >
+                            Metric cũ - không dùng cho benchmark hiện tại
+                          </Badge>
+                        )}
+                        {isBatchFailed ? (
+                          <div className="line-clamp-2 text-xs text-red-600">
+                            {batch.failureReason || "Phiên train lỗi trước khi đánh giá metric."}
+                          </div>
+                        ) : (
+                          <>
+                            <div className="grid gap-1 text-xs text-gray-600">
+                              <span>
+                                {metricLabel}: ứng viên{" "}
+                                <strong>{formatMetric(batch.candidateMetric)}</strong>
+                              </span>
+                              <span>
+                                Mốc cần đạt{" "}
+                                <strong>{formatMetric(requiredThreshold)}</strong>
+                              </span>
+                            </div>
+                            {batch.promotionReason && (
+                              <div className="line-clamp-2 text-xs text-gray-500">
+                                {translatePromotionReason(batch.promotionReason, batch.candidateMetric)}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>{formatDate(batch.requestedAtUtc)}</TableCell>
                     <TableCell>{batch.runCount}</TableCell>
                   </TableRow>
                   {expandedBatches[batch.batchId] && batch.runs?.map((run) => {
-                    const candidateUnetMiou = extractLastNumericMetric(run.logs, "miou");
+                    const isRunFailed = run.status === "FAILED" || run.status === "failed";
 
                     return (
                       <TableRow key={run.runId} className="bg-gray-50">
@@ -602,9 +648,22 @@ export function RetrainRuns({
                               </Button>
                             </div>
 
-                            {run.message && (
-                              <div className="rounded-md border border-gray-200 bg-white p-3 text-sm text-gray-700">
-                                <strong>Thông báo:</strong> {run.message}
+                            {isRunFailed && run.message && (
+                              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm">
+                                <strong className="text-red-700">Lỗi:</strong>{" "}
+                                <span className="text-red-600">{run.message}</span>
+                              </div>
+                            )}
+
+                            {!isRunFailed && batch.promotionReason && (
+                              <div className={[
+                                "rounded-md border p-3 text-sm",
+                                batch.promoted
+                                  ? "border-green-200 bg-green-50 text-green-800"
+                                  : "border-amber-200 bg-amber-50 text-amber-800",
+                              ].join(" ")}>
+                                <strong>{batch.promoted ? "Đã đưa vào sử dụng:" : "Kết quả đánh giá:"}</strong>{" "}
+                                {translatePromotionReason(batch.promotionReason, batch.candidateMetric)}
                               </div>
                             )}
 
@@ -613,38 +672,68 @@ export function RetrainRuns({
                             <div className="grid gap-3 lg:grid-cols-4">
                               <div className="rounded-md border border-gray-200 bg-white p-3">
                                 <div className="text-xs font-semibold uppercase text-gray-500">
-                                  Điểm tổng hợp ứng viên
+                                  {metricLabel} — ứng viên
                                 </div>
-                                <div className="mt-1 text-lg font-semibold text-gray-900">
+                                <div className={[
+                                  "mt-1 text-lg font-semibold",
+                                  batch.candidateMetric != null && requiredThreshold != null
+                                    ? batch.candidateMetric >= requiredThreshold
+                                      ? "text-green-700"
+                                      : "text-red-600"
+                                    : "text-gray-900",
+                                ].join(" ")}>
                                   {formatMetric(batch.candidateMetric)}
                                 </div>
+                                <div className="mt-1 text-xs text-gray-400">Mô hình vừa huấn luyện</div>
                               </div>
                               <div className="rounded-md border border-gray-200 bg-white p-3">
                                 <div className="text-xs font-semibold uppercase text-gray-500">
-                                  Điểm tổng hợp hiện tại
+                                  {metricLabel} — baseline
                                 </div>
                                 <div className="mt-1 text-lg font-semibold text-gray-900">
                                   {formatMetric(batch.baselineMetric)}
                                 </div>
+                                <div className="mt-1 text-xs text-gray-400">
+                                  Benchmark hiện tại
+                                </div>
                               </div>
                               <div className="rounded-md border border-gray-200 bg-white p-3">
                                 <div className="text-xs font-semibold uppercase text-gray-500">
-                                  Mức cải thiện yêu cầu
+                                  Mốc cần đạt
                                 </div>
                                 <div className="mt-1 text-lg font-semibold text-gray-900">
-                                  {formatMetric(batch.minimumImprovement)}
+                                  {formatMetric(requiredThreshold)}
+                                </div>
+                                <div className="mt-1 text-xs text-gray-400">
+                                  Benchmark hiện tại + {formatMetric(batch.minimumImprovement)}
                                 </div>
                               </div>
-                              <div className="rounded-md border border-gray-200 bg-white p-3">
+                              <div className={[
+                                "rounded-md border p-3",
+                                batch.promoted
+                                  ? "border-green-200 bg-green-50"
+                                  : batch.status === "REJECTED"
+                                  ? "border-red-100 bg-red-50"
+                                  : batch.status === "FAILED"
+                                  ? "border-red-200 bg-red-50"
+                                  : "border-gray-200 bg-white",
+                              ].join(" ")}>
                                 <div className="text-xs font-semibold uppercase text-gray-500">
-                                  Độ chính xác vùng
+                                  Kết quả
                                 </div>
-                                <div className="mt-1 text-sm text-gray-700">
-                                  Mô hình ứng viên: <strong>{formatMetric(candidateUnetMiou)}</strong>
+                                <div className={[
+                                  "mt-1 text-sm font-semibold",
+                                  batch.promoted
+                                    ? "text-green-700"
+                                    : batch.status === "REJECTED" || batch.status === "FAILED"
+                                    ? "text-red-700"
+                                    : "text-gray-700",
+                                ].join(" ")}>
+                                  {gateResultLabel}
                                 </div>
-                                <div className="text-xs text-gray-500">
-                                  Bộ phát hiện được giữ cố định; chỉ dùng kiểm tra nhanh khi cần.
-                                </div>
+                                {batch.promotionReason?.toLowerCase().includes("yolo frozen") && (
+                                  <div className="mt-1 text-xs text-gray-400">YOLO: cố định, không tái huấn luyện</div>
+                                )}
                               </div>
                             </div>
 
@@ -669,7 +758,8 @@ export function RetrainRuns({
                     );
                   })}
                 </React.Fragment>
-              ))}
+                );
+              })}
             </TableBody>
             </Table>
           </div>
@@ -838,6 +928,3 @@ function TrainingConfirmSummaryItem({
     </div>
   );
 }
-
-
-

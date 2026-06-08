@@ -119,7 +119,8 @@ export function BenchmarkDatasetOverview() {
             <CardTitle>Bộ ảnh benchmark mô hình phân vùng</CardTitle>
             <p className="mt-2 max-w-3xl text-sm text-gray-500">
               Đây là tập ảnh cố định, không dùng để huấn luyện. Bộ này dùng để
-              so sánh mô hình hiện tại và mô hình ứng viên trên cùng bằng chứng.
+              so sánh mô hình hiện tại và mô hình ứng viên trên cùng bằng chứng,
+              và là nguồn dữ liệu thật cho benchmark gate.
             </p>
           </div>
           <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-1">
@@ -226,9 +227,9 @@ export function BenchmarkOverview() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-            Bộ đánh giá là điều kiện trước khi đưa mô hình mới vào sử dụng.
-            Không dùng chỉ số kiểm tra nhanh, nhật ký chạy thử hoặc nhãn vẽ chưa
-            đủ chuẩn để khẳng định chất lượng phân vùng.
+            Bộ đánh giá benchmark 46 ảnh thật là điều kiện trước khi đưa mô hình
+            mới vào sử dụng. Không dùng chỉ số kiểm tra nhanh, nhật ký chạy thử
+            hoặc nhãn vẽ chưa đủ chuẩn để khẳng định chất lượng phân vùng.
           </div>
           <div className="grid gap-3 md:grid-cols-4">
             <div className="rounded-md border border-gray-200 bg-white p-3">
@@ -253,7 +254,9 @@ export function BenchmarkOverview() {
               <div className="text-xs font-semibold uppercase text-gray-500">
                 Điều kiện đưa vào sử dụng
               </div>
-              <div className="mt-1 text-lg font-semibold">Có benchmark cố định</div>
+              <div className="mt-1 text-lg font-semibold">
+                Vượt benchmark hiện tại
+              </div>
             </div>
           </div>
           <Table>
@@ -305,7 +308,7 @@ export function ModelVersions() {
               Mô hình đang phục vụ hệ thống
             </div>
             <p className="mt-1 text-sm text-gray-500">
-              Mốc hiện tại để so sánh với mô hình ứng viên trên cùng bộ đánh giá.
+              Benchmark hiện tại dùng để tính mốc cần đạt cho mô hình ứng viên.
             </p>
           </div>
           <div className="rounded-md border border-gray-200 bg-white p-3">
@@ -313,17 +316,19 @@ export function ModelVersions() {
               Mô hình ứng viên
             </div>
             <div className="mt-1 font-semibold text-gray-900">
-              Chỉ đưa vào sử dụng sau khi đạt bộ đánh giá
+              Chỉ đưa vào sử dụng sau khi vượt mốc cần đạt
             </div>
             <p className="mt-1 text-sm text-gray-500">
-              Không tự động đưa vào sử dụng nếu thiếu mốc hiện tại hoặc báo cáo.
+              Không tự động đưa vào sử dụng nếu thiếu metric benchmark, thiếu
+              benchmark hiện tại hoặc phiên train lỗi.
             </p>
           </div>
         </div>
         <div className="rounded-md border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
-          Mô hình ứng viên đạt yêu cầu khi không làm tăng tỷ lệ đạt sai, không
-          làm giảm độ chính xác kết luận, độ chính xác vùng không thấp hơn mốc
-          hiện tại và độ trễ vẫn đạt yêu cầu.
+          Mô hình ứng viên chỉ được đưa vào sử dụng khi phiên train hoàn tất và
+          benchmark mIoU trên 46 ảnh thật đạt công thức: benchmark ứng viên &gt;=
+          benchmark hiện tại + mức cải thiện yêu cầu. Nếu phiên train lỗi hoặc
+          thiếu metric benchmark, hệ thống không đưa mô hình vào sử dụng.
         </div>
       </CardContent>
     </Card>
