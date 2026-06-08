@@ -19,6 +19,8 @@ import { TaskCard } from "./details/TaskCard";
 import { ActionBar } from "./details/ActionBar";
 import { ProcessingResults } from "./details/ProcessingResults";
 
+import { parseLocalDate } from "@/lib/utils/date-utils";
+
 interface EmergencyRequestDetailProps {
   request: EmergencyLeaveRequest;
   affectedTasks: TaskAssignment[];
@@ -105,7 +107,7 @@ export function EmergencyRequestDetail({
                 className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-white hover:shadow-sm transition-all"
                 onClick={() => onBulkAction("REASSIGN_START")}
               >
-                Giao lại tất cả
+                Bàn giao tất cả
               </Button>
               <Button
                 size="sm"
@@ -113,7 +115,7 @@ export function EmergencyRequestDetail({
                 className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 hover:text-primary hover:bg-white hover:shadow-sm transition-all"
                 onClick={() => onBulkAction("KEEP_CONTINUE")}
               >
-                Giữ tất cả
+                Xử lý sau tất cả
               </Button>
             </div>
           )}
@@ -144,7 +146,10 @@ export function EmergencyRequestDetail({
                   </span>
                   {request.approvedAt && (
                     <span className="text-[10px] text-slate-400 font-medium italic">
-                      Xử lý lúc: {new Date(request.approvedAt).toLocaleString('vi-VN')}
+                      Xử lý lúc: {(() => {
+                        const date = parseLocalDate(request.approvedAt);
+                        return date ? date.toLocaleString('vi-VN') : "—";
+                      })()}
                     </span>
                   )}
                 </div>

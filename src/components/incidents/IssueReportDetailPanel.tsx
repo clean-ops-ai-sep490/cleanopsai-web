@@ -5,6 +5,7 @@ import { IssueReport } from "@/lib/issue-report-api";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
+import { parseLocalDate } from "@/lib/utils/date-utils";
 
 interface IssueReportDetailPanelProps {
   issue: IssueReport;
@@ -80,7 +81,14 @@ export function IssueReportDetailPanel({ issue }: IssueReportDetailPanelProps) {
               <p className="text-[15px] font-bold text-slate-900">{issue.reportedByWorkerName || "Không rõ"}</p>
               <div className="flex items-center gap-2 text-slate-400">
                  <Clock className="h-3 w-3" />
-                 <span className="text-xs font-medium italic">{issue.created ? formatDistanceToNow(new Date(issue.created), { addSuffix: true, locale: vi }) : "—"}</span>
+                 <span className="text-xs font-medium italic">
+                   {issue.created 
+                     ? (() => {
+                         const date = parseLocalDate(issue.created);
+                         return date ? formatDistanceToNow(date, { addSuffix: true, locale: vi }) : "—";
+                       })()
+                     : "—"}
+                 </span>
               </div>
             </div>
           </div>
@@ -126,7 +134,12 @@ export function IssueReportDetailPanel({ issue }: IssueReportDetailPanelProps) {
             <div className="space-y-1">
               <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-wider">Thời gian giải quyết</p>
               <p className="text-[13px] font-semibold text-slate-600 italic">
-                {issue.resolvedAt ? new Date(issue.resolvedAt).toLocaleString('vi-VN') : "—"}
+                {issue.resolvedAt 
+                  ? (() => {
+                      const date = parseLocalDate(issue.resolvedAt);
+                      return date ? date.toLocaleString('vi-VN') : "—";
+                    })()
+                  : "—"}
               </p>
             </div>
           </div>

@@ -81,14 +81,48 @@ export function CalendarGrid({
     return {
       left: `${leftPercent}%`,
       width: `${widthPercent}%`,
+      startOffset,
+      endOffset,
     };
   };
 
   const getTasksForWorker = (worker: WorkerGroup) => {
-    return worker.tasks.map((task) => {
-      const position = getTaskPosition(task);
-      return { task, position };
+    const sortedTasks = [...worker.tasks].sort((a, b) => {
+      const startA = parseISO(a.scheduledStartAt.replace("Z", "")).getTime();
+      const startB = parseISO(b.scheduledStartAt.replace("Z", "")).getTime();
+      return startA - startB;
     });
+
+    const lanes: number[] = [];
+
+    const tasks = sortedTasks.map((task) => {
+      const position = getTaskPosition(task);
+      
+      let assignedLane = -1;
+      for (let i = 0; i < lanes.length; i++) {
+        if (position.startOffset >= lanes[i]) {
+          assignedLane = i;
+          lanes[i] = position.endOffset;
+          break;
+        }
+      }
+
+      if (assignedLane === -1) {
+        lanes.push(position.endOffset);
+        assignedLane = lanes.length - 1;
+      }
+
+      return { 
+        task, 
+        position, 
+        lane: assignedLane 
+      };
+    });
+
+    return {
+      tasks,
+      laneCount: lanes.length
+    };
   };
 
   if (isLoading) {
@@ -182,7 +216,7 @@ export function CalendarGrid({
         {/* Worker Rows */}
         <div className="divide-y divide-slate-100">
           {workerGroups.map((worker, index) => {
-            const tasksForWorker = getTasksForWorker(worker);
+            const { tasks: tasksForWorker, laneCount } = getTasksForWorker(worker);
             const completedTasks = worker.tasks.filter(
               (t) => t.status === "Completed",
             ).length;
@@ -224,7 +258,13 @@ export function CalendarGrid({
                 </div>
 
                 {/* Timeline */}
-                <div className="relative min-h-[120px] py-4 bg-slate-50/20">
+                <div 
+                  className="relative py-4 bg-slate-50/20"
+                  style={{
+                    minHeight: "120px",
+                    height: `${Math.max(3, laneCount) * 36 + 16}px`
+                  }}
+                >
                   {/* Time grid background */}
                   <div
                     className="absolute inset-0 grid"
@@ -256,14 +296,14 @@ export function CalendarGrid({
 
                   {/* Tasks Container */}
                   <div className="relative h-full px-4">
-                    {tasksForWorker.map(({ task, position }, taskIndex) => (
+                    {tasksForWorker.map(({ task, position, lane }) => (
                       <div
                         key={task.id}
                         className="absolute"
                         style={{
                           left: position.left,
                           width: position.width,
-                          top: `${taskIndex * 36 + 4}px`,
+                          top: `${lane * 36 + 4}px`,
                           zIndex: 10,
                         }}
                       >

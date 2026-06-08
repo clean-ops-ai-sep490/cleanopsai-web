@@ -62,12 +62,12 @@ const navigation = [
         icon: MapPin,
         roles: [UserRole.Manager],
       },
-      {
-        name: "Tìm kiếm công nhân",
-        href: "/manager/workers",
-        icon: Users,
-        roles: [UserRole.Manager],
-      },
+      // {
+      //   name: "Tìm kiếm công nhân",
+      //   href: "/manager/workers",
+      //   icon: Users,
+      //   roles: [UserRole.Manager],
+      // },
     ],
   },
 ];

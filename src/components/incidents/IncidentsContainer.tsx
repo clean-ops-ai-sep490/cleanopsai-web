@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ClipboardPlus } from "lucide-react";
 import { toastUtils } from "@/lib/utils/toast-utils";
 import { IssueReportsTable } from "./IssueReportsTable";
@@ -20,6 +20,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { IssueReportDetailPanel } from "./IssueReportDetailPanel";
 import { IssueReport, getIssueReportById } from "@/lib/issue-report-api";
+import { getTaskAssignmentById } from "@/lib/task-assignment-api";
 import { useEffect } from "react";
 
 type TabKey = "issues" | "requests";
@@ -37,7 +38,10 @@ export function IncidentsContainer() {
     setMounted(true);
   }, []);
 
+  const queryClient = useQueryClient();
+
   const startTaskMutation = useStartTask(() => {
+    queryClient.invalidateQueries({ queryKey: ["task-assignment-statuses"] });
     refetchIssueReports();
     setProcessingIssueId(null);
   });
@@ -52,6 +56,38 @@ export function IncidentsContainer() {
     queryFn: () => getIssueReportsPaginated({ pageNumber: 1, pageSize: 50 }),
   });
 
+  const issueReports = issueReportsResponse?.content || [];
+
+  const { data: taskStatuses } = useQuery({
+    queryKey: ["task-assignment-statuses", issueReports.map((i) => i.taskAssignmentId).filter(Boolean)],
+    queryFn: async () => {
+      const approvedIssues = issueReports.filter(
+        (i) => i.status === "Approved" && i.taskAssignmentId
+      );
+      if (approvedIssues.length === 0) return {};
+
+      const results = await Promise.all(
+        approvedIssues.map(async (issue) => {
+          try {
+            const task = await getTaskAssignmentById(issue.taskAssignmentId!);
+            return { id: issue.taskAssignmentId!, status: task.status };
+          } catch (e) {
+            console.error(`Error fetching task assignment ${issue.taskAssignmentId}:`, e);
+            return { id: issue.taskAssignmentId!, status: null };
+          }
+        })
+      );
+
+      return results.reduce<Record<string, string>>((acc, curr) => {
+        if (curr.status) {
+          acc[curr.id] = curr.status;
+        }
+        return acc;
+      }, {});
+    },
+    enabled: issueReports.length > 0,
+  });
+
   const {
     data: emergencyLeaveRequestsResponse,
     isLoading: emergencyLeaveRequestsLoading,
@@ -61,7 +97,6 @@ export function IncidentsContainer() {
       getEmergencyLeaveRequestsPaginated({ pageNumber: 1, pageSize: 50 }),
   });
 
-  const issueReports = issueReportsResponse?.content || [];
   const emergencyLeaveRequests = emergencyLeaveRequestsResponse?.content || [];
 
   const openIssues = issueReports.filter(
@@ -239,6 +274,7 @@ export function IncidentsContainer() {
         {activeTab === "issues" && (
           <IssueReportsTable
             issues={issueReports}
+            taskStatuses={taskStatuses || {}}
             onApprove={handleApproveIssue}
             onReject={handleRejectIssue}
             onUpdateTaskStatus={handleUpdateTaskStatus}
