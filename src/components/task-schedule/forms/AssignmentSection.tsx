@@ -280,8 +280,8 @@ export function AssignmentSection({
 
       {/* Dialog xem nhanh thông tin nhân viên */}
       <Dialog open={quickViewOpen} onOpenChange={setQuickViewOpen}>
-        <DialogContent className="max-w-[480px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[680px]">
+          <DialogHeader className="pb-3 border-b border-slate-100">
             <DialogTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
               <User className="w-5 h-5 text-primary" />
               Thông tin nhân viên
@@ -292,27 +292,29 @@ export function AssignmentSection({
             (() => {
               const workerData = selectedWorker as any;
               return (
-                <div className="space-y-4 py-2">
+                <div className="space-y-5 py-2 w-full overflow-x-hidden">
                   {/* Profile Header */}
-                  <div className="flex items-center gap-4 p-3 bg-slate-50 rounded-lg">
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center border-2 border-white shadow-sm flex-shrink-0">
+                  <div className="flex items-start gap-4 p-4 bg-slate-50/60 rounded-xl border border-slate-100/80 w-full max-w-full overflow-hidden">
+                    <div className="w-14 h-14 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center border-2 border-white shadow-sm flex-shrink-0">
                       {workerData.avatarUrl ? (
                         <img src={workerData.avatarUrl} alt={workerData.fullName} className="w-full h-full object-cover" />
                       ) : (
-                        <User className="w-6 h-6 text-primary" />
+                        <User className="w-7 h-7 text-primary" />
                       )}
                     </div>
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-slate-900 text-base">{workerData.fullName}</h4>
-                      <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
-                        <span className="truncate">{workerData.displayAddress || "Chưa cập nhật địa chỉ"}</span>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-bold text-slate-900 text-base leading-snug break-words">{workerData.fullName}</h4>
+                      <p className="text-xs text-slate-500 flex items-start gap-1.5 mt-1.5 w-full">
+                        <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-slate-400 mt-0.5" />
+                        <span className="text-slate-600 leading-normal break-words whitespace-normal">
+                          {workerData.displayAddress || "Chưa cập nhật địa chỉ"}
+                        </span>
                       </p>
                     </div>
                   </div>
 
                   {/* Skills */}
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                       <Briefcase className="w-4 h-4 text-slate-400" />
                       Kỹ năng ({workerData.skills?.length || 0})
@@ -325,7 +327,7 @@ export function AssignmentSection({
                           return (
                             <span
                               key={`${skill.id || "skill"}-${idx}`}
-                              className="bg-primary/5 text-primary border border-primary/10 text-xs px-2.5 py-1 rounded-full font-medium"
+                              className="bg-primary/5 text-primary border border-primary/10 text-xs px-2.5 py-1 rounded-full font-medium hover:bg-primary/10 transition-colors"
                             >
                               {sName} {sCategory && <span className="text-[10px] opacity-60">({sCategory})</span>}
                             </span>
@@ -333,35 +335,37 @@ export function AssignmentSection({
                         })}
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-400 italic bg-slate-50 p-2 rounded text-center">Chưa cập nhật kỹ năng</p>
+                      <p className="text-xs text-slate-400 italic bg-slate-50/50 p-3 rounded-lg text-center border border-dashed border-slate-100">
+                        Chưa cập nhật kỹ năng
+                      </p>
                     )}
                   </div>
 
                   {/* Certifications */}
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                       <Award className="w-4 h-4 text-slate-400" />
                       Chứng chỉ ({workerData.certifications?.length || 0})
                     </h5>
                     {workerData.certifications && workerData.certifications.length > 0 ? (
-                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                      <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
                         {workerData.certifications.map((cert: any, idx: number) => {
                           const cName = cert.name || cert.certification?.name;
                           const cCategory = cert.category || cert.certification?.category;
                           return (
                             <div
                               key={`${cert.id || "cert"}-${idx}`}
-                              className="flex items-start justify-between p-2.5 border border-slate-100 rounded-lg hover:bg-slate-50 transition-colors"
+                              className="flex items-start justify-between p-3 border border-slate-100/80 rounded-xl hover:bg-slate-50/50 transition-colors"
                             >
-                              <div className="flex gap-2">
+                              <div className="flex gap-2.5 min-w-0">
                                 <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0" />
-                                <div>
-                                  <p className="font-semibold text-slate-800 text-xs">{cName}</p>
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-slate-800 text-xs break-words">{cName}</p>
                                   {cCategory && <p className="text-[10px] text-slate-500 mt-0.5">Loại: {cCategory}</p>}
                                 </div>
                               </div>
                               {cert.expiredAt && (
-                                <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded flex-shrink-0">
+                                <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md flex-shrink-0 font-medium ml-2">
                                   Hạn: {formatCertDate(cert.expiredAt)}
                                 </span>
                               )}
@@ -370,7 +374,9 @@ export function AssignmentSection({
                         })}
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-400 italic bg-slate-50 p-2 rounded text-center">Chưa cập nhật chứng chỉ</p>
+                      <p className="text-xs text-slate-400 italic bg-slate-50/50 p-3 rounded-lg text-center border border-dashed border-slate-100">
+                        Chưa cập nhật chứng chỉ
+                      </p>
                     )}
                   </div>
                 </div>
