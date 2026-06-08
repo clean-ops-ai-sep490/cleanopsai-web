@@ -19,6 +19,8 @@ import { TaskCard } from "./details/TaskCard";
 import { ActionBar } from "./details/ActionBar";
 import { ProcessingResults } from "./details/ProcessingResults";
 
+import { parseLocalDate } from "@/lib/utils/date-utils";
+
 interface EmergencyRequestDetailProps {
   request: EmergencyLeaveRequest;
   affectedTasks: TaskAssignment[];
@@ -144,7 +146,10 @@ export function EmergencyRequestDetail({
                   </span>
                   {request.approvedAt && (
                     <span className="text-[10px] text-slate-400 font-medium italic">
-                      Xử lý lúc: {new Date(request.approvedAt).toLocaleString('vi-VN')}
+                      Xử lý lúc: {(() => {
+                        const date = parseLocalDate(request.approvedAt);
+                        return date ? date.toLocaleString('vi-VN') : "—";
+                      })()}
                     </span>
                   )}
                 </div>

@@ -10,6 +10,7 @@ import {
   Filter,
   Eye,
 } from "lucide-react";
+import { parseLocalDate } from "@/lib/utils/date-utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IssueReport } from "@/lib/issue-report-api";
 import {
@@ -110,19 +111,22 @@ export function IssueReportsTable({
       )
     },
     {
-      header: "Thời gian",
+      header: "Ngày gửi",
       className: "text-center w-[150px]",
       headerClassName: "text-center",
-      cell: (issue: IssueReport) => (
-        <div className="flex flex-col items-center">
-          <span className="text-sm font-semibold text-slate-600">
-            {issue.created ? new Date(issue.created).toLocaleDateString("vi-VN") : "—"}
-          </span>
-          <span className="text-[11px] text-slate-400 font-medium">
-            {issue.created ? new Date(issue.created).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : ""}
-          </span>
-        </div>
-      )
+      cell: (issue: IssueReport) => {
+        const localDate = parseLocalDate(issue.created);
+        return (
+          <div className="flex flex-col items-center">
+            <span className="text-sm font-semibold text-slate-600">
+              {localDate ? localDate.toLocaleDateString("vi-VN") : "—"}
+            </span>
+            <span className="text-[11px] text-slate-400 font-medium">
+              {localDate ? localDate.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : ""}
+            </span>
+          </div>
+        );
+      }
     },
     {
       header: "Thao tác",

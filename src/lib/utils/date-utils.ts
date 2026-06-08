@@ -2,9 +2,26 @@
  * Date utility functions
  */
 
+/**
+ * Safely parse an API date string as local time by removing the 'Z' suffix
+ * if it represents local time disguised as UTC.
+ */
+export function parseLocalDate(dateString: string | Date | null | undefined): Date | null {
+  if (!dateString) return null;
+  if (dateString instanceof Date) return dateString;
+  try {
+    const clean = dateString.replace(/Z$/i, "");
+    const parsed = new Date(clean);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  } catch (error) {
+    return null;
+  }
+}
+
 export function formatDate(dateString: string): string {
   try {
-    const date = new Date(dateString);
+    const date = parseLocalDate(dateString);
+    if (!date) return "N/A";
     return date.toLocaleDateString("vi-VN", {
       year: "numeric",
       month: "2-digit",
@@ -17,7 +34,8 @@ export function formatDate(dateString: string): string {
 
 export function formatDateTime(dateString: string): string {
   try {
-    const date = new Date(dateString);
+    const date = parseLocalDate(dateString);
+    if (!date) return "N/A";
     return date.toLocaleString("vi-VN", {
       year: "numeric",
       month: "2-digit",
@@ -44,7 +62,8 @@ export function formatTimeAgo(dateString: string | Date): string {
   if (!dateString) return "N/A";
 
   try {
-    const date = typeof dateString === "string" ? new Date(dateString) : dateString;
+    const date = parseLocalDate(dateString);
+    if (!date) return "N/A";
     const now = new Date();
     const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
@@ -68,3 +87,4 @@ export function formatTimeAgo(dateString: string | Date): string {
     return "N/A";
   }
 }
+
